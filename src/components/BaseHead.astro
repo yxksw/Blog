@@ -211,12 +211,51 @@ const cfWebAnalyticsToken = import.meta.env.PUBLIC_CF_WEB_ANALYTICS_TOKEN;
 		};
 	})();
 </script>
-{
-	import.meta.env.PROD && cfWebAnalyticsToken && (
-		<script
-			defer
-			src="https://static.cloudflareinsights.com/beacon.min.js"
-			data-cf-beacon={`{"token":"${cfWebAnalyticsToken}"}`}
-		></script>
-	)
-}
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "352fbccc01ad4ecda30eb8031efa4a9b"}'></script>
+<!-- End Cloudflare Web Analytics -->
+
+<!-- Custom Analytics Tracking -->
+<script is:inline>
+	(function() {
+		const API_BASE = window.__API_BASE || 'https://api.261770.xyz';
+		
+		// Generate visitor ID
+		function getVisitorId() {
+			let id = localStorage.getItem('analytics_visitor_id');
+			if (!id) {
+				id = 'v_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+				localStorage.setItem('analytics_visitor_id', id);
+			}
+			return id;
+		}
+		
+		// Track page view
+		function trackPageView() {
+			const data = {
+				page_path: window.location.pathname,
+				page_title: document.title,
+				referrer: document.referrer,
+				visitor_id: getVisitorId(),
+			};
+			
+			fetch(`${API_BASE}/api/analytics/track`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(data),
+				keepalive: true,
+			}).catch(() => {}); // Silent fail
+		}
+		
+		// Track on page load
+		if (document.readyState === 'complete') {
+			trackPageView();
+		} else {
+			window.addEventListener('load', trackPageView);
+		}
+		
+		// Track on Astro page navigation
+		document.addEventListener('astro:page-load', trackPageView);
+	})();
+</script>
+<!-- End Custom Analytics -->
