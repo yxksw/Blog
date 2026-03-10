@@ -6,7 +6,7 @@ import Header from '../components/Header.astro';
 import MobileDrawer from '../components/MobileDrawer.astro';
 import PostCard from '../components/PostCard.astro';
 import TerminalQuote from '../components/TerminalQuote.astro';
-import { BILIBILI_URL, CREATINF_URL, GITHUB_URL, SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import { BILIBILI_URL, TELEGRAM_URL, EMAIL_URL, QQ_URL, GITHUB_URL, SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 
 const BASE = import.meta.env.BASE_URL;
 // Keep home preview aligned with list pagination size for consistent editorial cadence.
@@ -14,7 +14,7 @@ const posts = (await getCollection('blog'))
 	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
 	.slice(0, 6);
 
-const HOME_WALLPAPER = 'https://img.danarnoux.com/misc/home-2rd1yuubn4hc1.webp';
+const HOME_WALLPAPER = 'https://img.314926.xyz/h';
 ---
 
 <!doctype html>
@@ -47,7 +47,7 @@ const HOME_WALLPAPER = 'https://img.danarnoux.com/misc/home-2rd1yuubn4hc1.webp';
 						<p class="mt-1 font-sans text-sm text-zinc-500 dark:text-zinc-400">{SITE_DESCRIPTION}</p>
 						<div class="mt-3 flex flex-wrap gap-2">
 							<span class="rounded-lg border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">
-								UI: English
+								UI: Chinese
 							</span>
 							<span class="rounded-lg border border-zinc-200 px-2.5 py-1 text-xs font-medium text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">
 								Content: Chinese (long-form)
@@ -79,15 +79,33 @@ const HOME_WALLPAPER = 'https://img.danarnoux.com/misc/home-2rd1yuubn4hc1.webp';
 								<span class="sr-only">Bilibili</span>
 							</a>
 							<a
-								href={CREATINF_URL}
-								target="_blank"
-								rel="noreferrer"
-								class="icon-button inline-flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 text-zinc-600 transition-colors hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
-								aria-label="CreatInf"
-							>
-								<span class="text-lg font-semibold leading-none">∞</span>
-								<span class="sr-only">CreatInf</span>
-							</a>
+							href={TELEGRAM_URL}
+							target="_blank"
+							rel="noreferrer"
+							class="icon-button inline-flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 text-zinc-600 transition-colors hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
+							aria-label="Telegram"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 16L9 19.5L7 13l-5.5-2l21-8l-4 18l-7.5-7l4-3"/></svg>
+							<span class="sr-only">Telegram</span>
+						</a>
+						<a
+							href={QQ_URL}
+							target="_blank"
+							rel="noreferrer"
+							class="icon-button inline-flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 text-zinc-600 transition-colors hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
+							aria-label="QQ"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 12 12"><path fill="currentColor" d="M2 6H1v1H0v3h1V9h1Zm0 0h1V5h5v1h1V3H8V2H7V1H4v1H3v1H2Zm0 4h1V9H2Zm0 2h2v-1h3v1h2v-1H8v-1H3v1H2Zm2-3h2V7h2V6H3v1h1Zm4 1h1V9H8ZM4 4V3h1v1Zm6 6h1V7h-1V6H9v3h1ZM6 4V3h1v1Zm0 0"/></svg>
+							<span class="sr-only">QQ</span>
+						</a>
+						<a
+							href={EMAIL_URL}
+							class="icon-button inline-flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 text-zinc-600 transition-colors hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
+							aria-label="Email"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><rect width="18.5" height="17" x="2.682" y="3.5" rx="4"/><path stroke-linecap="round" stroke-linejoin="round" d="m2.729 7.59l7.205 4.13a3.96 3.96 0 0 0 3.975 0l7.225-4.13"/></g></svg>
+							<span class="sr-only">Email</span>
+						</a>
 						</div>
 					</div>
 

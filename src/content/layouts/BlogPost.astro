@@ -1,17 +1,18 @@
 ---
 import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
-import BaseHead from '../components/BaseHead.astro';
-import Comment from '../components/Comment.astro';
-import Footer from '../components/Footer.astro';
-import FormattedDate from '../components/FormattedDate.astro';
-import Header from '../components/Header.astro';
-import MobileDrawer from '../components/MobileDrawer.astro';
-import TocSidebar from '../components/TocSidebar.astro';
-import TocDrawer from '../components/TocDrawer.astro';
+import BaseHead from '../../components/BaseHead.astro';
+import Comment from '../../components/Comment.astro';
+import Footer from '../../components/Footer.astro';
+import FormattedDate from '../../components/FormattedDate.astro';
+import Header from '../../components/Header.astro';
+import MobileDrawer from '../../components/MobileDrawer.astro';
+import TocSidebar from '../../components/TocSidebar.astro';
+import TocDrawer from '../../components/TocDrawer.astro';
 
 /* Blog post layout coordinates desktop TOC, mobile drawer TOC, and route-transition-safe scripts. */
-type Props = CollectionEntry<'blog'>['data'] & {
+type Props = Omit<CollectionEntry<'blog'>['data'], 'heroImage'> & {
+	heroImage?: string | { src: string; width: number; height: number; format: 'png' | 'jpg' | 'jpeg' | 'tiff' | 'webp' | 'gif' | 'svg' | 'avif' };
 	profileImage?: string;
 	headings?: { depth: number; slug: string; text: string }[];
 	rawBody?: string;

@@ -1,0 +1,475 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+const title = 'Admin Dashboard - Blog Management';
+const description = 'Admin dashboard for managing blog comments and analytics';
+---
+
+<html lang="zh-CN">
+	<head>
+		<BaseHead title={title} description={description} />
+	</head>
+	<body class="bg-zinc-50 dark:bg-zinc-900">
+		<Header />
+		
+		<main class="min-h-screen py-10">
+			<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+				<!-- Admin Header -->
+				<div class="mb-8">
+					<h1 class="text-3xl font-bold text-zinc-900 dark:text-zinc-100">管理后台</h1>
+					<p class="mt-2 text-zinc-600 dark:text-zinc-400">管理评论、查看统计数据</p>
+				</div>
+
+				<!-- Login Required Message -->
+				<div id="login-required" class="hidden">
+					<div class="rounded-lg border border-zinc-200 bg-white p-8 text-center dark:border-zinc-700 dark:bg-zinc-800">
+						<p class="text-zinc-600 dark:text-zinc-400">请先登录管理员账号</p>
+						<a
+							href="https://api.261770.xyz/api/auth/github/start?returnTo=https://blog.261770.xyz/admin/"
+							class="mt-4 inline-flex items-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+						>
+							使用 GitHub 登录
+						</a>
+					</div>
+				</div>
+
+				<!-- Not Admin Message -->
+				<div id="not-admin" class="hidden">
+					<div class="rounded-lg border border-red-200 bg-red-50 p-8 text-center dark:border-red-800 dark:bg-red-900/20">
+						<p class="text-red-600 dark:text-red-400">您没有管理员权限</p>
+					</div>
+				</div>
+
+				<!-- Admin Dashboard -->
+				<div id="admin-dashboard" class="hidden space-y-6">
+					<!-- Stats Cards -->
+					<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+						<div class="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800">
+							<div class="flex items-center justify-between">
+								<div>
+									<p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">总评论</p>
+									<p class="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-100" id="stat-total-comments">0</p>
+								</div>
+								<div class="rounded-full bg-zinc-100 p-3 dark:bg-zinc-700">
+									<svg class="h-6 w-6 text-zinc-600 dark:text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+									</svg>
+								</div>
+							</div>
+						</div>
+
+						<div class="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800">
+							<div class="flex items-center justify-between">
+								<div>
+									<p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">待审核</p>
+									<p class="mt-2 text-3xl font-bold text-amber-600 dark:text-amber-400" id="stat-pending-comments">0</p>
+								</div>
+								<div class="rounded-full bg-amber-100 p-3 dark:bg-amber-900/30">
+									<svg class="h-6 w-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+									</svg>
+								</div>
+							</div>
+						</div>
+
+						<div class="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800">
+							<div class="flex items-center justify-between">
+								<div>
+									<p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">总用户数</p>
+									<p class="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-100" id="stat-total-users">0</p>
+								</div>
+								<div class="rounded-full bg-blue-100 p-3 dark:bg-blue-900/30">
+									<svg class="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+									</svg>
+								</div>
+							</div>
+						</div>
+
+						<div class="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800">
+							<div class="flex items-center justify-between">
+								<div>
+									<p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">评论文章数</p>
+									<p class="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-100" id="stat-posts-with-comments">0</p>
+								</div>
+								<div class="rounded-full bg-green-100 p-3 dark:bg-green-900/30">
+									<svg class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+									</svg>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Analytics Section -->
+					<div class="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800">
+						<div class="mb-4 flex items-center justify-between">
+							<h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">访问统计</h2>
+							<select id="analytics-period" class="rounded-md border border-zinc-300 bg-white px-3 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100">
+								<option value="7">最近7天</option>
+								<option value="30">最近30天</option>
+								<option value="90">最近90天</option>
+							</select>
+						</div>
+						<div class="grid gap-4 sm:grid-cols-3">
+							<div class="text-center">
+								<p class="text-sm text-zinc-600 dark:text-zinc-400">总浏览量</p>
+								<p class="mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-100" id="analytics-total-views">0</p>
+							</div>
+							<div class="text-center">
+								<p class="text-sm text-zinc-600 dark:text-zinc-400">独立访客</p>
+								<p class="mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-100" id="analytics-unique-visitors">0</p>
+							</div>
+							<div class="text-center">
+								<p class="text-sm text-zinc-600 dark:text-zinc-400">被访问页面</p>
+								<p class="mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-100" id="analytics-pages">0</p>
+							</div>
+						</div>
+						<div class="mt-6">
+							<h3 class="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">热门页面</h3>
+							<div id="analytics-top-pages" class="space-y-2">
+								<p class="text-sm text-zinc-500 dark:text-zinc-400">加载中...</p>
+							</div>
+						</div>
+					</div>
+
+					<!-- Comments Management -->
+					<div class="rounded-lg border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800">
+						<div class="border-b border-zinc-200 p-6 dark:border-zinc-700">
+							<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+								<h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">评论管理</h2>
+								<div class="flex gap-2">
+									<button data-filter="all" class="comment-filter rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900">全部</button>
+									<button data-filter="pending" class="comment-filter rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">待审核</button>
+									<button data-filter="approved" class="comment-filter rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">已通过</button>
+									<button data-filter="rejected" class="comment-filter rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">已拒绝</button>
+								</div>
+							</div>
+						</div>
+
+						<div id="comments-list" class="divide-y divide-zinc-200 dark:divide-zinc-700">
+							<p class="p-6 text-center text-zinc-500 dark:text-zinc-400">加载中...</p>
+						</div>
+
+						<div class="border-t border-zinc-200 p-4 dark:border-zinc-700">
+							<div class="flex items-center justify-between">
+								<button id="prev-page" class="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700" disabled>上一页</button>
+								<span id="page-info" class="text-sm text-zinc-600 dark:text-zinc-400">第 1 页</span>
+								<button id="next-page" class="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700" disabled>下一页</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</main>
+
+		<Footer />
+
+		<script is:inline>
+			const API_BASE = 'https://api.261770.xyz';
+			const TOKEN_KEY = 'yxksw_blog_token';
+			
+			let currentPage = 1;
+			let currentFilter = 'all';
+			let totalPages = 1;
+
+			// Get auth token from localStorage (same as blog)
+			const getAuthToken = () => {
+				return localStorage.getItem(TOKEN_KEY);
+			};
+
+			// Store token from hash (OAuth callback)
+			const storeTokenFromHash = () => {
+				const hash = window.location.hash || '';
+				const match = hash.match(/(?:^#|&)token=([^&]+)/);
+				if (!match) return null;
+				try {
+					const token = decodeURIComponent(match[1]);
+					localStorage.setItem(TOKEN_KEY, token);
+					history.replaceState(null, '', window.location.pathname);
+					return token;
+				} catch {
+					const token = match[1];
+					localStorage.setItem(TOKEN_KEY, token);
+					history.replaceState(null, '', window.location.pathname);
+					return token;
+				}
+			};
+
+			// Check admin status
+			const checkAdmin = async () => {
+				// First check for token in hash (from OAuth callback)
+				storeTokenFromHash();
+				
+				const token = getAuthToken();
+				if (!token) {
+					showLoginRequired();
+					return false;
+				}
+
+				try {
+					const response = await fetch(`${API_BASE}/api/admin/check`, {
+						headers: { 'Authorization': `Bearer ${token}` }
+					});
+					
+					if (!response.ok) {
+						showLoginRequired();
+						return false;
+					}
+
+					const data = await response.json();
+					if (!data.isAdmin) {
+						showNotAdmin();
+						return false;
+					}
+
+					showDashboard();
+					return true;
+				} catch (error) {
+					console.error('Admin check failed:', error);
+					showLoginRequired();
+					return false;
+				}
+			};
+
+			const showLoginRequired = () => {
+				document.getElementById('login-required').classList.remove('hidden');
+				document.getElementById('not-admin').classList.add('hidden');
+				document.getElementById('admin-dashboard').classList.add('hidden');
+			};
+
+			const showNotAdmin = () => {
+				document.getElementById('login-required').classList.add('hidden');
+				document.getElementById('not-admin').classList.remove('hidden');
+				document.getElementById('admin-dashboard').classList.add('hidden');
+			};
+
+			const showDashboard = () => {
+				document.getElementById('login-required').classList.add('hidden');
+				document.getElementById('not-admin').classList.add('hidden');
+				document.getElementById('admin-dashboard').classList.remove('hidden');
+			};
+
+			// Load stats
+			const loadStats = async () => {
+				const token = getAuthToken();
+				try {
+					const response = await fetch(`${API_BASE}/api/admin/stats`, {
+						headers: { 'Authorization': `Bearer ${token}` }
+					});
+					const data = await response.json();
+
+					document.getElementById('stat-total-comments').textContent = data.comments?.total || 0;
+					document.getElementById('stat-pending-comments').textContent = data.comments?.pending || 0;
+					document.getElementById('stat-total-users').textContent = data.users?.total || 0;
+					document.getElementById('stat-posts-with-comments').textContent = data.posts?.withComments || 0;
+				} catch (error) {
+					console.error('Failed to load stats:', error);
+				}
+			};
+
+			// Load analytics
+			const loadAnalytics = async (days = 7) => {
+				const token = getAuthToken();
+				try {
+					const response = await fetch(`${API_BASE}/api/admin/analytics?days=${days}`, {
+						headers: { 'Authorization': `Bearer ${token}` }
+					});
+					const data = await response.json();
+
+					document.getElementById('analytics-total-views').textContent = data.summary?.totalViews?.toLocaleString() || 0;
+					document.getElementById('analytics-unique-visitors').textContent = data.summary?.uniqueVisitors?.toLocaleString() || 0;
+					document.getElementById('analytics-pages').textContent = data.summary?.pagesTracked || 0;
+
+					// Render top pages
+					const topPagesContainer = document.getElementById('analytics-top-pages');
+					if (data.pageViews && data.pageViews.length > 0) {
+						topPagesContainer.innerHTML = data.pageViews.slice(0, 5).map(page => `
+							<div class="flex items-center justify-between rounded-md bg-zinc-50 p-3 dark:bg-zinc-700/50">
+								<span class="truncate text-sm text-zinc-700 dark:text-zinc-300" title="${page.page_path}">${page.page_path}</span>
+								<span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">${page.views} 次</span>
+							</div>
+						`).join('');
+					} else {
+						topPagesContainer.innerHTML = '<p class="text-sm text-zinc-500 dark:text-zinc-400">暂无数据</p>';
+					}
+				} catch (error) {
+					console.error('Failed to load analytics:', error);
+				}
+			};
+
+			// Load comments
+			const loadComments = async () => {
+				const token = getAuthToken();
+				try {
+					const statusParam = currentFilter === 'all' ? '' : `&status=${currentFilter}`;
+					const response = await fetch(`${API_BASE}/api/admin/comments?page=${currentPage}${statusParam}`, {
+						headers: { 'Authorization': `Bearer ${token}` }
+					});
+					const data = await response.json();
+
+					totalPages = data.pagination?.totalPages || 1;
+					renderComments(data.comments || []);
+					updatePagination();
+				} catch (error) {
+					console.error('Failed to load comments:', error);
+					document.getElementById('comments-list').innerHTML = '<p class="p-6 text-center text-zinc-500 dark:text-zinc-400">加载失败</p>';
+				}
+			};
+
+			const renderComments = (comments) => {
+				const container = document.getElementById('comments-list');
+				if (comments.length === 0) {
+					container.innerHTML = '<p class="p-6 text-center text-zinc-500 dark:text-zinc-400">暂无评论</p>';
+					return;
+				}
+
+				container.innerHTML = comments.map(comment => {
+					const statusColors = {
+						pending: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+						approved: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+						rejected: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+					};
+					const statusLabels = {
+						pending: '待审核',
+						approved: '已通过',
+						rejected: '已拒绝'
+					};
+
+					return `
+						<div class="p-6" data-comment-id="${comment.id}">
+							<div class="flex items-start gap-4">
+								<img src="${comment.author?.avatar || 'https://img.danarnoux.com/misc/DanArnoux.webp'}" 
+									 alt="${comment.author?.username || 'User'}" 
+									 class="h-10 w-10 rounded-full border border-zinc-200 object-cover dark:border-zinc-700">
+								<div class="min-w-0 flex-1">
+									<div class="flex flex-wrap items-center gap-2">
+										<span class="font-medium text-zinc-900 dark:text-zinc-100">${comment.author?.username || 'Anonymous'}</span>
+										<span class="text-sm text-zinc-500 dark:text-zinc-400">${new Date(comment.createdAt).toLocaleString('zh-CN')}</span>
+										<span class="rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[comment.status] || statusColors.pending}">${statusLabels[comment.status] || '待审核'}</span>
+									</div>
+									<p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">文章: ${comment.postSlug}</p>
+									<p class="mt-2 text-zinc-800 dark:text-zinc-200">${comment.content}</p>
+									<div class="mt-3 flex gap-2">
+										${comment.status !== 'approved' ? `<button onclick="updateCommentStatus('${comment.id}', 'approved')" class="rounded-md bg-green-600 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-green-700">通过</button>` : ''}
+										${comment.status !== 'rejected' ? `<button onclick="updateCommentStatus('${comment.id}', 'rejected')" class="rounded-md bg-red-600 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-red-700">拒绝</button>` : ''}
+										<button onclick="deleteComment('${comment.id}')" class="rounded-md border border-zinc-300 bg-white px-3 py-1 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">删除</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					`;
+				}).join('');
+			};
+
+			const updatePagination = () => {
+				document.getElementById('page-info').textContent = `第 ${currentPage} 页 / 共 ${totalPages} 页`;
+				document.getElementById('prev-page').disabled = currentPage <= 1;
+				document.getElementById('next-page').disabled = currentPage >= totalPages;
+			};
+
+			// Update comment status
+			window.updateCommentStatus = async (commentId, status) => {
+				const token = getAuthToken();
+				try {
+					const response = await fetch(`${API_BASE}/api/admin/comments/${commentId}`, {
+						method: 'PATCH',
+						headers: {
+							'Authorization': `Bearer ${token}`,
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify({ status })
+					});
+
+					if (response.ok) {
+						loadComments();
+						loadStats();
+					}
+				} catch (error) {
+					console.error('Failed to update comment:', error);
+					alert('操作失败');
+				}
+			};
+
+			// Delete comment
+			window.deleteComment = async (commentId) => {
+				if (!confirm('确定要删除这条评论吗？')) return;
+
+				const token = getAuthToken();
+				try {
+					const response = await fetch(`${API_BASE}/api/admin/comments/${commentId}`, {
+						method: 'DELETE',
+						headers: { 'Authorization': `Bearer ${token}` }
+					});
+
+					if (response.ok) {
+						loadComments();
+						loadStats();
+					}
+				} catch (error) {
+					console.error('Failed to delete comment:', error);
+					alert('删除失败');
+				}
+			};
+
+			// Initialize
+			const init = async () => {
+				const isAdmin = await checkAdmin();
+				if (isAdmin) {
+					loadStats();
+					loadAnalytics();
+					loadComments();
+				}
+			};
+
+			// Event listeners
+			document.addEventListener('DOMContentLoaded', init);
+			
+			// Listen for auth changes from other tabs/pages
+			window.addEventListener('storage', (e) => {
+				if (e.key === TOKEN_KEY) {
+					// Token changed, reload page to check admin status
+					window.location.reload();
+				}
+			});
+
+			// Filter buttons
+			document.querySelectorAll('.comment-filter').forEach(btn => {
+				btn.addEventListener('click', (e) => {
+					document.querySelectorAll('.comment-filter').forEach(b => {
+						b.classList.remove('bg-zinc-900', 'text-white', 'dark:bg-zinc-100', 'dark:text-zinc-900');
+						b.classList.add('border', 'border-zinc-300', 'bg-white', 'text-zinc-700', 'dark:border-zinc-600', 'dark:bg-zinc-800', 'dark:text-zinc-300');
+					});
+					e.target.classList.remove('border', 'border-zinc-300', 'bg-white', 'text-zinc-700', 'dark:border-zinc-600', 'dark:bg-zinc-800', 'dark:text-zinc-300');
+					e.target.classList.add('bg-zinc-900', 'text-white', 'dark:bg-zinc-100', 'dark:text-zinc-900');
+					
+					currentFilter = e.target.dataset.filter;
+					currentPage = 1;
+					loadComments();
+				});
+			});
+
+			// Pagination
+			document.getElementById('prev-page').addEventListener('click', () => {
+				if (currentPage > 1) {
+					currentPage--;
+					loadComments();
+				}
+			});
+
+			document.getElementById('next-page').addEventListener('click', () => {
+				if (currentPage < totalPages) {
+					currentPage++;
+					loadComments();
+				}
+			});
+
+			// Analytics period selector
+			document.getElementById('analytics-period').addEventListener('change', (e) => {
+				loadAnalytics(parseInt(e.target.value));
+			});
+		</script>
+	</body>
+</html>

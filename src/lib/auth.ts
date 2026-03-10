@@ -2,7 +2,7 @@
  * Auth helper for handling GitHub OAuth authentication
  */
 
-const API_BASE = 'https://api.danarnoux.com';
+const API_BASE = 'https://api.261770.xyz';
 const TOKEN_KEY = 'blog_token';
 
 export interface User {
