@@ -8,8 +8,6 @@ A static Astro + Tailwind personal blog for research notes, engineering workflow
 [![Tags](https://img.shields.io/badge/Open-Tags-6d28d9?style=for-the-badge)](https://danarnoux.com/tags/)
 [![Bilibili](https://img.shields.io/badge/Watch-Bilibili-fe738c?style=for-the-badge&logo=bilibili)](https://space.bilibili.com/435440676)
 
-> **Backend Worker**: [DansBlogs_worker](https://github.com/Dancncn/DansBlogs_worker)
->
 > **中文版**: [查看中文文档](./docs/README.zh-CN.md)
 
 ## Main Site
