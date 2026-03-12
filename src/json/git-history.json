@@ -9,6 +9,18 @@
   ],
   "welcome-to-my-blog.mdx": [
     {
+      "hash": "263af50",
+      "fullHash": "263af506417d3a633692cdcb631d48dcc160c308",
+      "date": "2026年3月12日",
+      "message": "docs(blog): 修正欢迎博客中的数字错误"
+    },
+    {
+      "hash": "e98a183",
+      "fullHash": "e98a1838d5dd575a92598370639d3660d9f94bea",
+      "date": "2026年3月12日",
+      "message": "docs(blog): 移除测试内容123123"
+    },
+    {
       "hash": "6e48e25",
       "fullHash": "6e48e25e24673fabd4c003416bc370099b5bddd3",
       "date": "2026年3月12日",
