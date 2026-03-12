@@ -1,4 +1,4 @@
-name: Build and Push to Pages Branch
+name: Build and Generate Git History
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: pages
+  group: build
   cancel-in-progress: false
 
 jobs:
@@ -64,25 +64,5 @@ jobs:
       - name: Build with Astro
         run: npm run build
 
-      - name: Push to pages branch
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          # 创建或切换到 pages 分支
-          git checkout --orphan pages || git checkout pages
-
-          # 清空当前分支内容
-          git rm -rf .
-
-          # 从 dist 复制构建产物
-          cp -r dist/* .
-
-          # 添加所有文件
-          git add .
-
-          # 提交
-          git commit -m "deploy: update build from main ($(date -u '+%Y-%m-%d %H:%M:%S UTC'))" || echo "No changes to commit"
-
-          # 强制推送到 pages 分支
-          git push origin pages --force
+      # Cloudflare Pages 会自动从 GitHub 仓库构建和部署
+      # 无需在此工作流中额外配置
