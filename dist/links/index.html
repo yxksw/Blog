@@ -1,0 +1,601 @@
+<!DOCTYPE html><html lang="zh-CN" x-data="{}"> <head><!-- Global Metadata --><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><!-- Keep View Transitions globally enabled so only targeted links/routes opt out when needed. --><meta name="astro-view-transitions-enabled" content="true"><meta name="astro-view-transitions-fallback" content="animate"><script type="module" src="/Blog/_astro/ClientRouter.astro_astro_type_script_index_0_lang.CDGfc0hd.js"></script><link rel="icon" type="image/x-icon" href="/Blog/image/favicon.ico"><link rel="shortcut icon" href="/Blog/image/favicon.ico"><link rel="sitemap" href="/Blog/sitemap-index.xml"><link rel="alternate" type="application/rss+xml" title="YXK's Blog" href="/Blog/rss.xml"><meta name="generator" content="Astro v5.17.1"><!-- Font preconnect --><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><style>
+	{`
+		@font-face {
+			font-family: "Alibaba PuHuiTi";
+			src: url('${BASE}fonts/AlibabaPuHuiTi-3-55-RegularL3.woff2') format('woff2');
+			font-weight: 400;
+			font-style: normal;
+			font-display: swap;
+		}
+		@font-face {
+			font-family: "Alibaba PuHuiTi";
+			src: url('${BASE}fonts/AlibabaPuHuiTi-3-75-SemiBold.woff2') format('woff2');
+			font-weight: 600;
+			font-style: normal;
+			font-display: swap;
+		}
+	`}
+</style><!-- UI/body fonts prioritize immediate paint to reduce perceived loading delay. --><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+SC:wght@400;600&display=swap"><!-- Code font is optional to avoid post-paint metric swaps on large code blocks. --><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=optional"><!-- Canonical URL --><link rel="canonical" href="https://blog.261770.xyz/Blog/links/"><!-- Primary Meta Tags --><title>友情链接 | YXK&#39;s Blog</title><meta name="title" content="友情链接 | YXK's Blog"><meta name="description" content="探索更多优秀的内容创作者和技术伙伴"><meta name="google-site-verification" content="c9eLQFflOQPGAa5ykLn2PnyXDt5rup4VJNQe3P8hW7Y"><!-- Open Graph / Facebook --><meta property="og:type" content="website"><meta property="og:url" content="https://blog.261770.xyz/Blog/links/"><meta property="og:title" content="友情链接 | YXK's Blog"><meta property="og:description" content="探索更多优秀的内容创作者和技术伙伴"><meta property="og:image" content="https://blog.261770.xyz/Blog/_astro/fallback.dEW8vPJx.jpg"><!-- Twitter --><meta property="twitter:card" content="summary_large_image"><meta property="twitter:url" content="https://blog.261770.xyz/Blog/links/"><meta property="twitter:title" content="友情链接 | YXK's Blog"><meta property="twitter:description" content="探索更多优秀的内容创作者和技术伙伴"><meta property="twitter:image" content="https://blog.261770.xyz/Blog/_astro/fallback.dEW8vPJx.jpg"><script>
+	(() => {
+		// Apply theme before hydration to avoid light/dark flash during initial paint.
+		const storageKey = 'theme';
+		const root = document.documentElement;
+
+		const applyTheme = () => {
+			const stored = localStorage.getItem(storageKey);
+			const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+			const theme = stored === 'dark' || stored === 'light' ? stored : systemPrefersDark ? 'dark' : 'light';
+			root.classList.toggle('dark', theme === 'dark');
+			root.dataset.theme = theme;
+		};
+
+		// Apply on initial load
+		applyTheme();
+
+		// Re-apply theme after Astro View Transitions navigation
+		// This ensures theme persists when switching pages
+		document.addEventListener('astro:after-swap', applyTheme);
+	})();
+</script><script>
+	// Token handling and auth functions - expose to window for global access
+	(function() {
+		const API_BASE = 'https://api.261770.xyz';
+		const TOKEN_KEY = 'blog_token';
+
+		// Store on window
+		window.__API_BASE = API_BASE;
+		window.__TOKEN_KEY = TOKEN_KEY;
+
+		// Read token from URL hash
+		function readHashToken() {
+			const hash = window.location.hash || '';
+			const match = hash.match(/(?:^#|&)token=([^&]+)/);
+			if (!match) return null;
+			try {
+				return decodeURIComponent(match[1]);
+			} catch {
+				return match[1];
+			}
+		}
+
+		// Store token from URL hash to localStorage
+		function storeTokenFromHash() {
+			const token = readHashToken();
+			if (!token) return null;
+			localStorage.setItem(TOKEN_KEY, token);
+			history.replaceState(null, '', window.location.pathname);
+			return token;
+		}
+
+		// Get auth token
+		function getAuthToken() {
+			storeTokenFromHash();
+			return localStorage.getItem(TOKEN_KEY);
+		}
+
+		// Get current user
+		async function getCurrentUser() {
+			const token = getAuthToken();
+			if (!token) return null;
+
+			try {
+				const response = await fetch(`${API_BASE}/api/me`, {
+					method: 'GET',
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				});
+
+				if (!response.ok) {
+					if (response.status === 401) {
+						localStorage.removeItem(TOKEN_KEY);
+					}
+					return null;
+				}
+
+				const data = await response.json();
+				const user = data?.user ?? data ?? null;
+				if (!user || typeof user !== 'object') return null;
+
+				return {
+					id: user.id ?? '',
+					username: user.username ?? user.login ?? user.name ?? '',
+					avatar: user.avatar ?? user.avatarUrl ?? user.avatar_url ?? '',
+				};
+			} catch {
+				return null;
+			}
+		}
+
+		// Logout
+		async function logout() {
+			const token = getAuthToken();
+			if (!token) {
+				localStorage.removeItem(TOKEN_KEY);
+				return;
+			}
+
+			try {
+				await fetch(`${API_BASE}/api/auth/logout`, {
+					method: 'POST',
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				});
+			} finally {
+				localStorage.removeItem(TOKEN_KEY);
+			}
+		}
+
+		// Initial token processing on page load
+		storeTokenFromHash();
+
+		// Expose to window
+		window.__auth = {
+			storeTokenFromHash,
+			getAuthToken,
+			getCurrentUser,
+			logout,
+		};
+	})();
+</script><!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{&quot;token&quot;: &quot;352fbccc01ad4ecda30eb8031efa4a9b&quot;}"></script><!-- End Cloudflare Web Analytics --><!-- Custom Analytics Tracking --><script>
+	(function() {
+		const API_BASE = window.__API_BASE || 'https://api.261770.xyz';
+		
+		// Generate visitor ID
+		function getVisitorId() {
+			let id = localStorage.getItem('analytics_visitor_id');
+			if (!id) {
+				id = 'v_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+				localStorage.setItem('analytics_visitor_id', id);
+			}
+			return id;
+		}
+		
+		// Track page view
+		function trackPageView() {
+			const data = {
+				page_path: window.location.pathname,
+				page_title: document.title,
+				referrer: document.referrer,
+				visitor_id: getVisitorId(),
+			};
+			
+			fetch(`${API_BASE}/api/analytics/track`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(data),
+				keepalive: true,
+			}).catch(() => {}); // Silent fail
+		}
+		
+		// Track on page load
+		if (document.readyState === 'complete') {
+			trackPageView();
+		} else {
+			window.addEventListener('load', trackPageView);
+		}
+		
+		// Track on Astro page navigation
+		document.addEventListener('astro:page-load', trackPageView);
+	})();
+</script><!-- End Custom Analytics --><!-- Random Background Image - https://img.050815.xyz/ --><script src="/random-bg.js"></script><!-- KaTeX CSS for math formula rendering --><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous"><script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script><link rel="stylesheet" href="/Blog/_astro/_slug_.Dq70yCxR.css"></head> <body class="bg-zinc-50 dark:bg-zinc-900"> <header class="sticky top-0 z-50 border-b border-zinc-200/70 bg-zinc-50/72 backdrop-blur-xl transition-colors duration-200 dark:border-zinc-800/80 dark:bg-zinc-950/72"> <nav class="page-shell flex h-16 items-center justify-between gap-4"> <div class="flex items-center gap-6"> <!-- Stable trigger ID consumed by MobileDrawer script. --> <button type="button" id="mobile-menu-button" class="header-toolbar-button inline-flex items-center gap-2 px-3 py-2 text-sm font-medium md:hidden" aria-controls="mobile-drawer" aria-expanded="false"> <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" aria-hidden="true"> <path d="M4 6.5A1.5 1.5 0 0 1 5.5 5h13a1.5 1.5 0 1 1 0 3h-13A1.5 1.5 0 0 1 4 6.5Zm0 5.5a1.5 1.5 0 0 1 1.5-1.5h13a1.5 1.5 0 0 1 0 3h-13A1.5 1.5 0 0 1 4 12Zm1.5 4a1.5 1.5 0 1 0 0 3h13a1.5 1.5 0 0 0 0-3h-13Z"></path> </svg> <span>菜单</span> </button> <!-- TOC drawer binds to this trigger and only renders on mobile. -->  <a href="/Blog/" class="hidden text-base font-semibold tracking-tight text-zinc-900 no-underline md:inline dark:text-zinc-100"> YXK&#39;s Blog </a> <div class="hidden items-center gap-1 text-sm md:flex"> <a href="/Blog/" class="nav-item rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"> 首页 </a><div class="nav-dropdown relative group"> <button type="button" class="nav-item inline-flex items-center gap-1 rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100" aria-expanded="false" aria-haspopup="true"> 文章 <svg class="h-4 w-4 transition-transform duration-200 group-hover:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <polyline points="6,9 12,15 18,9"></polyline> </svg> </button> <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-48 rounded-xl border border-zinc-200/80 bg-white/95 py-2 opacity-0 invisible transition-all duration-200 group-hover:opacity-100 group-hover:visible dark:border-zinc-700/80 dark:bg-zinc-900/95"> <a href="/Blog/blog/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 所有文章 </a><a href="/Blog/tags/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 标签 </a><a href="/Blog/important/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 推荐文章 </a> </div> </div><a href="/Blog/board/" class="nav-item rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"> 说说 </a><div class="nav-dropdown relative group"> <button type="button" class="nav-item inline-flex items-center gap-1 rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100" aria-expanded="false" aria-haspopup="true"> 更多页面 <svg class="h-4 w-4 transition-transform duration-200 group-hover:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <polyline points="6,9 12,15 18,9"></polyline> </svg> </button> <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-48 rounded-xl border border-zinc-200/80 bg-white/95 py-2 opacity-0 invisible transition-all duration-200 group-hover:opacity-100 group-hover:visible dark:border-zinc-700/80 dark:bg-zinc-900/95"> <a href="/Blog/bangumi/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 追番 </a><a href="/Blog/equipment/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 装备 </a><a href="/Blog/sponsors/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 赞助 </a> </div> </div><div class="nav-dropdown relative group"> <button type="button" class="nav-item inline-flex items-center gap-1 rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100 bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100" aria-expanded="false" aria-haspopup="true"> 友链 <svg class="h-4 w-4 transition-transform duration-200 group-hover:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <polyline points="6,9 12,15 18,9"></polyline> </svg> </button> <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-48 rounded-xl border border-zinc-200/80 bg-white/95 py-2 opacity-0 invisible transition-all duration-200 group-hover:opacity-100 group-hover:visible dark:border-zinc-700/80 dark:bg-zinc-900/95"> <a href="/Blog/links/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"> 友情链接 </a><a href="/Blog/fc/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 友链朋友圈 </a> </div> </div><a href="/Blog/about/" class="nav-item rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"> 关于 </a> </div> </div> <div class="flex items-center gap-2"> <a href="https://github.com/yxksw/Blog" target="_blank" rel="noreferrer" aria-label="异飨客的博客仓库"> <img src="https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif" alt="异飨客头像" class="h-9 w-9 rounded-full border border-zinc-200/80 object-cover shadow-[0_6px_18px_rgba(15,23,42,0.08)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.03] hover:border-zinc-300 hover:shadow-[0_10px_22px_rgba(15,23,42,0.12)] active:scale-95 dark:border-zinc-700/80 dark:shadow-[0_8px_18px_rgba(0,0,0,0.18)] dark:hover:border-zinc-500"> </a> <div class="header-toolbar-group hidden md:inline-flex"> <a href="https://github.com/yxksw" target="_blank" rel="noreferrer" class="header-toolbar-icon icon-button inline-flex items-center justify-center" aria-label="GitHub"> <svg viewBox="0 0 24 24" class="h-5 w-5 fill-current" aria-hidden="true"> <path d="M12 .3A12 12 0 0 0 8.2 23.7c.6.1.8-.2.8-.6v-2.3c-3.3.7-4-1.4-4-1.4-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.1.1 1.8 1.1 1.8 1.1 1 .1 1.6.7 2 1.3.9.2 1.8.4 2.7.1.1-.7.4-1.3.7-1.7-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.1-3.2-.1-.3-.5-1.5.1-3.2 0 0 .9-.3 3.2 1.1a10.9 10.9 0 0 1 5.9 0c2.2-1.4 3.2-1.1 3.2-1.1.6 1.7.2 2.9.1 3.2.7.8 1.1 1.9 1.1 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .4.2.7.8.6A12 12 0 0 0 12 .3"></path> </svg> <span class="sr-only">GitHub</span> </a> <button type="button" id="theme-toggle" class="header-toolbar-icon icon-button inline-flex items-center justify-center" aria-label="Toggle theme"> <svg data-theme-icon="sun" viewBox="0 0 24 24" class="h-5 w-5 fill-current transition-transform duration-300" aria-hidden="true"> <path d="M12 4a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V5a1 1 0 0 1 1-1Zm0 13a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1Zm8-5a1 1 0 0 1-1 1h-1a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1ZM7 12a1 1 0 0 1-1 1H5a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1Zm9.7-5.3a1 1 0 0 1 0 1.4L16 8.8a1 1 0 1 1-1.4-1.4l.7-.7a1 1 0 0 1 1.4 0Zm-7.3 7.3a1 1 0 0 1 0 1.4l-.7.7a1 1 0 0 1-1.4-1.4l.7-.7a1 1 0 0 1 1.4 0Zm7.3 2.1a1 1 0 0 1-1.4 1.4l-.7-.7a1 1 0 0 1 1.4-1.4l.7.7ZM9.4 8.8A1 1 0 0 1 8 8.8l-.7-.7a1 1 0 1 1 1.4-1.4l.7.7a1 1 0 0 1 0 1.4ZM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z"></path> </svg> <span class="sr-only">Toggle theme</span> </button> <!-- Login button (shown when not logged in) --> <button type="button" id="auth-button" class="header-toolbar-button hidden h-9 items-center justify-center px-3 text-sm font-medium" data-auth-login>
+Login
+</button> </div> <a href="https://github.com/yxksw" target="_blank" rel="noreferrer" class="header-toolbar-icon icon-button inline-flex items-center justify-center md:hidden" aria-label="GitHub"> <svg viewBox="0 0 24 24" class="h-5 w-5 fill-current" aria-hidden="true"> <path d="M12 .3A12 12 0 0 0 8.2 23.7c.6.1.8-.2.8-.6v-2.3c-3.3.7-4-1.4-4-1.4-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.1.1 1.8 1.1 1.8 1.1 1 .1 1.6.7 2 1.3.9.2 1.8.4 2.7.1.1-.7.4-1.3.7-1.7-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.1-3.2-.1-.3-.5-1.5.1-3.2 0 0 .9-.3 3.2 1.1a10.9 10.9 0 0 1 5.9 0c2.2-1.4 3.2-1.1 3.2-1.1.6 1.7.2 2.9.1 3.2.7.8 1.1 1.9 1.1 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .4.2.7.8.6A12 12 0 0 0 12 .3"></path> </svg> <span class="sr-only">GitHub</span> </a> <button type="button" id="theme-toggle-mobile" class="header-toolbar-icon icon-button inline-flex items-center justify-center md:hidden" aria-label="Toggle theme"> <svg data-theme-icon="sun" viewBox="0 0 24 24" class="h-5 w-5 fill-current transition-transform duration-300" aria-hidden="true"> <path d="M12 4a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V5a1 1 0 0 1 1-1Zm0 13a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1Zm8-5a1 1 0 0 1-1 1h-1a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1ZM7 12a1 1 0 0 1-1 1H5a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1Zm9.7-5.3a1 1 0 0 1 0 1.4L16 8.8a1 1 0 1 1-1.4-1.4l.7-.7a1 1 0 0 1 1.4 0Zm-7.3 7.3a1 1 0 0 1 0 1.4l-.7.7a1 1 0 0 1-1.4-1.4l.7-.7a1 1 0 0 1 1.4 0Zm7.3 2.1a1 1 0 0 1-1.4 1.4l-.7-.7a1 1 0 0 1 1.4-1.4l.7.7ZM9.4 8.8A1 1 0 0 1 8 8.8l-.7-.7a1 1 0 1 1 1.4-1.4l.7.7a1 1 0 0 1 0 1.4ZM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z"></path> </svg> <span class="sr-only">Toggle theme</span> </button> <!-- User dropdown (shown when logged in) --> <div id="user-dropdown" class="relative hidden" data-auth-user> <button type="button" id="user-dropdown-button" class="flex items-center gap-2 rounded-full border border-zinc-200/85 bg-white/82 p-0.5 shadow-[0_8px_22px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-300 hover:bg-white/95 hover:shadow-[0_12px_26px_rgba(15,23,42,0.12)] dark:border-zinc-700/85 dark:bg-zinc-900/80 dark:shadow-[0_8px_18px_rgba(0,0,0,0.18)] dark:hover:border-zinc-500 dark:hover:bg-zinc-800/95" aria-expanded="false" aria-haspopup="true"> <img id="user-avatar" src="https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif" alt="User avatar" class="h-8 w-8 rounded-full object-cover"> </button> <div id="user-dropdown-menu" class="absolute right-0 mt-2 w-56 rounded-2xl border border-zinc-200/80 bg-white/92 py-1.5 shadow-[0_18px_40px_rgba(15,23,42,0.14)] opacity-0 invisible transition-all duration-200 dark:border-zinc-700/80 dark:bg-zinc-900/92" role="menu"> <!-- Header: avatar + username + subtitle --> <div class="border-b border-zinc-200/80 px-3 py-3 dark:border-zinc-700/80"> <div class="flex items-center gap-3"> <img id="dropdown-user-avatar" src="https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif" alt="User avatar" class="h-10 w-10 rounded-full object-cover"> <div class="min-w-0"> <p id="user-name" class="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">User</p> <p class="text-xs text-zinc-500 dark:text-zinc-400">Manage your account</p> </div> </div> </div> <!-- Admin Dashboard link --> <a href="/admin" class="mx-1 flex w-[calc(100%-0.5rem)] items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100/90 dark:text-zinc-300 dark:hover:bg-zinc-800" role="menuitem"> <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <rect x="3" y="3" width="7" height="7" rx="1"></rect> <rect x="14" y="3" width="7" height="7" rx="1"></rect> <rect x="14" y="14" width="7" height="7" rx="1"></rect> <rect x="3" y="14" width="7" height="7" rx="1"></rect> </svg>
+后台
+</a> <!-- Settings button --> <button type="button" id="settings-button" class="mx-1 flex w-[calc(100%-0.5rem)] items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100/90 dark:text-zinc-300 dark:hover:bg-zinc-800" role="menuitem"> <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"></path> <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path> </svg>
+设置
+</button> <!-- Footer: Logout --> <div class="mt-1 border-t border-zinc-200/80 pb-1 pt-1 dark:border-zinc-700/80"> <button type="button" id="logout-button" class="mx-1 flex w-[calc(100%-0.5rem)] items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-red-600 transition-colors hover:bg-zinc-100/90 dark:text-red-400 dark:hover:bg-zinc-800" role="menuitem"> <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"></path> <polyline points="16,17 21,12 16,7"></polyline> <line x1="21" y1="12" x2="9" y2="12"></line> </svg>
+退出登录
+</button> </div> </div> </div> </div> </nav> </header> <div id="login-modal" class="fixed inset-0 z-[100] invisible opacity-0 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-200 ease-out" aria-hidden="true"> <div class="modal-content mx-4 w-[360px] rounded-xl bg-white p-6 shadow-xl transition-all duration-200 ease-out dark:bg-zinc-900 scale-95 opacity-0" role="dialog" aria-modal="true" aria-labelledby="login-modal-title" id="login-modal-content"> <h2 id="login-modal-title" class="mb-6 text-center text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+Login
+</h2> <a href="https://api.261770.xyz/api/auth/github/start" class="flex w-full items-center justify-center gap-3 rounded-lg bg-black px-4 py-3 text-base font-medium text-white transition-colors hover:bg-gray-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-gray-200"> <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"> <path d="M12 .3A12 12 0 0 0 8.2 23.7c.6.1.8-.2.8-.6v-2.3c-3.3.7-4-1.4-4-1.4-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.1.1 1.8 1.1 1.8 1.1 1 .1 1.6.7 2 1.3.9.2 1.8.4 2.7.1.1-.7.4-1.3.7-1.7-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.1-3.2-.1-.3-.5-1.5.1-3.2 0 0 .9-.3 3.2 1.1a10.9 10.9 0 0 1 5.9 0c2.2-1.4 3.2-1.1 3.2-1.1.6 1.7.2 2.9.1 3.2.7.8 1.1 1.9 1.1 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .4.2.7.8.6A12 12 0 0 0 12 .3"></path> </svg>
+Login with GitHub
+</a> <button type="button" id="login-modal-close" class="mt-4 w-full rounded-lg border border-zinc-200 px-4 py-2 text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800">
+Cancel
+</button> </div> </div> <div id="settings-modal" class="fixed inset-0 z-[100] invisible opacity-0 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-200 ease-out" aria-hidden="true"> <div class="modal-content mx-4 w-[360px] rounded-xl bg-white p-6 shadow-xl transition-all duration-200 ease-out dark:bg-zinc-900 scale-95 opacity-0" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title" id="settings-modal-content"> <div class="flex items-center justify-between mb-6"> <h2 id="settings-modal-title" class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+Settings
+</h2> <button type="button" id="settings-modal-close" class="p-1 rounded-lg text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 transition-colors"> <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <path d="M6 18L18 6M6 6l12 12"></path> </svg> </button> </div> <div class="flex flex-col items-center py-4"> <img id="settings-avatar" src="https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avifp" alt="User avatar" class="h-20 w-20 rounded-full border-2 border-zinc-200 object-cover dark:border-zinc-700"> <h3 id="settings-username" class="mt-3 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+User
+</h3> <p id="settings-login" class="text-sm text-zinc-500 dark:text-zinc-400">
+@login
+</p> </div> </div> </div> <script>
+	const initSettingsModal = () => {
+		const modal = document.getElementById('settings-modal');
+		const modalClose = document.getElementById('settings-modal-close');
+		const settingsAvatar = document.getElementById('settings-avatar');
+		const settingsUsername = document.getElementById('settings-username');
+		const settingsLogin = document.getElementById('settings-login');
+
+		const openModal = async () => {
+			if (!modal) return;
+
+			// Fetch current user info
+			const { getCurrentUser } = window.__auth || {};
+			if (getCurrentUser) {
+				try {
+					const user = await getCurrentUser();
+					if (user) {
+						if (settingsAvatar && user.avatar) settingsAvatar.src = user.avatar;
+						if (settingsUsername) settingsUsername.textContent = user.username || 'User';
+						if (settingsLogin) settingsLogin.textContent = '@' + (user.login || user.username || 'user');
+					}
+				} catch (e) {
+					console.error('Failed to load user info:', e);
+				}
+			}
+
+			requestAnimationFrame(() => {
+				modal.classList.remove('opacity-0', 'invisible');
+				modal.classList.add('opacity-100');
+				const content = modal.querySelector('.modal-content');
+				if (content) {
+					content.classList.remove('scale-95', 'opacity-0');
+					content.classList.add('scale-100', 'opacity-100');
+				}
+				modal.setAttribute('aria-hidden', 'false');
+			});
+		};
+
+		const closeModal = () => {
+			if (!modal) return;
+			modal.classList.remove('opacity-100');
+			modal.classList.add('opacity-0');
+			const content = modal.querySelector('.modal-content');
+			if (content) {
+				content.classList.remove('scale-100', 'opacity-100');
+				content.classList.add('scale-95', 'opacity-0');
+			}
+			setTimeout(() => modal.classList.add('invisible'), 200);
+			modal.setAttribute('aria-hidden', 'true');
+		};
+
+		// Listen for custom open-settings event
+		modal?.addEventListener('open-settings', openModal);
+
+		// Close on backdrop click
+		modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+		// Close on close button click
+		modalClose?.addEventListener('click', closeModal);
+
+		// Close on Escape key
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape' && modal && !modal.classList.contains('invisible')) closeModal();
+		});
+	};
+
+	initSettingsModal();
+	document.addEventListener('astro:page-load', initSettingsModal);
+	document.addEventListener('astro:after-swap', initSettingsModal);
+</script>  <script>
+(function() {
+	const initAuthButton = async () => {
+		const { storeTokenFromHash, getCurrentUser, logout } = window.__auth || {};
+		if (!storeTokenFromHash || !getCurrentUser || !logout) {
+			setTimeout(initAuthButton, 100);
+			return;
+		}
+
+		if (window.__authInitialized) return;
+		window.__authInitialized = true;
+
+		const loginButton = document.getElementById('auth-button');
+		const userDropdown = document.getElementById('user-dropdown');
+		const userAvatar = document.getElementById('user-avatar');
+		const userName = document.getElementById('user-name');
+		const userDropdownButton = document.getElementById('user-dropdown-button');
+		const userDropdownMenu = document.getElementById('user-dropdown-menu');
+		const logoutButton = document.getElementById('logout-button');
+		const modal = document.getElementById('login-modal');
+		const modalClose = document.getElementById('login-modal-close');
+
+		const openModal = () => {
+			if (!modal) return;
+			requestAnimationFrame(() => {
+				modal.classList.remove('opacity-0', 'invisible');
+				modal.classList.add('opacity-100');
+				const content = modal.querySelector('.modal-content');
+				if (content) {
+					content.classList.remove('scale-95', 'opacity-0');
+					content.classList.add('scale-100', 'opacity-100');
+				}
+				modal.setAttribute('aria-hidden', 'false');
+			});
+		};
+
+		const closeModal = () => {
+			if (!modal) return;
+			modal.classList.remove('opacity-100');
+			modal.classList.add('opacity-0');
+			const content = modal.querySelector('.modal-content');
+			if (content) {
+				content.classList.remove('scale-100', 'opacity-100');
+				content.classList.add('scale-95', 'opacity-0');
+			}
+			setTimeout(() => modal.classList.add('invisible'), 200);
+			modal.setAttribute('aria-hidden', 'true');
+		};
+
+		const toggleDropdown = () => {
+			if (!userDropdownButton || !userDropdownMenu) return;
+			const isExpanded = userDropdownButton.getAttribute('aria-expanded') === 'true';
+			userDropdownButton.setAttribute('aria-expanded', String(!isExpanded));
+			if (isExpanded) {
+				userDropdownMenu.classList.add('opacity-0', 'invisible');
+				userDropdownMenu.classList.remove('opacity-100', 'visible');
+			} else {
+				userDropdownMenu.classList.remove('opacity-0', 'invisible');
+				userDropdownMenu.classList.add('opacity-100', 'visible');
+			}
+		};
+
+		const closeDropdown = () => {
+			if (!userDropdownButton || !userDropdownMenu) return;
+			userDropdownButton.setAttribute('aria-expanded', 'false');
+			userDropdownMenu.classList.add('opacity-0', 'invisible');
+			userDropdownMenu.classList.remove('opacity-100', 'visible');
+		};
+
+		modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+		modalClose?.addEventListener('click', closeModal);
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape' && modal && !modal.classList.contains('invisible')) closeModal();
+		});
+
+		// Bind dropdown toggle click (only once)
+		if (userDropdownButton && !userDropdownButton.dataset.bound) {
+			userDropdownButton.dataset.bound = 'true';
+			userDropdownButton.addEventListener('click', (e) => {
+				e.stopPropagation();
+				e.preventDefault();
+				toggleDropdown();
+			});
+		}
+
+		// Bind document click to close dropdown (only once)
+		if (!window.__dropdownClickBound) {
+			window.__dropdownClickBound = true;
+			document.addEventListener('click', (e) => {
+				if (userDropdown && !userDropdown.contains(e.target)) closeDropdown();
+			});
+		}
+
+		try {
+			storeTokenFromHash();
+			const user = await getCurrentUser();
+
+			if (user) {
+				if (loginButton) loginButton.style.display = 'none';
+				if (userDropdown) userDropdown.classList.remove('hidden');
+				if (userAvatar && user.avatar) userAvatar.src = user.avatar;
+				if (userName) userName.textContent = user.username || 'User';
+				const dropdownAvatar = document.getElementById('dropdown-user-avatar');
+				if (dropdownAvatar && user.avatar) dropdownAvatar.src = user.avatar;
+
+				// Bind logout button (only once)
+				if (logoutButton && !logoutButton.dataset.bound) {
+					logoutButton.dataset.bound = 'true';
+					logoutButton.addEventListener('click', async () => {
+						closeDropdown();
+						await logout();
+						window.__authInitialized = false;
+						window.location.reload();
+					});
+				}
+
+				// Bind settings button (only once)
+				const settingsButton = document.getElementById('settings-button');
+				if (settingsButton && !settingsButton.dataset.bound) {
+					settingsButton.dataset.bound = 'true';
+					settingsButton.addEventListener('click', () => {
+						closeDropdown();
+						document.getElementById('settings-modal')?.dispatchEvent(new CustomEvent('open-settings'));
+					});
+				}
+			} else {
+				if (loginButton) loginButton.style.display = 'inline-flex';
+				if (userDropdown) userDropdown.classList.add('hidden');
+				// Bind login button (only once)
+				if (loginButton && !loginButton.dataset.bound) {
+					loginButton.dataset.bound = 'true';
+					loginButton.addEventListener('click', openModal);
+				}
+			}
+		} catch (error) {
+			console.error('Auth error:', error);
+			if (loginButton) loginButton.style.display = 'inline-flex';
+			if (userDropdown) userDropdown.classList.add('hidden');
+			if (loginButton && !loginButton.dataset.bound) {
+				loginButton.dataset.bound = 'true';
+				loginButton.addEventListener('click', openModal);
+			}
+		}
+	};
+
+	document.addEventListener('astro:page-load', () => {
+		window.__authInitialized = false;
+		initAuthButton();
+	});
+
+	initAuthButton();
+
+	const initThemeToggle = () => {
+		const buttons = Array.from(document.querySelectorAll('[id="theme-toggle"], [id="theme-toggle-mobile"]'));
+		if (!buttons.length) return;
+
+		const root = document.documentElement;
+		const storageKey = 'theme';
+		const updateAria = () => {
+			const isDark = root.classList.contains('dark');
+			buttons.forEach((button) => {
+				button.setAttribute('aria-pressed', String(isDark));
+				const icon = button.querySelector('[data-theme-icon]');
+				if (icon) {
+					icon.classList.toggle('rotate-180', isDark);
+				}
+			});
+		};
+
+		buttons.forEach((button) => {
+			if (button.dataset.bound === 'true') return;
+			button.dataset.bound = 'true';
+			button.addEventListener('click', () => {
+				const isDark = root.classList.toggle('dark');
+				root.dataset.theme = isDark ? 'dark' : 'light';
+				localStorage.setItem(storageKey, isDark ? 'dark' : 'light');
+				updateAria();
+			});
+		});
+
+		updateAria();
+	};
+
+	initThemeToggle();
+	// Rebind on client-side navigation because header can be re-rendered by View Transitions.
+	document.addEventListener('astro:page-load', initThemeToggle);
+	document.addEventListener('astro:after-swap', initThemeToggle);
+})();
+</script> <div id="mobile-overlay" class="pointer-events-none fixed inset-0 z-[80] bg-black/40 opacity-0 transition-opacity duration-200 ease-out motion-reduce:transition-none md:hidden [will-change:opacity] hidden" aria-hidden="true"></div> <aside id="mobile-drawer" class="pointer-events-auto fixed left-0 top-0 z-[90] flex h-[100dvh] w-[88vw] max-w-sm -translate-x-full flex-col border-r border-zinc-200 bg-white/95 p-4 shadow-2xl backdrop-blur transition-transform duration-200 ease-out motion-reduce:transition-none md:hidden dark:border-zinc-800 dark:bg-zinc-950/95 [will-change:transform] hidden" aria-label="移动端导航" aria-hidden="true"> <div class="mb-6 flex items-center justify-between"> <p class="m-0 text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">YXK&#39;s Blog</p> <button type="button" id="mobile-menu-close" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 transition-colors hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-100" aria-label="关闭菜单"> <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" aria-hidden="true"> <path d="M6.7 5.3a1 1 0 0 0-1.4 1.4L10.6 12l-5.3 5.3a1 1 0 1 0 1.4 1.4l5.3-5.3 5.3 5.3a1 1 0 1 0 1.4-1.4L13.4 12l5.3-5.3a1 1 0 0 0-1.4-1.4L12 10.6 6.7 5.3Z"></path> </svg> </button> </div> <nav class="flex flex-col gap-2"> <a href="/Blog/" data-drawer-link class="block rounded-xl px-4 py-3 text-base font-medium text-zinc-700 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 首页 </a><div class="mobile-nav-group" data-mobile-nav-group> <button type="button" data-mobile-nav-toggle class="flex w-full items-center justify-between rounded-xl px-4 py-3 text-base font-medium text-zinc-700 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-100" aria-expanded="false"> <span>文章</span> <svg class="mobile-nav-arrow h-5 w-5 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <polyline points="6,9 12,15 18,9"></polyline> </svg> </button> <div class="mobile-nav-children hidden pl-4"> <a href="/Blog/blog/" data-drawer-link class="block rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 所有文章 </a><a href="/Blog/tags/" data-drawer-link class="block rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 标签 </a><a href="/Blog/important/" data-drawer-link class="block rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 推荐文章 </a> </div> </div><a href="/Blog/board/" data-drawer-link class="block rounded-xl px-4 py-3 text-base font-medium text-zinc-700 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 说说 </a><div class="mobile-nav-group" data-mobile-nav-group> <button type="button" data-mobile-nav-toggle class="flex w-full items-center justify-between rounded-xl px-4 py-3 text-base font-medium text-zinc-700 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-100" aria-expanded="false"> <span>更多页面</span> <svg class="mobile-nav-arrow h-5 w-5 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <polyline points="6,9 12,15 18,9"></polyline> </svg> </button> <div class="mobile-nav-children hidden pl-4"> <a href="/Blog/bangumi/" data-drawer-link class="block rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 追番 </a><a href="/Blog/equipment/" data-drawer-link class="block rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 装备 </a><a href="/Blog/sponsors/" data-drawer-link class="block rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 赞助 </a> </div> </div><div class="mobile-nav-group" data-mobile-nav-group> <button type="button" data-mobile-nav-toggle class="flex w-full items-center justify-between rounded-xl px-4 py-3 text-base font-medium text-zinc-700 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100" aria-expanded="false"> <span>友链</span> <svg class="mobile-nav-arrow h-5 w-5 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <polyline points="6,9 12,15 18,9"></polyline> </svg> </button> <div class="mobile-nav-children hidden pl-4"> <a href="/Blog/links/" data-drawer-link class="block rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"> 友情链接 </a><a href="/Blog/fc/" data-drawer-link class="block rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 友链朋友圈 </a> </div> </div><a href="/Blog/about/" data-drawer-link class="block rounded-xl px-4 py-3 text-base font-medium text-zinc-700 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 关于 </a> </nav> </aside> <script>
+	const initMobileDrawer = () => {
+		const trigger = document.getElementById('mobile-menu-button');
+		const drawer = document.getElementById('mobile-drawer');
+		const overlay = document.getElementById('mobile-overlay');
+		const closeBtn = document.getElementById('mobile-menu-close');
+		// Avoid duplicate listeners after client-side route swaps.
+		if (!trigger || !drawer || !overlay || !closeBtn || trigger.dataset.drawerBound === 'true') return;
+		trigger.dataset.drawerBound = 'true';
+		const TRANSITION_MS = 220;
+		let closeTimer = null;
+
+		const forceClosedState = () => {
+			drawer.classList.add('-translate-x-full', 'hidden');
+			drawer.classList.remove('translate-x-0');
+			drawer.setAttribute('aria-hidden', 'true');
+			overlay.classList.add('opacity-0', 'pointer-events-none', 'hidden');
+			overlay.classList.remove('opacity-100', 'pointer-events-auto');
+			document.documentElement.classList.remove('overflow-hidden');
+			trigger.setAttribute('aria-expanded', 'false');
+		};
+
+		const setOpenVisualState = () => {
+			drawer.classList.remove('-translate-x-full');
+			drawer.classList.add('translate-x-0');
+			overlay.classList.remove('opacity-0', 'pointer-events-none');
+			overlay.classList.add('opacity-100', 'pointer-events-auto');
+		};
+
+		const closeDrawer = () => {
+			if (closeTimer) {
+				clearTimeout(closeTimer);
+				closeTimer = null;
+			}
+			trigger.setAttribute('aria-expanded', 'false');
+			drawer.setAttribute('aria-hidden', 'true');
+			drawer.classList.add('-translate-x-full');
+			drawer.classList.remove('translate-x-0');
+			overlay.classList.add('opacity-0', 'pointer-events-none');
+			overlay.classList.remove('opacity-100', 'pointer-events-auto');
+			document.documentElement.classList.remove('overflow-hidden');
+			closeTimer = window.setTimeout(() => {
+				drawer.classList.add('hidden');
+				overlay.classList.add('hidden');
+				closeTimer = null;
+			}, TRANSITION_MS);
+		};
+
+		const openDrawer = () => {
+			if (closeTimer) {
+				clearTimeout(closeTimer);
+				closeTimer = null;
+			}
+			trigger.setAttribute('aria-expanded', 'true');
+			drawer.setAttribute('aria-hidden', 'false');
+			drawer.classList.remove('hidden');
+			overlay.classList.remove('hidden');
+			document.documentElement.classList.add('overflow-hidden');
+			// Defer transform class toggle to next frame so transition runs reliably.
+			window.requestAnimationFrame(setOpenVisualState);
+		};
+
+		trigger.addEventListener('click', openDrawer);
+		closeBtn.addEventListener('click', closeDrawer);
+		overlay.addEventListener('click', closeDrawer);
+
+		const drawerLinks = drawer.querySelectorAll('[data-drawer-link]');
+		for (const link of drawerLinks) {
+			link.addEventListener('click', closeDrawer);
+		}
+
+		// Initialize mobile nav toggles
+		const navGroups = drawer.querySelectorAll('[data-mobile-nav-group]');
+		for (const group of navGroups) {
+			const toggle = group.querySelector('[data-mobile-nav-toggle]');
+			const children = group.querySelector('.mobile-nav-children');
+			const arrow = group.querySelector('.mobile-nav-arrow');
+			
+			if (toggle && children && arrow) {
+				toggle.addEventListener('click', () => {
+					const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+					toggle.setAttribute('aria-expanded', String(!isExpanded));
+					children.classList.toggle('hidden');
+					arrow.classList.toggle('rotate-180');
+				});
+			}
+		}
+
+		forceClosedState();
+	};
+
+	if (document.documentElement.dataset.drawerEscBound !== 'true') {
+		document.addEventListener('keydown', (event) => {
+			if (event.key !== 'Escape') return;
+			const trigger = document.getElementById('mobile-menu-button');
+			const drawer = document.getElementById('mobile-drawer');
+			const overlay = document.getElementById('mobile-overlay');
+			if (!trigger || !drawer || !overlay || trigger.getAttribute('aria-expanded') !== 'true') return;
+
+			trigger.setAttribute('aria-expanded', 'false');
+			drawer.setAttribute('aria-hidden', 'true');
+			drawer.classList.add('-translate-x-full');
+			drawer.classList.remove('translate-x-0');
+			overlay.classList.add('opacity-0', 'pointer-events-none');
+			overlay.classList.remove('opacity-100', 'pointer-events-auto');
+			document.documentElement.classList.remove('overflow-hidden');
+			window.setTimeout(() => {
+				drawer.classList.add('hidden');
+				overlay.classList.add('hidden');
+			}, 220);
+		});
+		// Bound once globally; avoids stacking ESC handlers across route transitions.
+		document.documentElement.dataset.drawerEscBound = 'true';
+	}
+
+	// Defensive: ensure scroll is unlocked when leaving page
+	window.addEventListener('pagehide', () => {
+		document.documentElement.classList.remove('overflow-hidden');
+	});
+
+	initMobileDrawer();
+	document.addEventListener('astro:page-load', initMobileDrawer);
+	document.addEventListener('astro:after-swap', initMobileDrawer);
+</script> <main class="min-h-screen py-10"> <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8"> <!-- Header --> <div class="text-center mb-12"> <h1 class="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-white mb-4">友情链接</h1> <p class="text-lg text-zinc-600 dark:text-zinc-400">
+探索更多优秀的内容创作者和技术伙伴
+</p> </div> <!-- Legend --> <div class="w-full bg-white dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden mb-8"> <details class="group"> <summary class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer list-none"> <h3 class="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2"> <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-400 group-hover:text-blue-500 transition-colors"> <circle cx="12" cy="12" r="10"></circle> <path d="M12 16v-4"></path> <path d="M12 8h.01"></path> </svg>
+友链印记说明
+</h3> <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors group-open:rotate-180"> <path d="m6 9 6 6 6-6"></path> </svg> </summary> <div class="p-6 pt-0 border-t border-zinc-100 dark:border-zinc-700"> <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 pt-4"> <div class="flex items-center gap-2 p-2 rounded-lg border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"> <div class="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-700 text-slate-600 dark:text-slate-400"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .962 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.962 0z"></path> </svg> </div> <div class="flex flex-col"> <span class="text-xs font-bold text-slate-600 dark:text-slate-400"> 初遇 </span> <span class="text-[10px] text-zinc-500 dark:text-zinc-400"> 0-30天 </span> </div> </div><div class="flex items-center gap-2 p-2 rounded-lg border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"> <div class="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-700 text-lime-600 dark:text-lime-400"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10"></path> </svg> </div> <div class="flex flex-col"> <span class="text-xs font-bold text-lime-600 dark:text-lime-400"> 萌芽 </span> <span class="text-[10px] text-zinc-500 dark:text-zinc-400"> 30-60天 </span> </div> </div><div class="flex items-center gap-2 p-2 rounded-lg border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"> <div class="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-700 text-green-600 dark:text-green-400"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10M2 21c0-3 2.5-5 5-5s5 2 5 5"></path> </svg> </div> <div class="flex flex-col"> <span class="text-xs font-bold text-green-600 dark:text-green-400"> 抽叶 </span> <span class="text-[10px] text-zinc-500 dark:text-zinc-400"> 60-90天 </span> </div> </div><div class="flex items-center gap-2 p-2 rounded-lg border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"> <div class="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-700 text-emerald-600 dark:text-emerald-400"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M12 7.5a4.5 4.5 0 1 1 4.5 4.5M12 7.5A4.5 4.5 0 1 0 7.5 12M12 7.5V9m-4.5 3a4.5 4.5 0 1 0 4.5 4.5M7.5 12H9m3 4.5V15m4.5-3H15m-3-4.5V9m0 3v.01"></path> </svg> </div> <div class="flex flex-col"> <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400"> 绽放 </span> <span class="text-[10px] text-zinc-500 dark:text-zinc-400"> 90-180天 </span> </div> </div><div class="flex items-center gap-2 p-2 rounded-lg border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"> <div class="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-700 text-teal-600 dark:text-teal-400"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M12 22c4.97 0 9-3.58 9-8 0-3.35-2.08-6.23-5-7.4V5a3 3 0 0 0-6 0v1.6C7.08 7.77 5 10.65 5 14c0 4.42 4.03 8 9 8z"></path> </svg> </div> <div class="flex flex-col"> <span class="text-xs font-bold text-teal-600 dark:text-teal-400"> 轻语 </span> <span class="text-[10px] text-zinc-500 dark:text-zinc-400"> 180-270天 </span> </div> </div><div class="flex items-center gap-2 p-2 rounded-lg border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"> <div class="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-700 text-cyan-600 dark:text-cyan-400"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2M9.6 4.6A2 2 0 1 1 11 8H2m10.6 11.4A2 2 0 1 0 14 16H2"></path> </svg> </div> <div class="flex flex-col"> <span class="text-xs font-bold text-cyan-600 dark:text-cyan-400"> 听风 </span> <span class="text-[10px] text-zinc-500 dark:text-zinc-400"> 270-365天 </span> </div> </div><div class="flex items-center gap-2 p-2 rounded-lg border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"> <div class="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-700 text-sky-600 dark:text-sky-400"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M17.5 19c0-1.7-1.3-3-3-3c-1.1 0-2 .6-2.6 1.5c-.5-.9-1.5-1.5-2.6-1.5c-1.7 0-3 1.3-3 3M17.5 19H22v-5.3c0-2.8-2.2-5-5-5c-1.9 0-3.5 1-4.4 2.6c-.9-1.5-2.5-2.6-4.4-2.6c-2.8 0-5 2.2-5 5V19h4.5"></path> </svg> </div> <div class="flex flex-col"> <span class="text-xs font-bold text-sky-600 dark:text-sky-400"> 云游 </span> <span class="text-[10px] text-zinc-500 dark:text-zinc-400"> 365-450天 </span> </div> </div><div class="flex items-center gap-2 p-2 rounded-lg border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"> <div class="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-700 text-blue-600 dark:text-blue-400"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path> </svg> </div> <div class="flex flex-col"> <span class="text-xs font-bold text-blue-600 dark:text-blue-400"> 润泽 </span> <span class="text-[10px] text-zinc-500 dark:text-zinc-400"> 450-540天 </span> </div> </div><div class="flex items-center gap-2 p-2 rounded-lg border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"> <div class="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-700 text-indigo-600 dark:text-indigo-400"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M12 3v18M8 7l8 10M8 17l8-10"></path> </svg> </div> <div class="flex flex-col"> <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400"> 凝冰 </span> <span class="text-[10px] text-zinc-500 dark:text-zinc-400"> 540-630天 </span> </div> </div><div class="flex items-center gap-2 p-2 rounded-lg border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"> <div class="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-700 text-stone-600 dark:text-stone-400"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M8 3l4 8 5-5 2 10H3L8 3z"></path> </svg> </div> <div class="flex flex-col"> <span class="text-xs font-bold text-stone-600 dark:text-stone-400"> 磐石 </span> <span class="text-[10px] text-zinc-500 dark:text-zinc-400"> 630-730天 </span> </div> </div><div class="flex items-center gap-2 p-2 rounded-lg border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"> <div class="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-700 text-amber-600 dark:text-amber-400"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path> </svg> </div> <div class="flex flex-col"> <span class="text-xs font-bold text-amber-600 dark:text-amber-400"> 坚守 </span> <span class="text-[10px] text-zinc-500 dark:text-zinc-400"> 730-900天 </span> </div> </div><div class="flex items-center gap-2 p-2 rounded-lg border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"> <div class="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-700 text-orange-600 dark:text-orange-400"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path> </svg> </div> <div class="flex flex-col"> <span class="text-xs font-bold text-orange-600 dark:text-orange-400"> 燃情 </span> <span class="text-[10px] text-zinc-500 dark:text-zinc-400"> 900-1080天 </span> </div> </div><div class="flex items-center gap-2 p-2 rounded-lg border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"> <div class="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-700 text-red-600 dark:text-red-400"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"></path> </svg> </div> <div class="flex flex-col"> <span class="text-xs font-bold text-red-600 dark:text-red-400"> 烈阳 </span> <span class="text-[10px] text-zinc-500 dark:text-zinc-400"> 1080-1460天 </span> </div> </div><div class="flex items-center gap-2 p-2 rounded-lg border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"> <div class="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-700 text-purple-600 dark:text-purple-400"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path> </svg> </div> <div class="flex flex-col"> <span class="text-xs font-bold text-purple-600 dark:text-purple-400"> 雷鸣 </span> <span class="text-[10px] text-zinc-500 dark:text-zinc-400"> 1460-1825天 </span> </div> </div><div class="flex items-center gap-2 p-2 rounded-lg border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"> <div class="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-700 text-fuchsia-600 dark:text-fuchsia-400"> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M5 16L3 5l8.5 5L19 4l-2 16H5zm2-2h10v-2H7v2z"></path> </svg> </div> <div class="flex flex-col"> <span class="text-xs font-bold text-fuchsia-600 dark:text-fuchsia-400"> 传世 </span> <span class="text-[10px] text-zinc-500 dark:text-zinc-400"> 2190天+ </span> </div> </div> </div> </div> </details> </div> <!-- Active Friends --> <div class="mb-12"> <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-6 flex items-center gap-2"> <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-500"> <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path> <circle cx="9" cy="7" r="4"></circle> <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path> <path d="M16 3.13a4 4 0 0 1 0 7.75"></path> </svg>
+活跃友链 (4)
+</h2> <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"> <a href="https://blog.atao.cyou/" target="_blank" rel="noopener noreferrer" class="group relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 bg-white dark:bg-zinc-800/50 hover:-translate-y-1 hover:shadow-lg overflow-hidden h-[90px] border-slate-200 dark:border-slate-800 group-hover:border-slate-400 dark:group-hover:border-slate-600">  <div class="relative w-14 h-14 flex-shrink-0"> <div class="absolute inset-0 rounded-full border-2 border-slate-200 dark:border-slate-800 group-hover:border-slate-400 dark:group-hover:border-slate-600 opacity-20 scale-110"></div> <img src="https://cdn.atao.cyou/Web/Avatar.png" alt="ATao-Blog" class="w-14 h-14 rounded-full object-cover relative z-10 transition-transform duration-500 group-hover:rotate-12" loading="lazy" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(this.alt)"> </div>  <div class="flex-grow min-w-0 z-10 h-full flex flex-col justify-center"> <div class="flex items-center gap-2 mb-1"> <h3 class="font-bold text-zinc-900 dark:text-white truncate"> ATao-Blog </h3> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="#d3bc8e" stroke="#d3bc8e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="推荐"> <title>推荐</title> <path d="M7 10v12"></path> <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"></path> </svg> </div> <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-normal truncate"> 做自己喜欢的事 </p> </div>  <div class="absolute bottom-[-5px] right-[-5px] opacity-25 group-hover:opacity-40 transition-all duration-300 group-hover:scale-110 group-hover:rotate-[-12deg] pointer-events-none"> <div class="relative w-24 h-24 flex items-center justify-center text-slate-600 dark:text-slate-400"> <div class="absolute top-5 font-black tracking-widest uppercase text-[10px] opacity-100"> 初遇 </div> <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="opacity-60"> <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .962 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.962 0z"></path> </svg> <div class="absolute bottom-5 font-mono text-[9px] opacity-100 font-bold"> 19 DAYS
+</div> </div> </div> </a><a href="https://blog.ljx.icu" target="_blank" rel="noopener noreferrer" class="group relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 bg-white dark:bg-zinc-800/50 hover:-translate-y-1 hover:shadow-lg overflow-hidden h-[90px] border-slate-200 dark:border-slate-800 group-hover:border-slate-400 dark:group-hover:border-slate-600">  <div class="relative w-14 h-14 flex-shrink-0"> <div class="absolute inset-0 rounded-full border-2 border-slate-200 dark:border-slate-800 group-hover:border-slate-400 dark:group-hover:border-slate-600 opacity-20 scale-110"></div> <img src="https://blog.ljx.icu/favicon.png" alt="梨尽兴" class="w-14 h-14 rounded-full object-cover relative z-10 transition-transform duration-500 group-hover:rotate-12" loading="lazy" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(this.alt)"> </div>  <div class="flex-grow min-w-0 z-10 h-full flex flex-col justify-center"> <div class="flex items-center gap-2 mb-1"> <h3 class="font-bold text-zinc-900 dark:text-white truncate"> 梨尽兴 </h3> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="#d3bc8e" stroke="#d3bc8e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="推荐"> <title>推荐</title> <path d="M7 10v12"></path> <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"></path> </svg> </div> <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-normal truncate"> A place for peace </p> </div>  <div class="absolute bottom-[-5px] right-[-5px] opacity-25 group-hover:opacity-40 transition-all duration-300 group-hover:scale-110 group-hover:rotate-[-12deg] pointer-events-none"> <div class="relative w-24 h-24 flex items-center justify-center text-slate-600 dark:text-slate-400"> <div class="absolute top-5 font-black tracking-widest uppercase text-[10px] opacity-100"> 初遇 </div> <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="opacity-60"> <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .962 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.962 0z"></path> </svg> <div class="absolute bottom-5 font-mono text-[9px] opacity-100 font-bold"> 20 DAYS
+</div> </div> </div> </a><a href="https://blog.zhilu.site/" target="_blank" rel="noopener noreferrer" class="group relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 bg-white dark:bg-zinc-800/50 hover:-translate-y-1 hover:shadow-lg overflow-hidden h-[90px] border-teal-200 dark:border-teal-800 group-hover:border-teal-400 dark:group-hover:border-teal-600">  <div class="relative w-14 h-14 flex-shrink-0"> <div class="absolute inset-0 rounded-full border-2 border-teal-200 dark:border-teal-800 group-hover:border-teal-400 dark:group-hover:border-teal-600 opacity-20 scale-110"></div> <img src="https://www.zhilu.site/api/avatar.png" alt="纸鹿摸鱼处" class="w-14 h-14 rounded-full object-cover relative z-10 transition-transform duration-500 group-hover:rotate-12" loading="lazy" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(this.alt)"> </div>  <div class="flex-grow min-w-0 z-10 h-full flex flex-col justify-center"> <div class="flex items-center gap-2 mb-1"> <h3 class="font-bold text-zinc-900 dark:text-white truncate"> 纸鹿摸鱼处 </h3> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="#d3bc8e" stroke="#d3bc8e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="推荐"> <title>推荐</title> <path d="M7 10v12"></path> <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"></path> </svg> </div> <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-normal truncate"> 纸鹿至麓不知路，支炉制露不止漉 </p> </div>  <div class="absolute bottom-[-5px] right-[-5px] opacity-25 group-hover:opacity-40 transition-all duration-300 group-hover:scale-110 group-hover:rotate-[-12deg] pointer-events-none"> <div class="relative w-24 h-24 flex items-center justify-center text-teal-600 dark:text-teal-400"> <div class="absolute top-5 font-black tracking-widest uppercase text-[10px] opacity-100"> 轻语 </div> <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="opacity-60"> <path d="M12 22c4.97 0 9-3.58 9-8 0-3.35-2.08-6.23-5-7.4V5a3 3 0 0 0-6 0v1.6C7.08 7.77 5 10.65 5 14c0 4.42 4.03 8 9 8z"></path> </svg> <div class="absolute bottom-5 font-mono text-[9px] opacity-100 font-bold"> 190 DAYS
+</div> </div> </div> </a><a href="https://blog.sakura.ink" target="_blank" rel="noopener noreferrer" class="group relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 bg-white dark:bg-zinc-800/50 hover:-translate-y-1 hover:shadow-lg overflow-hidden h-[90px] border-teal-200 dark:border-teal-800 group-hover:border-teal-400 dark:group-hover:border-teal-600">  <div class="relative w-14 h-14 flex-shrink-0"> <div class="absolute inset-0 rounded-full border-2 border-teal-200 dark:border-teal-800 group-hover:border-teal-400 dark:group-hover:border-teal-600 opacity-20 scale-110"></div> <img src="https://q2.qlogo.cn/headimg_dl?dst_uin=2731443459&spec=5" alt="鈴奈咲桜のBlog" class="w-14 h-14 rounded-full object-cover relative z-10 transition-transform duration-500 group-hover:rotate-12" loading="lazy" onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(this.alt)"> </div>  <div class="flex-grow min-w-0 z-10 h-full flex flex-col justify-center"> <div class="flex items-center gap-2 mb-1"> <h3 class="font-bold text-zinc-900 dark:text-white truncate"> 鈴奈咲桜のBlog </h3> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="#d3bc8e" stroke="#d3bc8e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="推荐"> <title>推荐</title> <path d="M7 10v12"></path> <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"></path> </svg> </div> <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-normal truncate"> 愛することを忘れないで </p> </div>  <div class="absolute bottom-[-5px] right-[-5px] opacity-25 group-hover:opacity-40 transition-all duration-300 group-hover:scale-110 group-hover:rotate-[-12deg] pointer-events-none"> <div class="relative w-24 h-24 flex items-center justify-center text-teal-600 dark:text-teal-400"> <div class="absolute top-5 font-black tracking-widest uppercase text-[10px] opacity-100"> 轻语 </div> <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="opacity-60"> <path d="M12 22c4.97 0 9-3.58 9-8 0-3.35-2.08-6.23-5-7.4V5a3 3 0 0 0-6 0v1.6C7.08 7.77 5 10.65 5 14c0 4.42 4.03 8 9 8z"></path> </svg> <div class="absolute bottom-5 font-mono text-[9px] opacity-100 font-bold"> 184 DAYS
+</div> </div> </div> </a> </div> </div> <!-- Disconnected Friends -->  <!-- Apply Section --> <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12"> <!-- 申请友链 --> <div class="rounded-2xl bg-white dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 p-6"> <div class="flex items-center gap-2 mb-4"> <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"> <path d="M3 8l7.89 5.26a2 2 0 0 0 2.22 0L21 8M5 19h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2z"></path> </svg> <h3 class="text-lg font-bold text-zinc-900 dark:text-white">申请友链</h3> </div> <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+欢迎技术与生活类博客交换友链
+</p> <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+在Github仓库提交 <a href="https://github.com/yxksw/Friends/issues/new?template=friend-link-request.yml" class="text-blue-500 hover:underline">友链申请</a> </p> <div class="rounded-lg border-2 border-dashed border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-4 text-center"> <p class="text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">
+博客名称、描述、地址、头像等信息
+</p> <p class="text-xs text-zinc-500 dark:text-zinc-400">
+任意格式均可，包含基本信息即可
+</p> </div> </div> <!-- 本站信息 --> <div class="rounded-2xl bg-zinc-50 dark:bg-white/5 border border-zinc-100 dark:border-white/5 p-6" x-data="{ copiedField: null, copy(text, fieldId) { navigator.clipboard.writeText(text); this.copiedField = fieldId; setTimeout(() => this.copiedField = null, 2000); }, copyJSON() { const data = { name: 'YxkBlog', url: 'https://www.050815.xyz', description: '每一段旅行，都有终点。', avatar: 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif' }; this.copy(JSON.stringify(data, null, 2), 'json'); } }"> <div class="flex items-center gap-2 mb-4"> <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"> <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"></path> </svg> <h3 class="text-lg font-bold text-zinc-900 dark:text-white">本站信息</h3> <button @click="copyJSON()" :class="copiedField === 'json' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-zinc-200 dark:bg-white/10 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-white/20'" class="ml-auto text-xs px-2 py-1 rounded transition-colors" x-text="copiedField === 'json' ? '已复制' : 'JSON'">
+JSON
+</button> </div> <div class="space-y-1"> <!-- 名称 --> <div class="group flex items-center hover:bg-zinc-100 dark:hover:bg-white/5 rounded px-2 py-1 -mx-2 transition-colors cursor-pointer" @click="copy('YxkBlog', 'name')"> <span class="text-zinc-500 dark:text-zinc-400 w-16 text-sm">名称</span> <span class="text-zinc-900 dark:text-white font-medium text-sm flex-1 truncate">YxkBlog</span> <span :class="copiedField === 'name' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 opacity-100' : 'text-zinc-400 hover:text-blue-500 opacity-0 group-hover:opacity-100'" class="ml-2 p-1 rounded transition-all text-xs"> <template x-if="copiedField === 'name'"> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg> </template> <template x-if="copiedField !== 'name'"> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg> </template> </span> </div> <!-- 地址 --> <div class="group flex items-center hover:bg-zinc-100 dark:hover:bg-white/5 rounded px-2 py-1 -mx-2 transition-colors cursor-pointer" @click="copy('https://www.050815.xyz', 'url')"> <span class="text-zinc-500 dark:text-zinc-400 w-16 text-sm">地址</span> <span class="text-zinc-900 dark:text-white font-medium text-sm flex-1 truncate">https://www.050815.xyz</span> <span :class="copiedField === 'url' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 opacity-100' : 'text-zinc-400 hover:text-blue-500 opacity-0 group-hover:opacity-100'" class="ml-2 p-1 rounded transition-all text-xs"> <template x-if="copiedField === 'url'"> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg> </template> <template x-if="copiedField !== 'url'"> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg> </template> </span> </div> <!-- 描述 --> <div class="group flex items-center hover:bg-zinc-100 dark:hover:bg-white/5 rounded px-2 py-1 -mx-2 transition-colors cursor-pointer" @click="copy('每一段旅行，都有终点。', 'description')"> <span class="text-zinc-500 dark:text-zinc-400 w-16 text-sm">描述</span> <span class="text-zinc-900 dark:text-white font-medium text-sm flex-1 truncate">每一段旅行，都有终点。</span> <span :class="copiedField === 'description' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 opacity-100' : 'text-zinc-400 hover:text-blue-500 opacity-0 group-hover:opacity-100'" class="ml-2 p-1 rounded transition-all text-xs"> <template x-if="copiedField === 'description'"> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg> </template> <template x-if="copiedField !== 'description'"> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg> </template> </span> </div> <!-- 头像 --> <div class="group flex items-center hover:bg-zinc-100 dark:hover:bg-white/5 rounded px-2 py-1 -mx-2 transition-colors cursor-pointer" @click="copy('https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif', 'avatar')"> <span class="text-zinc-500 dark:text-zinc-400 w-16 text-sm">头像</span> <span class="text-zinc-900 dark:text-white font-medium text-sm flex-1 truncate">https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif</span> <span :class="copiedField === 'avatar' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 opacity-100' : 'text-zinc-400 hover:text-blue-500 opacity-0 group-hover:opacity-100'" class="ml-2 p-1 rounded transition-all text-xs"> <template x-if="copiedField === 'avatar'"> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg> </template> <template x-if="copiedField !== 'avatar'"> <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg> </template> </span> </div> </div> </div> </div> </div> </main> <footer class="mt-16 border-t border-zinc-200 py-8 transition-colors duration-200 dark:border-zinc-800"> <div class="page-shell text-sm text-zinc-500 dark:text-zinc-400"> <p class="m-0">&copy; 2026 异飨客. All rights reserved.</p> </div> </footer> </body></html>

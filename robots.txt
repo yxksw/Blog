@@ -1,0 +1,5 @@
+﻿User-agent: *
+Allow: /
+Sitemap: https://blog.261770.xyz/sitemap.xml
+Sitemap: https://blog.261770.xyz/sitemap-index.xml
+# If you bind a custom domain later, update the Sitemap URLs above.
