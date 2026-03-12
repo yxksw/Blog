@@ -1,0 +1,92 @@
+---
+// 新文章通知组件
+---
+
+<div id="new-post-notification" class="fixed top-24 right-4 z-50 transform translate-x-full opacity-0 transition-all duration-300 pointer-events-none max-w-sm">
+    <div class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg p-4 pointer-events-auto">
+        <div class="flex items-start gap-3">
+            <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+                <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-1">新文章发布</h3>
+                <div id="new-post-list" class="space-y-2 max-h-48 overflow-y-auto">
+                    <!-- 动态插入新文章列表 -->
+                </div>
+            </div>
+            <button id="close-new-post-notification" class="flex-shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script is:inline>
+    (function() {
+        // 等待 RSSUtils 加载
+        async function init() {
+            if (!window.RSSUtils) {
+                setTimeout(init, 100);
+                return;
+            }
+
+            const result = await window.RSSUtils.checkRSSUpdate();
+            if (!result || result.isFirstVisit) return;
+
+            if (result.newPosts.length > 0) {
+                showNotification(result.newPosts);
+            }
+        }
+
+        function showNotification(newPosts) {
+            const notification = document.getElementById('new-post-notification');
+            const list = document.getElementById('new-post-list');
+            const closeBtn = document.getElementById('close-new-post-notification');
+
+            if (!notification || !list) return;
+
+            // 渲染新文章列表
+            list.innerHTML = newPosts.slice(0, 3).map(post => `
+                <a href="${post.link}" class="block text-sm text-zinc-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-2">
+                    ${escapeHtml(post.title)}
+                </a>
+            `).join('');
+
+            // 显示通知
+            requestAnimationFrame(() => {
+                notification.classList.remove('translate-x-full', 'opacity-0', 'pointer-events-none');
+            });
+
+            // 关闭按钮
+            closeBtn?.addEventListener('click', () => {
+                notification.classList.add('translate-x-full', 'opacity-0', 'pointer-events-none');
+            });
+
+            // 5秒后自动关闭
+            setTimeout(() => {
+                notification.classList.add('translate-x-full', 'opacity-0', 'pointer-events-none');
+            }, 5000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 页面加载完成后初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+
+        // 监听 Astro 页面切换
+        document.addEventListener('astro:page-load', init);
+    })();
+</script>

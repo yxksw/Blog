@@ -1,0 +1,72 @@
+---
+interface Props {
+	publishedAt: Date;
+	updatedAt?: Date;
+}
+
+const { publishedAt, updatedAt } = Astro.props;
+const publishedStr = publishedAt.toISOString();
+const updatedStr = updatedAt?.toISOString() || publishedStr;
+---
+
+<div id="post-update-notice" class="hidden mb-6 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 items-center gap-3">
+    <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+    </div>
+    <div class="flex-1 text-sm text-zinc-700 dark:text-zinc-300">
+        <span id="update-notice-message">正在计算文章时效性...</span>
+    </div>
+    <a id="revision-history-link" href="#revision-history" class="hidden items-center gap-1 px-3 py-1.5 rounded-md bg-blue-500 text-white text-xs font-medium hover:bg-blue-600 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12"/>
+            <path d="M3 3v9h9"/>
+        </svg>
+        查看修订历史
+    </a>
+</div>
+
+<script is:inline define:vars={{ publishedAt: publishedStr, updatedAt: updatedStr }}>
+    (function() {
+        function updateNotice() {
+            const notice = document.getElementById('post-update-notice');
+            const message = document.getElementById('update-notice-message');
+            const historyLink = document.getElementById('revision-history-link');
+            
+            if (!notice || !message) return;
+
+            const published = new Date(publishedAt);
+            const updated = new Date(updatedAt);
+            const now = new Date();
+            
+            const daysSinceUpdate = Math.floor((now - updated) / (1000 * 60 * 60 * 24));
+            const daysSincePublished = Math.floor((now - published) / (1000 * 60 * 60 * 24));
+
+            let statusText = '';
+            
+            if (daysSinceUpdate === 0) {
+                statusText = '这篇文章今天刚刚更新，内容非常新鲜。';
+                historyLink?.classList.add('hidden');
+            } else {
+                statusText = `文章初次发布于 ${daysSincePublished} 天前，最后修改于 ${daysSinceUpdate} 天前，部分技术细节可能已随时间演变，请结合实际情况参考。`;
+                historyLink?.classList.remove('hidden');
+                historyLink?.classList.add('flex');
+            }
+
+            message.textContent = statusText;
+            notice.classList.remove('hidden');
+            notice.classList.add('flex');
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', updateNotice);
+        } else {
+            updateNotice();
+        }
+
+        document.addEventListener('astro:page-load', updateNotice);
+    })();
+</script>

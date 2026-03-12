@@ -1,0 +1,153 @@
+---
+// 文章更新内容高亮组件
+---
+
+<div id="post-update-toast" class="fixed top-24 right-4 z-50 transform translate-x-full opacity-0 transition-all duration-300 pointer-events-none max-w-sm">
+    <div class="bg-white dark:bg-zinc-800 border border-green-200 dark:border-green-800 rounded-xl shadow-lg p-4 pointer-events-auto">
+        <div class="flex items-start gap-3">
+            <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-green-500 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="12" y1="18" x2="12" y2="12"/>
+                    <line x1="9" y1="15" x2="15" y2="15"/>
+                </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+                <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-1">内容已更新</h3>
+                <p class="text-xs text-zinc-600 dark:text-zinc-400 mb-2">检测到文章内容有变化，已为您高亮差异部分。</p>
+                <div class="flex gap-2">
+                    <button id="scroll-to-diff-btn" class="px-3 py-1.5 rounded-md bg-green-500 text-white text-xs font-medium hover:bg-green-600 transition-colors">
+                        跳转到更新处
+                    </button>
+                    <button id="close-update-toast" class="px-3 py-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 text-xs hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+                        忽略
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script is:inline>
+    (function() {
+        const STORAGE_PREFIX = 'post-content-cache-';
+        let currentDiff = null;
+
+        async function init() {
+            // 只在文章页面运行
+            const postContainer = document.querySelector('.markdown-prose, .markdown-content');
+            if (!postContainer) return;
+
+            const currentPath = window.location.pathname;
+            const storageKey = STORAGE_PREFIX + currentPath;
+            const currentText = getContentText(postContainer);
+
+            // 检查是否是调试模式
+            const urlParams = new URLSearchParams(window.location.search);
+            const isDebugMode = urlParams.has('debug-diff');
+
+            if (isDebugMode) {
+                // 调试模式：模拟差异
+                const paragraphs = currentText.split('\n\n');
+                const middleIndex = Math.floor(paragraphs.length / 2);
+                const oldText = paragraphs.filter((_, i) => i !== middleIndex).join('\n\n');
+                showDiffToast();
+                return;
+            }
+
+            const cachedText = localStorage.getItem(storageKey);
+
+            if (!cachedText) {
+                // 首次访问，缓存当前内容
+                localStorage.setItem(storageKey, currentText);
+            } else if (cachedText !== currentText) {
+                // 内容有变化
+                console.log('[PostHighlighter] Content change detected');
+                currentDiff = findDiff(cachedText, currentText);
+                if (currentDiff) {
+                    showDiffToast();
+                }
+                // 更新缓存
+                localStorage.setItem(storageKey, currentText);
+            }
+        }
+
+        function getContentText(container) {
+            // 克隆节点以避免修改原始 DOM
+            const clone = container.cloneNode(true);
+            // 移除代码块等不需要比较的内容
+            clone.querySelectorAll('pre, code, .highlight').forEach(el => el.remove());
+            return clone.textContent || '';
+        }
+
+        function findDiff(oldText, newText) {
+            // 简单的差异检测：找到第一个不同的段落
+            const oldParagraphs = oldText.split(/\n\n+/).filter(p => p.trim());
+            const newParagraphs = newText.split(/\n\n+/).filter(p => p.trim());
+
+            for (let i = 0; i < newParagraphs.length; i++) {
+                if (oldParagraphs[i] !== newParagraphs[i]) {
+                    return newParagraphs[i].substring(0, 100); // 返回前100个字符用于定位
+                }
+            }
+            return null;
+        }
+
+        function showDiffToast() {
+            const toast = document.getElementById('post-update-toast');
+            const closeBtn = document.getElementById('close-update-toast');
+            const scrollBtn = document.getElementById('scroll-to-diff-btn');
+
+            if (!toast) return;
+
+            // 显示通知
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0', 'pointer-events-none');
+            });
+
+            // 关闭按钮
+            closeBtn?.addEventListener('click', () => {
+                toast.classList.add('translate-x-full', 'opacity-0', 'pointer-events-none');
+            });
+
+            // 跳转到差异处
+            scrollBtn?.addEventListener('click', () => {
+                scrollToDiff();
+                toast.classList.add('translate-x-full', 'opacity-0', 'pointer-events-none');
+            });
+
+            // 8秒后自动关闭
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0', 'pointer-events-none');
+            }, 8000);
+        }
+
+        function scrollToDiff() {
+            const container = document.querySelector('.markdown-prose, .markdown-content');
+            if (!container) return;
+
+            // 简单的实现：滚动到第一个段落
+            const firstParagraph = container.querySelector('p, h1, h2, h3, h4, h5, h6');
+            if (firstParagraph) {
+                firstParagraph.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // 添加高亮动画
+                firstParagraph.style.backgroundColor = 'rgba(34, 197, 94, 0.2)';
+                firstParagraph.style.transition = 'background-color 2s ease';
+                
+                setTimeout(() => {
+                    firstParagraph.style.backgroundColor = 'transparent';
+                }, 3000);
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+
+        document.addEventListener('astro:page-load', init);
+    })();
+</script>

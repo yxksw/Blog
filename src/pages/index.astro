@@ -1,9 +1,10 @@
-﻿---
+---
 import { getCollection } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import MobileDrawer from '../components/MobileDrawer.astro';
+import NewPostNotification from '../components/NewPostNotification.astro';
 import PostCard from '../components/PostCard.astro';
 import TerminalQuote from '../components/TerminalQuote.astro';
 import { BILIBILI_URL, TELEGRAM_URL, EMAIL_URL, QQ_URL, GITHUB_URL, SITE_DESCRIPTION, SITE_TITLE } from '../consts';
@@ -25,6 +26,7 @@ const HOME_WALLPAPER = 'https://img.314926.xyz/h';
 	<body>
 		<Header />
 		<MobileDrawer />
+		<NewPostNotification />
 		<main class="page-shell page-fade-in py-10 md:py-14" transition:name="page-main" transition:animate="fade">
 			<div class="space-y-6">
 				<section class="hero-enter overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">

@@ -8,7 +8,10 @@ import FormattedDate from '../../components/FormattedDate.astro';
 import Header from '../../components/Header.astro';
 import License from '../../components/License.astro';
 import MobileDrawer from '../../components/MobileDrawer.astro';
+import PostContentHighlighter from '../../components/PostContentHighlighter.astro';
+import PostDiffInArticle from '../../components/PostDiffInArticle.astro';
 import PostFeedback from '../../components/PostFeedback.astro';
+import PostUpdateNotice from '../../components/PostUpdateNotice.astro';
 import TocSidebar from '../../components/TocSidebar.astro';
 import TocDrawer from '../../components/TocDrawer.astro';
 
@@ -174,10 +177,22 @@ const charsLabel = chars.toLocaleString('en-US');
 									))
 							}
 
+							<!-- 文章更新时效性提示 -->
+							<PostUpdateNotice 
+								publishedAt={pubDate} 
+								updatedAt={updatedDate} 
+							/>
+
+							<!-- 文章 diff 展示 -->
+							<PostDiffInArticle />
+
 							<div class="markdown-prose min-w-0">
 							<slot />
 						</div>
-					</article>
+							
+							<!-- 文章更新高亮提示 -->
+							<PostContentHighlighter />
+						</article>
 
 					<!-- 文章反馈组件 -->
 					<PostFeedback 
