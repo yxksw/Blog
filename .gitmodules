@@ -1,6 +1,3 @@
 [submodule "Blogs_worker"]
 	path = Blogs_worker
 	url = https://github.com/yxksw/Blogs_worker.git
-[submodule "fuwari"]
-	path = fuwari
-	url = https://github.com/saicaca/fuwari.git
