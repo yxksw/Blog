@@ -22,6 +22,7 @@ export const getNavLinks = (base: string): NavLink[] => [
 		children: [
 			{ href: `${base}bangumi/`, label: '追番' },
 			{ href: `${base}equipment/`, label: '装备' },
+			{ href: `${base}sponsors/`, label: '赞助' },
 		],
 	},
 	{

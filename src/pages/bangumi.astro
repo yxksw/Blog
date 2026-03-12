@@ -368,6 +368,11 @@ const banguimCard = [
 
                 init() {
                     this.fetchData();
+                    
+                    // 监听 Astro 页面加载事件（处理 View Transitions）
+                    document.addEventListener('astro:page-load', () => {
+                        this.fetchData();
+                    });
                 },
 
                 setContentType(type) {

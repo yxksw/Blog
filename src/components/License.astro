@@ -1,0 +1,73 @@
+---
+import FormattedDate from './FormattedDate.astro';
+import { AUTHOR_NAME } from '../consts';
+
+interface Props {
+	title: string;
+	pubDate: Date;
+	class?: string;
+}
+
+const { title, pubDate, class: className = '' } = Astro.props;
+const postUrl = decodeURIComponent(Astro.url.toString());
+---
+
+<div class={`license-block relative overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 py-5 px-6 dark:border-zinc-700 dark:bg-zinc-800/50 ${className}`}>
+    <!-- 背景装饰图标 -->
+    <svg 
+        class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-200/50 dark:text-zinc-700/30" 
+        width="120" 
+        height="120" 
+        viewBox="0 0 24 24" 
+        fill="currentColor"
+        aria-hidden="true"
+    >
+        <path d="M10.08 10.86c.05-.33.16-.62.3-.86c.3-.56.81-.85 1.5-.86c.45 0 .86.2 1.15.49c.28.31.47.74.47 1.17h1.8c-.02-.47-.11-.9-.3-1.3c-.15-.38-.38-.72-.68-1c-1.45-1.34-4.14-1.15-5.37.37c-1.29 1.67-1.32 4.59-.01 6.26c1.21 1.49 3.86 1.7 5.3.37c.31-.25.56-.56.76-.92c.16-.36.27-.74.28-1.15H13.5c0 .21-.07.4-.16.57c-.09.19-.21.34-.34.47c-.33.26-.72.4-1.14.4c-.36-.01-.66-.08-.89-.23a1.4 1.4 0 0 1-.59-.64c-.5-.9-.42-2.15-.3-3.14M12 2C6.5 2 2 6.5 2 12c.53 13.27 19.5 13.26 20 0c0-5.5-4.5-10-10-10m0 18c-4.41 0-8-3.59-8-8c.44-10.61 15.56-10.61 16 0c0 4.41-3.59 8-8 8"/>
+    </svg>
+
+    <!-- 标题 -->
+    <div class="relative z-10 font-semibold text-zinc-800 dark:text-zinc-200 mb-3">
+        {title}
+    </div>
+
+    <!-- 当前链接 -->
+    <div class="relative z-10 mb-4">
+        <a 
+            href={postUrl} 
+            class="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 break-all"
+        >
+            {postUrl}
+        </a>
+    </div>
+
+    <!-- 信息网格 -->
+    <div class="relative z-10 grid grid-cols-3 gap-4 text-sm">
+        <div>
+            <div class="text-zinc-400 dark:text-zinc-500 text-xs mb-1">作者</div>
+            <div class="text-zinc-700 dark:text-zinc-300 line-clamp-1">{AUTHOR_NAME}</div>
+        </div>
+        <div>
+            <div class="text-zinc-400 dark:text-zinc-500 text-xs mb-1">发布于</div>
+            <div class="text-zinc-700 dark:text-zinc-300 line-clamp-1">
+                <FormattedDate date={pubDate} />
+            </div>
+        </div>
+        <div>
+            <div class="text-zinc-400 dark:text-zinc-500 text-xs mb-1">许可协议</div>
+            <a 
+                href="https://creativecommons.org/licenses/by-nc-sa/4.0/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                class="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 line-clamp-1"
+            >
+                CC BY-NC-SA 4.0
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .license-block {
+        position: relative;
+    }
+</style>

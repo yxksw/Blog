@@ -1,0 +1,128 @@
+---
+import gitHistory from '../json/git-history.json';
+
+interface Props {
+	slug?: string;
+	extension?: string;
+	class?: string;
+}
+
+const { slug, extension = 'mdx', class: className = '' } = Astro.props;
+
+// GitHub 编辑配置
+const gitHubEditConfig = {
+	enable: true,
+	baseUrl: 'https://github.com/yxksw/Blog/blob/main/src/content/blog',
+	repoUrl: 'https://github.com/yxksw/Blog'
+};
+
+// 获取文章历史
+const fileName = slug ? `${slug}.${extension}` : '';
+const history = (gitHistory[fileName] || []).map(commit => ({
+	...commit,
+	url: `${gitHubEditConfig.repoUrl}/commit/${commit.fullHash}`
+}));
+const hasHistory = history.length > 0;
+
+// 构建编辑链接
+const editUrl = slug ? `${gitHubEditConfig.baseUrl}/${slug}.${extension}` : '#';
+---
+
+<div class={`post-feedback rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50 ${className}`}>
+	<!-- 反馈区域 -->
+	<div class="flex items-center justify-between mb-4">
+		<div class="flex items-center gap-3">
+			<div class="flex h-5 w-5 items-center justify-center rounded bg-blue-500 dark:bg-blue-400">
+				<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-white dark:text-zinc-900">
+					<circle cx="12" cy="12" r="10"/>
+					<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+					<path d="M12 17h.01"/>
+				</svg>
+			</div>
+			<p class="text-sm text-zinc-700 dark:text-zinc-300">这篇文章是否对你有帮助？</p>
+		</div>
+		<div class="flex gap-2">
+			<a href="mailto:yxksw@foxmail.com" class="group inline-flex items-center gap-1 rounded-md bg-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 transition-all hover:bg-zinc-300 active:scale-95 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600">
+				<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform group-hover:scale-110">
+					<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+				</svg>
+				联系
+			</a>
+			<a href="/sponsors/" class="group inline-flex items-center gap-1 rounded-md bg-blue-500 px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-blue-600 active:scale-95 dark:bg-blue-400 dark:text-zinc-900 dark:hover:bg-blue-500">
+				<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="transition-transform group-hover:scale-110">
+					<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+				</svg>
+				赞助
+			</a>
+		</div>
+	</div>
+	
+	{gitHubEditConfig.enable && (
+		<>
+			<!-- 分隔线 -->
+			<div class="my-3 border-t border-zinc-200 dark:border-zinc-700"></div>
+			
+			<!-- GitHub编辑区域 -->
+			<div class="flex items-start gap-3">
+				<div class="flex h-5 w-5 items-center justify-center rounded bg-blue-500 dark:bg-blue-400">
+					<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-white dark:text-zinc-900">
+						<path d="M12 20h9"/>
+						<path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+					</svg>
+				</div>
+				<div class="flex-1">
+					<p class="mb-1 text-sm text-zinc-700 dark:text-zinc-300">发现错误或想要改进这篇文章？</p>
+					<a 
+						href={editUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+							<path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+						</svg>
+						在 GitHub 上编辑此页
+						<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+							<polyline points="15 3 21 3 21 9"/>
+							<line x1="10" x2="21" y1="14" y2="3"/>
+						</svg>
+					</a>
+				</div>
+			</div>
+
+			<!-- 修订历史 -->
+			{hasHistory && (
+				<div id="revision-history" class="mt-4 flex items-start gap-3 scroll-mt-20">
+					<div class="flex h-5 w-5 items-center justify-center rounded bg-blue-500 dark:bg-blue-400">
+						<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-white dark:text-zinc-900">
+							<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12"/>
+							<path d="M3 3v9h9"/>
+						</svg>
+					</div>
+					<div class="flex-1">
+						<p class="mb-1 text-sm text-zinc-700 dark:text-zinc-300">文章修订历史 ({history.length} 次)</p>
+						<details class="group">
+							<summary class="cursor-pointer select-none text-sm font-medium text-blue-600 hover:underline dark:text-blue-400">
+								查看变更记录
+							</summary>
+							<div class="mt-2 max-h-48 space-y-2 overflow-y-auto">
+								{history.map((commit) => (
+									<div class="flex flex-col rounded bg-zinc-100 p-2 text-xs dark:bg-zinc-700/50">
+										<div class="mb-1 flex items-center justify-between">
+											<span class="font-semibold text-zinc-700 dark:text-zinc-300">{commit.date}</span>
+											<a href={commit.url} target="_blank" rel="noopener noreferrer" class="font-mono text-blue-600 hover:underline dark:text-blue-400">
+												{commit.hash}
+											</a>
+										</div>
+										<p class="break-all text-zinc-600 dark:text-zinc-400">{commit.message}</p>
+									</div>
+								))}
+								</div>
+							</details>
+						</div>
+					</div>
+				)}
+			</>
+		)}
+</div>

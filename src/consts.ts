@@ -3,6 +3,7 @@
 
 export const SITE_TITLE = "YXK's Blog";
 export const SITE_DESCRIPTION = '每一段旅行，都有终点。';
+export const AUTHOR_NAME = '异飨客';
 
 export const GITHUB_URL = 'https://github.com/yxksw';
 export const BILIBILI_URL = 'https://space.bilibili.com/3546643173477234';
