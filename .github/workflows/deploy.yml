@@ -71,3 +71,18 @@ jobs:
                   publish_dir: ./dist
                   publish_branch: gh-pages
                   force_orphan: true
+          
+          # 清空当前分支内容
+          git rm -rf .
+          
+          # 从 dist 复制构建产物
+          cp -r dist/* .
+          
+          # 添加所有文件
+          git add .
+          
+          # 提交
+          git commit -m "deploy: update build from main ($(date -u '+%Y-%m-%d %H:%M:%S UTC'))" || echo "No changes to commit"
+          
+          # 强制推送到 pages 分支
+          git push origin pages --force
