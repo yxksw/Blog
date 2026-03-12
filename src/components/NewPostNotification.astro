@@ -346,9 +346,9 @@
 
         // Logic for "No updates"
         if (newPosts.length === 0) {
-             list.innerHTML = `<div class="text-center text-zinc-500 py-4">
+             list.innerHTML = `<div class="text-center text-zinc-500 dark:text-zinc-400 py-4">
                 <p class="text-sm font-medium mb-2">暂无文章更新</p>
-                <div class="text-xs opacity-70 bg-zinc-700 rounded px-2 py-1 inline-block">
+                <div class="text-xs opacity-70 bg-zinc-200 dark:bg-zinc-700 rounded px-2 py-1 inline-block">
                     ${initTimeStr} - ${checkTimeStr}
                 </div>
              </div>`;
@@ -360,7 +360,7 @@
         
         // Show timestamp header
         let html = `
-            <div class="text-xs text-zinc-500 mb-2 px-1 flex flex-col gap-0.5">
+            <div class="text-xs text-zinc-500 dark:text-zinc-400 mb-2 px-1 flex flex-col gap-0.5">
                 <div class="font-medium">发现更新</div>
                 <div class="opacity-70 text-[10px]">${initTimeStr} - ${checkTimeStr}</div>
             </div>`;
@@ -368,8 +368,8 @@
         newPosts.forEach(post => {
             const isUpdated = post.isUpdated;
             const badge = isUpdated 
-                ? '<span class="text-xs bg-blue-900 text-blue-300 px-1.5 py-0.5 rounded ml-2">更新</span>'
-                : '<span class="text-xs bg-green-900 text-green-300 px-1.5 py-0.5 rounded ml-2">新文章</span>';
+                ? '<span class="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded ml-2">更新</span>'
+                : '<span class="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded ml-2">新文章</span>';
             
             // Convert absolute URL to relative path
             let postLink = post.link;
@@ -397,7 +397,7 @@
             html += `
             <div>
                 <div class="flex items-center justify-between p-2 rounded-lg hover:bg-blue-500/5 transition-colors">
-                    <a href="${postHref}" class="font-medium truncate pr-2 hover:text-blue-500 transition-colors text-white block flex-1">
+                    <a href="${postHref}" class="font-medium truncate pr-2 hover:text-blue-500 transition-colors text-zinc-900 dark:text-white block flex-1">
                         ${post.title}
                     </a>
                     <div class="flex items-center shrink-0">

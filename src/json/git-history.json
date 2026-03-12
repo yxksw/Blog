@@ -3,7 +3,7 @@
     {
       "hash": "0d76044",
       "fullHash": "0d76044534362537e3295f3a7c3ebd1ff5a934dc",
-      "date": "2026年3月12日",
+      "date": "2026年3月13日",
       "message": "feat(文章差异): 实现文章更新差异高亮与跳转功能"
     }
   ],
@@ -17,15 +17,21 @@
   ],
   "welcome-to-my-blog.mdx": [
     {
+      "hash": "bb48ce8",
+      "fullHash": "bb48ce828f00ae919c07f590b72ade30e9f092ee",
+      "date": "2026年3月13日",
+      "message": "docs(blog): 更新欢迎博客的结语部分"
+    },
+    {
       "hash": "3cab77c",
       "fullHash": "3cab77c9d3fdc5a6e47baaec921359faeee946c2",
-      "date": "2026年3月12日",
+      "date": "2026年3月13日",
       "message": "feat: 添加暗黑模式支持并优化通知组件"
     },
     {
       "hash": "0d76044",
       "fullHash": "0d76044534362537e3295f3a7c3ebd1ff5a934dc",
-      "date": "2026年3月12日",
+      "date": "2026年3月13日",
       "message": "feat(文章差异): 实现文章更新差异高亮与跳转功能"
     },
     {

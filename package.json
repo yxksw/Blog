@@ -10,6 +10,7 @@
     "postbuild": "node scripts/postbuild-sitemap.mjs",
     "preview": "astro preview",
     "astro": "astro",
+    "check": "node scripts/generate-git-history.mjs",
     "pagefind": "npx pagefind --site dist"
   },
   "dependencies": {
