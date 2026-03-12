@@ -1,6 +1,6 @@
-﻿---
+---
 import { SITE_TITLE } from '../consts';
-import { getNavLinks } from '../data/navLinks';
+import { getNavLinks, type NavLink } from '../data/navLinks';
 
 /*
  * Mobile navigation drawer.
@@ -8,6 +8,27 @@ import { getNavLinks } from '../data/navLinks';
  */
 const BASE = import.meta.env.BASE_URL;
 const NAV_LINKS = getNavLinks(BASE);
+
+// Helper to check if a link or any of its children is active
+const isLinkActive = (link: NavLink, pathname: string, baseUrl: string): boolean => {
+	const normalizedHref = link.href.replace(baseUrl, '/').replace(/\/+$/, '/');
+	const normalizedPath = pathname.replace(baseUrl, '/');
+	const subpath = normalizedPath.match(/[^\/]+/g);
+	const firstSegmentPath = subpath?.[0] ? `/${subpath[0]}/` : '/';
+
+	if (normalizedHref === normalizedPath || normalizedHref === firstSegmentPath) {
+		return true;
+	}
+
+	if (link.children) {
+		return link.children.some(child => {
+			const childHref = child.href.replace(baseUrl, '/').replace(/\/+$/, '/');
+			return childHref === normalizedPath || childHref === firstSegmentPath;
+		});
+	}
+
+	return false;
+};
 ---
 
 <div
@@ -18,7 +39,7 @@ const NAV_LINKS = getNavLinks(BASE);
 <aside
 	id="mobile-drawer"
 	class="pointer-events-auto fixed left-0 top-0 z-[90] flex h-[100dvh] w-[88vw] max-w-sm -translate-x-full flex-col border-r border-zinc-200 bg-white/95 p-4 shadow-2xl backdrop-blur transition-transform duration-200 ease-out motion-reduce:transition-none md:hidden dark:border-zinc-800 dark:bg-zinc-950/95 [will-change:transform] hidden"
-	aria-label="Mobile navigation"
+	aria-label="移动端导航"
 	aria-hidden="true"
 >
 	<div class="mb-6 flex items-center justify-between">
@@ -27,7 +48,7 @@ const NAV_LINKS = getNavLinks(BASE);
 			type="button"
 			id="mobile-menu-close"
 			class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 transition-colors hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
-			aria-label="Close menu"
+			aria-label="关闭菜单"
 		>
 			<svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" aria-hidden="true">
 				<path d="M6.7 5.3a1 1 0 0 0-1.4 1.4L10.6 12l-5.3 5.3a1 1 0 1 0 1.4 1.4l5.3-5.3 5.3 5.3a1 1 0 1 0 1.4-1.4L13.4 12l5.3-5.3a1 1 0 0 0-1.4-1.4L12 10.6 6.7 5.3Z" />
@@ -37,13 +58,49 @@ const NAV_LINKS = getNavLinks(BASE);
 	<nav class="flex flex-col gap-2">
 		{
 			NAV_LINKS.map((link) => (
-				<a
-					href={link.href}
-					data-drawer-link
-					class="block rounded-xl px-4 py-3 text-base font-medium text-zinc-700 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
-				>
-					{link.label}
-				</a>
+				link.children ? (
+					<div class="mobile-nav-group" data-mobile-nav-group>
+						<button
+							type="button"
+							data-mobile-nav-toggle
+							class:list={[
+								'flex w-full items-center justify-between rounded-xl px-4 py-3 text-base font-medium text-zinc-700 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-100',
+								{ 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100': isLinkActive(link, Astro.url.pathname, BASE) },
+							]}
+							aria-expanded="false"
+						>
+							<span>{link.label}</span>
+							<svg class="mobile-nav-arrow h-5 w-5 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+								<polyline points="6,9 12,15 18,9" />
+							</svg>
+						</button>
+						<div class="mobile-nav-children hidden pl-4">
+							{link.children.map((child) => (
+								<a
+									href={child.href}
+									data-drawer-link
+									class:list={[
+										'block rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100',
+										{ 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100': isLinkActive(child, Astro.url.pathname, BASE) },
+									]}
+								>
+									{child.label}
+								</a>
+							))}
+						</div>
+					</div>
+				) : (
+					<a
+						href={link.href}
+						data-drawer-link
+						class:list={[
+							'block rounded-xl px-4 py-3 text-base font-medium text-zinc-700 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-100',
+							{ 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100': isLinkActive(link, Astro.url.pathname, BASE) },
+						]}
+					>
+						{link.label}
+					</a>
+				)
 			))
 		}
 	</nav>
@@ -118,6 +175,23 @@ const NAV_LINKS = getNavLinks(BASE);
 		const drawerLinks = drawer.querySelectorAll('[data-drawer-link]');
 		for (const link of drawerLinks) {
 			link.addEventListener('click', closeDrawer);
+		}
+
+		// Initialize mobile nav toggles
+		const navGroups = drawer.querySelectorAll('[data-mobile-nav-group]');
+		for (const group of navGroups) {
+			const toggle = group.querySelector('[data-mobile-nav-toggle]');
+			const children = group.querySelector('.mobile-nav-children');
+			const arrow = group.querySelector('.mobile-nav-arrow');
+			
+			if (toggle && children && arrow) {
+				toggle.addEventListener('click', () => {
+					const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+					toggle.setAttribute('aria-expanded', String(!isExpanded));
+					children.classList.toggle('hidden');
+					arrow.classList.toggle('rotate-180');
+				});
+			}
 		}
 
 		forceClosedState();

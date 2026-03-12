@@ -1,0 +1,226 @@
+---
+title: 如何实现博客评论邮件通知功能
+description: 详细介绍如何在 Astro + Cloudflare Workers 博客中实现评论邮件通知功能，支持 QQ 邮箱 SMTP
+pubDate: 2026-03-11
+tags: ['Cloudflare Workers', 'SMTP', '评论系统', '教程']
+important: false
+author: 异飨客
+lang: cn
+category: 技术教程
+---
+
+# 如何实现博客评论邮件通知功能
+
+在这篇文章中，我将详细介绍如何为 Astro + Cloudflare Workers 博客添加评论邮件通知功能，让你在新评论到来时第一时间收到邮件提醒。
+
+## 技术栈
+
+- **前端**: Astro + React
+- **后端**: Cloudflare Workers
+- **邮件服务**: QQ 邮箱 SMTP
+- **数据库**: Cloudflare D1
+
+## 整体架构
+
+```
+用户发表评论
+    ↓
+前端调用 API → Cloudflare Worker
+    ↓
+保存到 D1 数据库
+    ↓
+异步发送邮件通知 (ctx.waitUntil)
+    ↓
+QQ 邮箱 SMTP 发送邮件
+```
+
+## 核心实现步骤
+
+### 1. 后端邮件服务
+
+在 Cloudflare Worker 中创建 SMTP 客户端：
+
+```typescript
+// src/email/smtp.ts
+import { connect } from 'cloudflare:sockets';
+
+export interface SMTPConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  auth: {
+    user: string;
+    pass: string;
+  };
+}
+
+export class SMTPClient {
+  private socket: ReturnType<typeof connect> | null = null;
+  private reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+  private writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
+  private encoder = new TextEncoder();
+  private decoder = new TextDecoder();
+
+  constructor(private config: SMTPConfig) {}
+
+  async send(message: SMTPMessage): Promise<void> {
+    try {
+      await this.connect();
+      await this.ehlo();
+      await this.auth();
+      await this.mailFrom(message.from);
+      
+      for (const to of message.to) {
+        await this.rcptTo(to);
+      }
+      
+      await this.data(message);
+      await this.quit();
+    } finally {
+      await this.close();
+    }
+  }
+  
+  // ... 其他方法
+}
+```
+
+### 2. QQ 邮箱配置
+
+QQ 邮箱需要使用 **端口 465 + 直接 TLS**，而不是 587 + STARTTLS：
+
+```typescript
+export function createQQMailConfig(auth: { user: string; pass: string }): SMTPConfig {
+  return {
+    host: 'smtp.qq.com',
+    port: 465,        // 使用直接 TLS
+    secure: true,     // 启用 TLS
+    auth,
+  };
+}
+```
+
+> ⚠️ **注意**: QQ 邮箱的密码不是登录密码，而是需要在邮箱设置中生成的 **授权码**。
+
+### 3. 邮件模板
+
+创建美观的 HTML 邮件模板：
+
+```typescript
+private buildEmailTemplate(data: CommentNotificationData): string {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      max-width: 600px; 
+      margin: 0 auto; 
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container { 
+      background: white; 
+      border-radius: 8px; 
+      padding: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .button { 
+      display: inline-block; 
+      background: #2563eb; 
+      color: white; 
+      padding: 12px 24px; 
+      text-decoration: none; 
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📝 新评论通知</h1>
+    <p>你的博客收到了一条新评论</p>
+    <a href="${postUrl}#comment-${data.commentId}" class="button">
+      查看评论
+    </a>
+  </div>
+</body>
+</html>`;
+}
+```
+
+### 4. 异步发送邮件
+
+使用 `ctx.waitUntil()` 确保邮件发送不会阻塞 HTTP 响应：
+
+```typescript
+async function handleCommentsPost(request: Request, env: Env, ctx: ExecutionContext) {
+  // 1. 保存评论到数据库
+  const comment = await saveComment(data, env);
+  
+  // 2. 异步发送邮件通知
+  ctx.waitUntil(
+    emailService.sendCommentNotification({
+      postSlug: data.post_id,
+      commentId: comment.id,
+      commentContent: data.content,
+      authorName: user.name,
+      authorUsername: user.username,
+      createdAt: Date.now(),
+    }).catch((err) => {
+      console.error('Failed to send comment notification:', err);
+    })
+  );
+  
+  return new Response(JSON.stringify(comment), { status: 201 });
+}
+```
+
+### 5. 环境变量配置
+
+在 `wrangler.toml` 中配置 SMTP：
+
+```toml
+[vars]
+SMTP_PROVIDER = "qq"
+SMTP_USER = "your-email@qq.com"
+EMAIL_TO = "your-email@foxmail.com"
+EMAIL_FROM_NAME = "博客评论通知"
+NOTIFY_ON_COMMENT = "true"
+
+# 敏感信息使用 secrets
+# wrangler secret put SMTP_PASS
+```
+
+## 踩坑记录
+
+### 1. STARTTLS 问题
+
+最初使用端口 587 + STARTTLS 时遇到 `WritableStream has been closed` 错误。解决方案是改用端口 465 + 直接 TLS。
+
+### 2. 异步任务执行
+
+Worker 会在 HTTP 响应返回后终止，需要使用 `ctx.waitUntil()` 来确保邮件发送任务完成。
+
+### 3. 邮件链接路径
+
+确保邮件中的文章链接路径正确（如 `/blog/` 而不是 `/posts/`）。
+
+## 最终效果
+
+当有新评论时，你会收到如下邮件：
+
+- **标题**: 📝 新评论：&#123;作者名&#125; 评论了「&#123;文章标题&#125;」
+- **内容**: 包含评论者信息、评论内容和查看链接
+- **回复通知**: 如果评论是回复，会通知被回复者
+
+## 总结
+
+通过 Cloudflare Workers 的 TCP Sockets API，我们可以直接连接 SMTP 服务器发送邮件，无需部署额外的邮件服务。这种方式：
+
+- ✅ 无需额外部署
+- ✅ 免费使用
+- ✅ 响应快速
+- ✅ 支持主流邮箱
+
+希望这篇教程对你有帮助！如有问题欢迎在评论区留言。

@@ -7,16 +7,16 @@ const { postSlug } = Astro.props;
 ---
 
 <section class="comments-section mt-12 border-t border-zinc-200 pt-8 dark:border-zinc-700">
-	<h2 class="mb-6 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Comments</h2>
+	<h2 class="mb-6 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">评论区</h2>
 
 	<div id="comment-form-container" class="mt-8">
 		<!-- Show login prompt when not logged in -->
 		<div id="login-prompt" class="hidden">
 			<p class="text-zinc-600 dark:text-zinc-400">
 				<a href="https://api.261770.xyz/api/auth/github/start" class="text-blue-600 hover:underline dark:text-blue-400">
-					Login with GitHub
+					在Github登录
 				</a>
-				to comment
+				来评论
 			</p>
 		</div>
 
@@ -31,21 +31,21 @@ const { postSlug } = Astro.props;
 				class="w-full rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-zinc-900 placeholder-zinc-400 focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500"
 			></textarea>
 			<p class="text-xs text-zinc-500 dark:text-zinc-400">
-				Supports: **bold**, *italic*, `code`, [links](url), - lists
+				支持: Markdown格式 (<a href="https://markdown.com.cn/basic-syntax/" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline dark:text-blue-400">Markdown格式参考点此</a>)
 			</p>
 			<div class="flex items-center justify-between">
 				<button
 					type="submit"
 					class="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
 				>
-					Submit Comment
+					提交评论
 				</button>
 				<button
 					type="button"
 					id="cancel-reply-btn"
 					class="hidden rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
 				>
-					Cancel Reply
+					取消回复
 				</button>
 			</div>
 			<input type="hidden" id="parent-comment-id" value="" />
@@ -129,7 +129,7 @@ const { postSlug } = Astro.props;
 			<div class="comment-item ${replyClass}" data-comment-id="${comment.id}">
 				<div class="flex gap-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50">
 					<img
-						src="${comment.author?.avatar || 'https://img.danarnoux.com/misc/DanArnoux.webp'}"
+						src="${comment.author?.avatar || 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avifp'}"
 						alt="${comment.author?.username || 'User'} avatar"
 						class="h-10 w-10 shrink-0 rounded-full border border-zinc-200 object-cover dark:border-zinc-700"
 					/>
@@ -161,7 +161,7 @@ const { postSlug } = Astro.props;
 		if (!container) return;
 
 		if (!comments || comments.length === 0) {
-			container.innerHTML = '<p class="text-zinc-500 dark:text-zinc-400">No comments yet. Be the first to comment!</p>';
+			container.innerHTML = '<p class="text-zinc-500 dark:text-zinc-400">暂无评论。成为第一个评论者吧！</p>';
 			return;
 		}
 

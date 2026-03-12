@@ -1,46 +1,567 @@
 ---
-import Layout from '../content/layouts/BlogPost.astro';
-import TerminalQuote from '../components/TerminalQuote.astro';
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import MobileDrawer from '../components/MobileDrawer.astro';
+import { SITE_TITLE } from '../consts';
+import { aboutData } from '../data/about';
+import { getCollection } from 'astro:content';
 
-const nowText =
-	"Now: Learning finite element analysis (FEA) software,using ANSA, ANSYS, and COMSOL,for battery-related engineering problems, running electrochemical testing and analysis, and building PV parking lot EMS features step by step.";
+// 获取 about.mdx 内容
+const aboutEntries = await getCollection('about');
+const aboutDoc = aboutEntries.find(entry => entry.slug === 'about') || aboutEntries[0];
+const aboutContent = aboutDoc?.body || '';
+
+// 解析时间线数据
+function parseTimeline(content: string) {
+  const lines = content.split('\n').filter(line => line.trim());
+  const timeline: { version: string; content: string }[] = [];
+  let currentItem: { version: string; content: string } | null = null;
+  
+  for (const line of lines) {
+    const versionMatch = line.match(/^-\s*(V\d+\s+\d{4})/);
+    if (versionMatch) {
+      if (currentItem) {
+        timeline.push(currentItem);
+      }
+      currentItem = {
+        version: versionMatch[1],
+        content: ''
+      };
+    } else if (currentItem && line.trim()) {
+      currentItem.content += (currentItem.content ? ' ' : '') + line.trim();
+    }
+  }
+  if (currentItem) {
+    timeline.push(currentItem);
+  }
+  return timeline;
+}
+
+const timelineData = parseTimeline(aboutContent);
+
+const title = `关于 | ${SITE_TITLE}`;
+const description = '关于异飨客的博客';
 ---
 
-<Layout
-	title="About Me"
-	description="You can call me DanArnoux, or 符笙."
-	pubDate={new Date('Feb 10 2026')}
-	heroImage="https://img.261770.xyz/misc/about-image.webp"
-	profileImage="https://img.261770.xyz/misc/DanArnoux.webp"
-	important={false}
-	importantOrder={0}
-	draft={false}
->
-	<p>
-		I am DanArnoux (符笙), an energy engineering student from China. I care about practical
-		engineering, clear reasoning, and building systems that can be explained and reproduced.
-		This blog is my long-term notebook for experiments, tools, and technical decisions.
-	</p>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <BaseHead title={title} description={description} />
+    <style>
+        /* Author Section */
+        .author-main {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            user-select: none;
+        }
+        
+        .mainports {
+            margin: 0 20px;
+        }
+        
+        .author-tag-left, .author-tag-right {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .author-tag-left {
+            align-items: flex-end;
+        }
+        
+        .author-tag-left .author-tag:first-child,
+        .author-tag-left .author-tag:last-child {
+            margin-right: -16px;
+        }
+        
+        .author-tag-right {
+            align-items: flex-start;
+        }
+        
+        .author-tag {
+            padding: 4px 12px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            animation: tag-float 6s ease-in-out infinite;
+            transform: translateY(-4px);
+            will-change: transform, opacity;
+        }
+        
+        .dark .author-tag {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.1);
+            color: #e5e7eb;
+        }
+        
+        .author-tag:nth-child(1) { animation-delay: 0s; }
+        .author-tag:nth-child(2) { animation-delay: 0.6s; }
+        .author-tag:nth-child(3) { animation-delay: 1.2s; }
+        .author-tag:nth-child(4) { animation-delay: 1.8s; }
+        
+        @keyframes tag-float {
+            0%, 100% { 
+                transform: translateY(-4px) scale(1);
+                opacity: 1;
+            }
+            50% { 
+                transform: translateY(-8px) scale(1.05);
+                opacity: 0.9;
+            }
+        }
+        
+        .author-avatar-container {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: rgba(253, 253, 253, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .author-avatar-container::before {
+            content: '';
+            position: absolute;
+            inset: 5px;
+            border-radius: 50%;
+            background: rgba(253, 253, 253, 0.8);
+            z-index: 1;
+        }
+        
+        .author-avatar {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            object-fit: cover;
+            position: relative;
+            z-index: 10;
+            transition: transform 0.5s ease;
+        }
+        
+        .author-avatar:hover {
+            transform: rotate(12deg);
+        }
+        
+        .dark .author-avatar-container {
+            background: rgba(31, 41, 55, 0.8);
+        }
+        
+        .dark .author-avatar-container::before {
+            background: rgba(31, 41, 55, 0.8);
+        }
+        
+        /* 响应式优化 */
+        @media (max-width: 768px) {
+            .author-main {
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .mainports {
+                margin: 0;
+                order: -1;
+            }
+            
+            .author-tag-left,
+            .author-tag-right {
+                align-items: center;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .author-tag-left .author-tag:first-child,
+            .author-tag-left .author-tag:last-child {
+                margin-right: 0;
+            }
+            
+            .author-tag {
+                animation-duration: 4s;
+            }
+            
+            .author-avatar-container {
+                width: 150px;
+                height: 150px;
+            }
+            
+            .author-avatar {
+                width: 150px;
+                height: 150px;
+            }
+        }
+        
+        /* Content Grid */
+        .author-content-grid {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .author-content-grid-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        
+        .author-content-grid-1 {
+            grid-template-columns: 1fr;
+        }
+        
+        @media (max-width: 768px) {
+            .author-content-grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .author-content-item {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .dark .author-content-item {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.1);
+        }
+        
+        /* MyInfo Section */
+        .myInfo-section {
+            background: linear-gradient(120deg, #5b27ff 0%, #00d4ff 100%);
+            color: white;
+            text-align: center;
+            min-height: 175px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .myInfo-title1 {
+            opacity: 0.8;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .myInfo-title2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+        }
+        
+        .myInfo-inline {
+            word-break: keep-all;
+            white-space: nowrap;
+        }
+        
+        /* Site Tips */
+        .site-tips h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-top: 0;
+        }
+        
+        .mask-container {
+            height: 40px;
+            position: relative;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        
+        .mask-text {
+            display: block;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            font-size: 1.5rem;
+            font-weight: 700;
+            opacity: 0;
+            animation: mask-scroll 12s ease-in-out infinite;
+        }
+        
+        .mask-text:nth-child(1) { 
+            animation-delay: 0s;
+            background: linear-gradient(45deg, #0ecffe 50%, #07a6f1);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .mask-text:nth-child(2) { 
+            animation-delay: 3s;
+            background: linear-gradient(45deg, #18e198 50%, #0ec15d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .mask-text:nth-child(3) { 
+            animation-delay: 6s;
+            background: linear-gradient(45deg, #8a7cfb 50%, #633e9c);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .mask-text:nth-child(4) { 
+            animation-delay: 9s;
+            background: linear-gradient(45deg, #fa7671 50%, #f45f7f);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        @keyframes mask-scroll {
+            0% { 
+                transform: translateY(0);
+                opacity: 0;
+            }
+            5% { 
+                transform: translateY(-100%);
+                opacity: 1;
+            }
+            20% { 
+                transform: translateY(-100%);
+                opacity: 1;
+            }
+            25% { 
+                transform: translateY(-200%);
+                opacity: 0;
+            }
+            100% { 
+                transform: translateY(-200%);
+                opacity: 0;
+            }
+        }
+        
+        /* Maxim */
+        .maxim-section {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        /* Skills */
+        .skills-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .skill-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 1rem;
+            background: rgba(0,0,0,0.05);
+            font-size: 0.875rem;
+        }
+        
+        .dark .skill-item {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .skill-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        
+        /* Single Section */
+        .single-section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .single-section .lishi {
+            font-size: 1.25rem;
+            color: #6b7280;
+            margin-bottom: 1rem;
+        }
+        
+        .dark .single-section .lishi {
+            color: #9ca3af;
+        }
+        
+        .timeline {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .timeline li {
+            position: relative;
+            padding-left: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-left: 2px solid #e5e7eb;
+        }
+        
+        .dark .timeline li {
+            border-left-color: rgba(255,255,255,0.1);
+        }
+        
+        .timeline li::before {
+            content: '';
+            position: absolute;
+            left: -5px;
+            top: 0;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #3b82f6;
+        }
+        
+        .timeline li:last-child {
+            border-left: 2px solid transparent;
+        }
+        
+        .timeline-version {
+            font-weight: 700;
+            color: #3b82f6;
+            margin-bottom: 0.25rem;
+        }
+        
+        .timeline-content {
+            color: #4b5563;
+            line-height: 1.6;
+        }
+        
+        .dark .timeline-content {
+            color: #9ca3af;
+        }
+        
+        .item-tips {
+            opacity: 0.6;
+            font-size: 0.75rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+<body class="bg-zinc-50 dark:bg-zinc-900">
+    <Header />
+    <MobileDrawer />
+    
+    <main class="min-h-screen py-10">
+        <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+            <!-- Author Section -->
+            <div class="author-main">
+                <div class="author-tag-left">
+                    {aboutData.author.left.map((tag, index) => (
+                        <span class="author-tag">{tag}</span>
+                    ))}
+                </div>
+                
+                <div class="mainports">
+                    <div class="author-avatar-container">
+                        <img 
+                            src={aboutData.author.avatar} 
+                            alt={aboutData.author.name}
+                            class="author-avatar"
+                        />
+                    </div>
+                </div>
+                
+                <div class="author-tag-right">
+                    {aboutData.author.right.map((tag, index) => (
+                        <span class="author-tag">{tag}</span>
+                    ))}
+                </div>
+            </div>
+            
+            <!-- My Info Section -->
+            <div class="author-content-grid author-content-grid-1 mb-4">
+                <div class="author-content-item myInfo-section">
+                    <div class="myInfo-title1">{aboutData.myinfo.title1}</div>
+                    <div class="myInfo-title2">
+                        {aboutData.myinfo.title2}
+                        <span class="myInfo-inline">{aboutData.myinfo.bloggerName}</span>
+                    </div>
+                    <div class="myInfo-title1">
+                        {aboutData.myinfo.content1}
+                        <span class="myInfo-inline">{aboutData.myinfo.content2}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Site Tips & Maxim -->
+            <div class="author-content-grid author-content-grid-2 mb-4">
+                <div class="author-content-item site-tips">
+                    <div class="item-tips">{aboutData.siteTips.tips}</div>
+                    <h2>
+                        {aboutData.siteTips.connect1}
+                        <br />
+                        {aboutData.siteTips.connect2}
+                        <span class="myInfo-inline">{aboutData.siteTips.inlineWord}</span>
+                        <div class="mask-container">
+                            {aboutData.siteTips.mask.map((text, index) => (
+                                <span class="mask-text" style={`background: linear-gradient(45deg, ${['#0ecffe', '#18e198', '#8a7cfb', '#fa7671'][index]} 50%, ${['#07a6f1', '#0ec15d', '#633e9c', '#f45f7f'][index]}); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;`}>
+                                    {text}
+                                </span>
+                            ))}
+                        </div>
+                    </h2>
+                </div>
+                
+                <div class="author-content-item maxim-section">
+                    <div class="item-tips">{aboutData.maxim.tip}</div>
+                    <span>
+                        <span style="opacity: 0.6; display: block; margin-bottom: 8px;">{aboutData.maxim.title1}</span>
+                        <span>{aboutData.maxim.title2}</span>
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Skills -->
+            <div class="author-content-grid author-content-grid-1 mb-4">
+                <div class="author-content-item">
+                    <div class="item-tips">技能</div>
+                    <div class="skills-grid">
+                        {aboutData.skills.map((skill) => (
+                            <div class="skill-item">
+                                <div class="skill-icon" style={`background: ${skill.color}; color: white;`}>
+                                    {skill.icon}
+                                </div>
+                                <span>{skill.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Single Section (History) -->
+            <div class="author-content-grid author-content-grid-1 mb-4">
+                <div class="author-content-item single-section">
+                    <div class="item-tips">{aboutData.single.tip}</div>
+                    <h2>{aboutData.single.title}</h2>
+                    <div class="lishi">{aboutData.single.history}</div>
+                    <ul class="timeline">
+                        {timelineData.map((item) => (
+                            <li>
+                                <div class="timeline-version">{item.version}</div>
+                                <div class="timeline-content">{item.content}</div>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
 
-	<h2>Focus</h2>
-	<ul>
-		<li>Electrochemistry and materials aging: CV / EIS / ECSA analysis, battery degradation, and characterization</li>
-		<li>Simulation and modeling: battery-oriented FEM studies, Simulink models, and reproducible workflows</li>
-		<li>
-			AI and applied systems: Stable Diffusion, LLM-assisted tooling, and
-			<a href="https://creatinf.com/" target="_blank" rel="noreferrer">CreatInf</a>
-		</li>
-	</ul>
-
-	<h2>Now</h2>
-	<TerminalQuote text={nowText} once={true} fixedHeight={false} />
-
-	<h2>Contact</h2>
-	<p>
-		The most reliable way to reach me is by email:
-		<code>2819045467@qq.com</code>
-		or
-		<code>danchennuo@gmail.com</code>.
-		You can also find me via GitHub and Bilibili from the site navigation.
-	</p>
-</Layout>
+    <Footer />
+</body>
+</html>

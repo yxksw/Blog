@@ -22,7 +22,8 @@
 	}
 
 	body {
-		@apply bg-zinc-50 text-zinc-800 font-sans antialiased transition-colors duration-200 dark:bg-zinc-950 dark:text-zinc-200;
+		@apply text-zinc-800 font-sans antialiased transition-colors duration-200 dark:text-zinc-200;
+		background: transparent !important;
 	}
 
 	a {
@@ -124,7 +125,7 @@ html.dark:hover::-webkit-scrollbar-thumb {
 	}
 
 	.card-surface {
-		@apply rounded-xl border border-zinc-200 bg-white transition-all duration-200 dark:border-zinc-700 dark:bg-zinc-900;
+		@apply rounded-xl border border-zinc-200/80 bg-white/85 backdrop-blur-md transition-all duration-200 dark:border-zinc-700/80 dark:bg-zinc-900/80;
 	}
 
 	.card-interactive {

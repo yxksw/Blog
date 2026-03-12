@@ -1,0 +1,774 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import MobileDrawer from '../components/MobileDrawer.astro';
+import { SITE_TITLE } from '../consts';
+
+const title = `追更历史 | ${SITE_TITLE}`;
+const description = '我的 Bangumi 追番、游戏、书籍记录';
+
+// Bangumi 卡片引用信息
+const banguimCard = [
+  { name: '克喵的博客', link: 'https://blog-v3.kemeow.top/', type: 'API参考' },
+  { name: '风纪星辰', link: 'https://www.thyuu.com/douban/', type: '样式参考' },
+  { name: 'Mikuの鬆', link: 'https://miku.love/', type: '卡片样式' }
+];
+---
+
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <BaseHead title={title} description={description} />
+    <style>
+        /* 页面容器 */
+        .banguim-container {
+            margin-top: 20px;
+            margin-left: 1rem;
+            margin-right: 1rem;
+        }
+
+        /* 导航栏 */
+        .banguim-nav {
+            padding: 0 0 20px;
+            justify-self: center;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .nav-item {
+            font-size: 1em;
+            cursor: pointer;
+            border-bottom: 1px solid transparent;
+            transition: .5s border-color;
+            display: flex;
+            align-items: center;
+            text-transform: capitalize;
+            margin-right: 20px;
+            color: var(--c-text-2);
+            padding-bottom: 4px;
+        }
+
+        .nav-item.active {
+            border-color: var(--c-primary);
+            color: var(--c-primary);
+        }
+
+        .type-item {
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid var(--c-border);
+            border-radius: 999rem;
+            padding: 7px 25px;
+            color: var(--c-text-2);
+            background: color-mix(in srgb, var(--c-primary) 50%, transparent);
+            backdrop-filter: saturate(1.8) blur(20px);
+            -webkit-backdrop-filter: saturate(1.8) blur(20px);
+            transition: all 0.3s ease;
+        }
+
+        .type-item.active {
+            color: var(--c-primary);
+            border-color: var(--c-primary);
+            cursor: not-allowed;
+        }
+
+        /* 加载动画 */
+        .loading {
+            display: flex;
+            justify-content: center;
+            min-height: 50vh;
+            align-items: center;
+        }
+
+        .loading-ripple {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+
+        .loading-ripple::before,
+        .loading-ripple::after {
+            position: absolute;
+            border: 4px solid var(--c-primary);
+            content: "";
+            opacity: 1;
+            border-radius: 50%;
+            animation: lds-ripple 1s cubic-bezier(0, .2, .8, 1) infinite;
+        }
+
+        .loading-ripple::after {
+            animation-delay: 0.5s;
+        }
+
+        @keyframes lds-ripple {
+            0% {
+                top: 36px;
+                left: 36px;
+                width: 0;
+                height: 0;
+                opacity: 0;
+            }
+            5% {
+                top: 36px;
+                left: 36px;
+                width: 0;
+                height: 0;
+                opacity: 1;
+            }
+            100% {
+                top: 0px;
+                left: 0px;
+                width: 72px;
+                height: 72px;
+                opacity: 0;
+            }
+        }
+
+        /* 卡片列表 */
+        .banguim-card {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            transition: .1s;
+        }
+
+        .banguim-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5em;
+        }
+
+        /* 空数据 */
+        .banguim-empty {
+            height: 300px;
+            width: 100%;
+            font-size: 4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--c-text-2);
+        }
+
+        /* 版权信息 */
+        .banguim-copyright {
+            font-size: 12px;
+            text-align: right;
+            margin-top: 20px;
+            color: var(--c-text-2);
+        }
+
+        .banguim-copyright .card-info {
+            margin-bottom: 4px;
+        }
+
+        .banguim-copyright .copyright {
+            color: var(--c-primary);
+            text-decoration: none;
+        }
+
+        .banguim-copyright .copyright:hover {
+            text-decoration: underline;
+        }
+
+        /* 淡入淡出动画 */
+        .fade-enter {
+            opacity: 0;
+        }
+
+        .fade-enter-active {
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .fade-exit {
+            opacity: 1;
+        }
+
+        .fade-exit-active {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .banguim-nav {
+                justify-content: center;
+            }
+
+            .nav-item {
+                margin-right: 12px;
+                font-size: 0.9em;
+            }
+
+            .type-item {
+                padding: 5px 15px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-zinc-50 dark:bg-zinc-900">
+    <Header />
+    <MobileDrawer />
+
+    <main class="min-h-screen py-10">
+        <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+            <!-- 页面标题 -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-white mb-4">追更历史</h1>
+                <p class="text-lg text-zinc-600 dark:text-zinc-400">
+                    记录我的追番、游戏、书籍和音乐
+                </p>
+            </div>
+
+            <div class="banguim-container" x-data="bangumiApp()" x-init="init()">
+                <!-- 内容类型导航 -->
+                <div class="banguim-nav">
+                    <template x-for="(label, key) in subjectMap" :key="key">
+                        <div
+                            class="nav-item"
+                            :class="{ active: contentType === key }"
+                            @click="setContentType(key)"
+                            x-text="label"
+                        ></div>
+                    </template>
+                </div>
+
+                <!-- 收藏类型导航 -->
+                <div class="banguim-nav">
+                    <template x-for="(label, key) in orderMap" :key="key">
+                        <button
+                            class="type-item"
+                            @click="setCollectionType(key)"
+                            :class="{ active: collectionType === key }"
+                            x-text="label"
+                        ></button>
+                    </template>
+                </div>
+
+                <!-- 加载状态 -->
+                <div x-show="loading" class="loading" x-transition.opacity.duration.300ms>
+                    <div class="loading-ripple"></div>
+                </div>
+
+                <!-- 数据列表 -->
+                <div x-show="!loading && dataReady" class="banguim-card" x-transition.opacity.duration.300ms>
+                    <div class="banguim-list" x-show="games.length > 0">
+                        <template x-for="game in games" :key="`${game.subject_id}-${contentType}`">
+                            <div class="bgm-info-card" x-html="renderCard(game)"></div>
+                        </template>
+                    </div>
+                    <div class="banguim-empty" x-show="games.length === 0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14l4 4v10a2 2 0 0 1-2 2h-2"/>
+                            <path d="M2 10h20"/>
+                        </svg>
+                        <p class="ml-4 text-lg">暂无数据</p>
+                    </div>
+                </div>
+
+                <!-- 版权信息 -->
+                <div class="banguim-copyright">
+                    <template x-for="item in banguimCard" :key="item.link">
+                        <div class="card-info">
+                            基于
+                            <a class="copyright" :href="item.link" target="_blank" x-text="item.name"></a>
+                            的<span x-text="item.type"></span>
+                        </div>
+                    </template>
+                    <div class="card-info">
+                        共计
+                        <span class="copyright" x-text="total || 0"></span>
+                        部作品
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <Footer />
+
+    <script is:inline>
+        function bangumiApp() {
+            return {
+                // 数据
+                contentType: 'anime',
+                collectionType: 'wish',
+                page: 1,
+                games: [],
+                total: 0,
+                totalPages: 0,
+                loading: true,
+                dataReady: false,
+                loadingTimeout: null,
+
+                // Bangumi 配置
+                username: 'yxksw',
+                itemsPerPage: 20,
+
+                // 类型映射
+                subjectMap: {
+                    book: '书籍',
+                    anime: '追番',
+                    game: '游戏'
+                },
+
+                // 根据内容类型返回对应的标签映射
+                get orderMap() {
+                    const maps = {
+                        book: {
+                            wish: '想看',
+                            do: '在看',
+                            collect: '看过',
+                            on_hold: '搁置',
+                            dropped: '抛弃'
+                        },
+                        anime: {
+                            wish: '想看',
+                            do: '在看',
+                            collect: '看过',
+                            on_hold: '搁置',
+                            dropped: '抛弃'
+                        },
+                        game: {
+                            wish: '想玩',
+                            do: '在玩',
+                            collect: '玩过',
+                            on_hold: '搁置',
+                            dropped: '抛弃'
+                        }
+                    };
+                    return maps[this.contentType] || maps.anime;
+                },
+
+                typeSubjectMap: {
+                    book: 1,
+                    anime: 2,
+                    game: 4
+                },
+
+                typeIdMap: {
+                    wish: 1,
+                    collect: 2,
+                    do: 3,
+                    on_hold: 4,
+                    dropped: 5
+                },
+
+                banguimCard: [
+                    { name: '克喵的博客', link: 'https://blog-v3.kemeow.top/', type: 'API参考' },
+                    { name: '风纪星辰', link: 'https://www.thyuu.com/douban/', type: '样式参考' },
+                    { name: 'Mikuの鬆', link: 'https://miku.love/', type: '卡片样式' }
+                ],
+
+                init() {
+                    this.fetchData();
+                },
+
+                setContentType(type) {
+                    if (this.contentType === type) return;
+                    this.contentType = type;
+                    this.page = 1;
+                    this.fetchData();
+                },
+
+                setCollectionType(type) {
+                    if (this.collectionType === type) return;
+                    this.collectionType = type;
+                    this.page = 1;
+                    this.fetchData();
+                },
+
+                async fetchData() {
+                    this.loading = true;
+                    this.dataReady = false;
+
+                    // 清除之前的超时
+                    if (this.loadingTimeout) {
+                        clearTimeout(this.loadingTimeout);
+                    }
+
+                    const subjectType = this.typeSubjectMap[this.contentType];
+                    const typeId = this.typeIdMap[this.collectionType];
+                    const offset = (this.page - 1) * this.itemsPerPage;
+
+                    try {
+                        const response = await fetch(
+                            `https://api.bgm.tv/v0/users/${this.username}/collections?subject_type=${subjectType}&type=${typeId}&limit=${this.itemsPerPage}&offset=${offset}`
+                        );
+
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch data');
+                        }
+
+                        const data = await response.json();
+
+                        // 确保最小加载时间
+                        this.loadingTimeout = setTimeout(() => {
+                            this.games = data.data || [];
+                            this.total = data.total || 0;
+                            this.totalPages = Math.ceil(this.total / this.itemsPerPage);
+                            this.loading = false;
+                            this.dataReady = true;
+                        }, 300);
+                    } catch (error) {
+                        console.error('Error fetching bangumi data:', error);
+                        this.games = [];
+                        this.total = 0;
+                        this.loading = false;
+                        this.dataReady = true;
+                    }
+                },
+
+                renderCard(game) {
+                    const score = Math.floor(game.subject?.score || 0);
+                    const fullStars = Math.floor(score / 2);
+                    const hasHalfStar = (score / 2) % 1 !== 0;
+
+                    let starsHtml = '';
+                    for (let i = 0; i < 5; i++) {
+                        if (i < fullStars) {
+                            starsHtml += '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="#ffc107" stroke="#ffc107" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+                        } else if (i === fullStars && hasHalfStar) {
+                            starsHtml += '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffc107" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><defs><linearGradient id="half"><stop offset="50%" stop-color="#ffc107"/><stop offset="50%" stop-color="transparent"/></linearGradient></defs><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="url(#half)"/></svg>';
+                        } else {
+                            starsHtml += '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffc107" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+                        }
+                    }
+
+                    const tags = (game.subject?.tags || [])
+                        .slice(0, 10)
+                        .sort((a, b) => (b.count || 0) - (a.count || 0))
+                        .map(tag => `<span class="info-tag">${tag.name}<sup>${tag.count}</sup></span>`)
+                        .join('');
+
+                    const nameCn = game.subject?.name_cn || game.subject?.name || '未知';
+                    const name = game.subject?.name || '';
+                    const summary = game.subject?.short_summary || '暂无简介';
+                    const image = game.subject?.images?.common || game.subject?.images?.large || game.subject?.images?.medium || '';
+                    const updatedAt = game.updated_at ? new Date(game.updated_at).toLocaleDateString('zh-CN') : '-';
+
+                    return `
+                        <div class="bgm-card" onclick="window.open('https://bgm.tv/subject/${game.subject_id}', '_blank')">
+                            <div class="bgm-image-wrapper">
+                                <img src="${image}" alt="${name}" class="bgm-image" loading="lazy" />
+                            </div>
+                            <div class="bgm-content">
+                                <div class="bgm-main-section">
+                                    <div class="bgm-title">
+                                        <h3 class="font-color">${nameCn.slice(0, 16)}</h3>
+                                    </div>
+                                    <p class="bgm-desc">${summary}</p>
+                                </div>
+                                <div class="bgm-info-section">
+                                    <div class="info-stars">
+                                        <div class="rating-stars-icon">${starsHtml}</div>
+                                        <div class="rating-stars-number">${score}</div>
+                                    </div>
+                                    <div class="info-tag-list">${tags}</div>
+                                    <div class="info-combined-list">
+                                        <div class="info-date">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                                            ${updatedAt}
+                                        </div>
+                                        <div class="source-badge">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                                            Bangumi
+                                        </div>
+                                    </div>
+                                    <div class="bgm-footer">
+                                        <button class="view-button">
+                                            <span>查看详情</span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            };
+        }
+    </script>
+
+    <style is:inline>
+        /* Bangumi 卡片样式 */
+        .bgm-card {
+            cursor: pointer;
+            display: flex;
+            background: var(--ld-bg-card, white);
+            border: 1px solid var(--c-border, #e5e7eb);
+            border-radius: 0.75em;
+            margin: 0 0 1.5em;
+            overflow: hidden;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .bgm-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark .bgm-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .bgm-image-wrapper {
+            flex-shrink: 0;
+            position: relative;
+            background: var(--c-border, #e5e7eb);
+            border-radius: 0.5em;
+            overflow: hidden;
+            height: 200px;
+            min-width: 150px;
+            width: 150px;
+            margin: 0.75em;
+        }
+
+        .bgm-image {
+            height: 100%;
+            object-fit: cover;
+            object-position: center center;
+            width: 100%;
+            background: var(--ld-bg, #f3f4f6);
+        }
+
+        .bgm-content {
+            align-items: start;
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 1em;
+            padding: 0.75em;
+            flex: 1;
+        }
+
+        .bgm-main-section {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            gap: 0.5em;
+        }
+
+        .bgm-title {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25em;
+        }
+
+        .font-color {
+            color: var(--c-text, #1f2937);
+            font-size: 1.25em;
+            font-weight: 600;
+            line-height: 1.3;
+            word-break: break-word;
+            margin: 0;
+        }
+
+        .dark .font-color {
+            color: #f3f4f6;
+        }
+
+        .bgm-desc {
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            line-height: 1.5;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            color: var(--c-text-2, #6b7280);
+            font-size: 0.9375em;
+            margin: 0;
+        }
+
+        .bgm-info-section {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.875em;
+            gap: 0.5em;
+        }
+
+        .info-stars {
+            align-items: center;
+            background: linear-gradient(135deg, color-mix(in srgb, #ffc107 8%, transparent), color-mix(in srgb, #ffc107 3%, transparent));
+            border: 1px solid color-mix(in srgb, #ffc107 20%, transparent);
+            border-radius: .5em;
+            display: flex;
+            gap: .5em;
+            margin-bottom: .5em;
+            padding: .25em .5em;
+        }
+
+        .rating-stars-icon {
+            display: flex;
+            gap: 2px;
+        }
+
+        .rating-stars-number {
+            background: linear-gradient(135deg, var(--c-text, #1f2937), color-mix(in srgb, #ffc107 30%, var(--c-text, #1f2937)));
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: var(--c-text, #1f2937);
+            font-size: .875em;
+            font-weight: 700;
+            -webkit-text-fill-color: transparent;
+            margin-left: .25em;
+        }
+
+        .info-tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25em;
+            margin: 0;
+        }
+
+        .info-tag {
+            color: var(--c-primary, #3b82f6);
+            display: inline-block;
+            font-size: 0.78em;
+            font-weight: 500;
+            background: color-mix(in srgb, var(--c-primary, #3b82f6) 15%, transparent);
+            border-radius: 0.25em;
+            padding: 0.25em 0.5em;
+            white-space: nowrap;
+        }
+
+        .info-tag sup {
+            opacity: 0.6;
+            top: -0.7em;
+            font-size: 8.8px;
+            line-height: 0;
+            position: relative;
+            vertical-align: baseline;
+        }
+
+        .info-combined-list {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            font-size: 0.875em;
+            gap: 0.75em;
+        }
+
+        .info-date {
+            align-items: center;
+            color: var(--c-text-2, #6b7280);
+            display: flex;
+            gap: 0.25em;
+        }
+
+        .source-badge {
+            align-items: center;
+            color: var(--c-text-2, #6b7280);
+            display: flex;
+            font-size: 0.875em;
+            font-weight: 500;
+            gap: 0.25em;
+        }
+
+        .bgm-footer {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            margin-top: auto;
+            padding-top: 0.5em;
+            border-top: 1px solid var(--c-border, #e5e7eb);
+            gap: 1em;
+        }
+
+        .view-button {
+            font-size: 0.75rem;
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--c-text, #1f2937);
+            padding: 6px 12px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: flex;
+            gap: 0.25em;
+            align-items: center;
+            border: none;
+            cursor: pointer;
+        }
+
+        .view-button:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .dark .view-button {
+            background: rgba(255, 255, 255, 0.1);
+            color: #f3f4f6;
+        }
+
+        .dark .view-button:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .bgm-card {
+                flex-direction: column;
+                gap: 0.75em;
+                padding: 0.5em;
+            }
+
+            .bgm-image-wrapper {
+                height: 360px;
+                min-width: unset;
+                width: 100%;
+                margin: 0;
+            }
+
+            .bgm-content {
+                grid-template-columns: 1fr;
+                gap: .75em;
+                padding: 0;
+            }
+
+            .info-combined-list {
+                gap: .5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .bgm-image-wrapper {
+                height: 320px;
+            }
+
+            .info-combined-list {
+                align-items: flex-start;
+                flex-direction: column;
+                font-size: .75em;
+                gap: .25em;
+            }
+        }
+
+        /* CSS 变量 */
+        :root {
+            --c-primary: #3b82f6;
+            --c-text: #1f2937;
+            --c-text-2: #6b7280;
+            --c-border: #e5e7eb;
+            --ld-bg-card: white;
+            --ld-bg: #f3f4f6;
+        }
+
+        .dark {
+            --c-primary: #60a5fa;
+            --c-text: #f3f4f6;
+            --c-text-2: #9ca3af;
+            --c-border: rgba(255, 255, 255, 0.1);
+            --ld-bg-card: rgba(255, 255, 255, 0.05);
+            --ld-bg: rgba(31, 41, 55, 0.8);
+        }
+    </style>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</body>
+</html>

@@ -6,7 +6,7 @@
 import '../styles/global.css';
 import { ViewTransitions } from 'astro:transitions';
 import type { ImageMetadata } from 'astro';
-import FallbackImage from '../assets/blog-placeholder-1.jpg';
+import FallbackImage from '../assets/fallback.jpg';
 import { SITE_TITLE } from '../consts';
 
 interface Props {
@@ -101,11 +101,21 @@ const cfWebAnalyticsToken = import.meta.env.PUBLIC_CF_WEB_ANALYTICS_TOKEN;
 		// Apply theme before hydration to avoid light/dark flash during initial paint.
 		const storageKey = 'theme';
 		const root = document.documentElement;
-		const stored = localStorage.getItem(storageKey);
-		const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-		const theme = stored === 'dark' || stored === 'light' ? stored : systemPrefersDark ? 'dark' : 'light';
-		root.classList.toggle('dark', theme === 'dark');
-		root.dataset.theme = theme;
+
+		const applyTheme = () => {
+			const stored = localStorage.getItem(storageKey);
+			const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+			const theme = stored === 'dark' || stored === 'light' ? stored : systemPrefersDark ? 'dark' : 'light';
+			root.classList.toggle('dark', theme === 'dark');
+			root.dataset.theme = theme;
+		};
+
+		// Apply on initial load
+		applyTheme();
+
+		// Re-apply theme after Astro View Transitions navigation
+		// This ensures theme persists when switching pages
+		document.addEventListener('astro:after-swap', applyTheme);
 	})();
 </script>
 <script is:inline>
@@ -259,3 +269,9 @@ const cfWebAnalyticsToken = import.meta.env.PUBLIC_CF_WEB_ANALYTICS_TOKEN;
 	})();
 </script>
 <!-- End Custom Analytics -->
+
+<!-- Random Background Image - https://img.050815.xyz/ -->
+<script is:inline src="/random-bg.js"></script>
+
+<!-- KaTeX CSS for math formula rendering -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous" />

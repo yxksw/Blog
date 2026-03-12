@@ -8,8 +8,9 @@
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 import { defineConfig } from "astro/config";
-
 import tailwindcss from "@tailwindcss/vite";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 
 /*
  * Minimal GitHub-style alert parser for markdown blockquotes.
@@ -147,8 +148,8 @@ export default defineConfig({
   integrations: [mdx(), sitemap()],
   markdown: {
     // Keep markdown image URLs deployment-agnostic.
-    remarkPlugins: [remarkGitHubAlertFallback],
-    rehypePlugins: [rehypePrefixPublicImageBase(runtimeBase)],
+    remarkPlugins: [remarkGitHubAlertFallback, remarkMath],
+    rehypePlugins: [rehypePrefixPublicImageBase(runtimeBase), rehypeKatex],
     syntaxHighlight: "shiki",
     shikiConfig: {
       themes: {
@@ -160,5 +161,10 @@ export default defineConfig({
   },
   vite: {
     plugins: [tailwindcss()],
+    build: {
+      rollupOptions: {
+        external: ['/pagefind/pagefind.js'],
+      },
+    },
   },
 });

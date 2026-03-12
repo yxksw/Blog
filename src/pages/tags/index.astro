@@ -34,7 +34,7 @@ const sortedTags = [...tagCount.entries()].sort((a, b) => {
 		<Header />
 		<MobileDrawer />
 		<main class="mx-auto max-w-3xl px-4 py-12" transition:name="page-main" transition:animate="fade">
-			<h1 class="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-4xl" transition:name="page-title" transition:animate="fade">Tags</h1>
+			<h1 class="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-4xl" transition:name="page-title" transition:animate="fade">标签</h1>
 			<div class="mt-8 flex flex-wrap gap-3">
 				{
 					sortedTags.map(([tag, count]) => (

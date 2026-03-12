@@ -1,6 +1,6 @@
-﻿---
+﻿﻿﻿---
 import { GITHUB_URL, SITE_TITLE } from '../consts';
-import { getNavLinks } from '../data/navLinks';
+import { getNavLinks, type NavLink } from '../data/navLinks';
 import HeaderLink from './HeaderLink.astro';
 import LoginModal from './LoginModal.astro';
 import SettingsModal from './SettingsModal.astro';
@@ -20,6 +20,27 @@ const BASE = import.meta.env.BASE_URL;
 const BLOG_REPO_URL = 'https://github.com/yxksw/Blog';
 const NAV_LINKS = getNavLinks(BASE);
 const { showTocButton = false } = Astro.props as Props;
+
+// Helper to check if a link or any of its children is active
+const isLinkActive = (link: NavLink, pathname: string, baseUrl: string): boolean => {
+	const normalizedHref = link.href.replace(baseUrl, '/').replace(/\/+$/, '/');
+	const normalizedPath = pathname.replace(baseUrl, '/');
+	const subpath = normalizedPath.match(/[^\/]+/g);
+	const firstSegmentPath = subpath?.[0] ? `/${subpath[0]}/` : '/';
+	
+	if (normalizedHref === normalizedPath || normalizedHref === firstSegmentPath) {
+		return true;
+	}
+	
+	if (link.children) {
+		return link.children.some(child => {
+			const childHref = child.href.replace(baseUrl, '/').replace(/\/+$/, '/');
+			return childHref === normalizedPath || childHref === firstSegmentPath;
+		});
+	}
+	
+	return false;
+};
 ---
 
 <header class="sticky top-0 z-50 border-b border-zinc-200/70 bg-zinc-50/72 backdrop-blur-xl transition-colors duration-200 dark:border-zinc-800/80 dark:bg-zinc-950/72">
@@ -36,7 +57,7 @@ const { showTocButton = false } = Astro.props as Props;
 				<svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" aria-hidden="true">
 					<path d="M4 6.5A1.5 1.5 0 0 1 5.5 5h13a1.5 1.5 0 1 1 0 3h-13A1.5 1.5 0 0 1 4 6.5Zm0 5.5a1.5 1.5 0 0 1 1.5-1.5h13a1.5 1.5 0 0 1 0 3h-13A1.5 1.5 0 0 1 4 12Zm1.5 4a1.5 1.5 0 1 0 0 3h13a1.5 1.5 0 0 0 0-3h-13Z" />
 				</svg>
-				<span>Menu</span>
+				<span>菜单</span>
 			</button>
 			<!-- TOC drawer binds to this trigger and only renders on mobile. -->
 			{
@@ -47,12 +68,12 @@ const { showTocButton = false } = Astro.props as Props;
 						class="header-toolbar-button inline-flex items-center gap-2 px-3 py-2 text-sm font-medium md:hidden"
 						aria-controls="toc-drawer"
 						aria-expanded="false"
-						aria-label="Open table of contents"
+						aria-label="打开目录"
 					>
 						<svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" aria-hidden="true">
 							<path d="M4 6a1 1 0 0 1 1-1h14a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Zm0 6a1 1 0 0 1 1-1h14a1 1 0 1 1 0 2H5a1 1 0 0 1-1-1Zm1 5a1 1 0 1 0 0 2h8a1 1 0 1 0 0-2H5Z" />
 						</svg>
-						<span>TOC</span>
+						<span>目录</span>
 					</button>
 				)
 			}
@@ -62,16 +83,48 @@ const { showTocButton = false } = Astro.props as Props;
 			<div class="hidden items-center gap-1 text-sm md:flex">
 				{
 					NAV_LINKS.map((link) => (
-						<HeaderLink href={link.href}>{link.label}</HeaderLink>
+						link.children ? (
+							<div class="nav-dropdown relative group">
+								<button
+									type="button"
+									class:list={[
+										'nav-item inline-flex items-center gap-1 rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100',
+										{ 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100': isLinkActive(link, Astro.url.pathname, BASE) },
+									]}
+									aria-expanded="false"
+									aria-haspopup="true"
+								>
+									{link.label}
+									<svg class="h-4 w-4 transition-transform duration-200 group-hover:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+										<polyline points="6,9 12,15 18,9" />
+									</svg>
+								</button>
+								<div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-48 rounded-xl border border-zinc-200/80 bg-white/95 py-2 opacity-0 invisible transition-all duration-200 group-hover:opacity-100 group-hover:visible dark:border-zinc-700/80 dark:bg-zinc-900/95">
+									{link.children.map((child) => (
+										<a
+											href={child.href}
+											class:list={[
+												'block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100',
+												{ 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100': isLinkActive(child, Astro.url.pathname, BASE) },
+											]}
+										>
+											{child.label}
+										</a>
+									))}
+								</div>
+							</div>
+						) : (
+							<HeaderLink href={link.href}>{link.label}</HeaderLink>
+						)
 					))
 				}
 			</div>
 		</div>
 		<div class="flex items-center gap-2">
-			<a href={BLOG_REPO_URL} target="_blank" rel="noreferrer" aria-label="DanArnoux Blog Repository">
+			<a href={BLOG_REPO_URL} target="_blank" rel="noreferrer" aria-label="异飨客的博客仓库">
 				<img
 					src="https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif"
-					alt="Dan Arnoux avatar"
+					alt="异飨客头像"
 					class="h-9 w-9 rounded-full border border-zinc-200/80 object-cover shadow-[0_6px_18px_rgba(15,23,42,0.08)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.03] hover:border-zinc-300 hover:shadow-[0_10px_22px_rgba(15,23,42,0.12)] active:scale-95 dark:border-zinc-700/80 dark:shadow-[0_8px_18px_rgba(0,0,0,0.18)] dark:hover:border-zinc-500"
 				/>
 			</a>
@@ -143,7 +196,7 @@ const { showTocButton = false } = Astro.props as Props;
 				>
 					<img
 						id="user-avatar"
-						src="https://img.danarnoux.com/misc/DanArnoux.webp"
+						src="https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif"
 						alt="User avatar"
 						class="h-8 w-8 rounded-full object-cover"
 					/>
@@ -158,7 +211,7 @@ const { showTocButton = false } = Astro.props as Props;
 						<div class="flex items-center gap-3">
 							<img
 								id="dropdown-user-avatar"
-								src="https://img.danarnoux.com/misc/DanArnoux.webp"
+								src="https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif"
 								alt="User avatar"
 								class="h-10 w-10 rounded-full object-cover"
 							/>
@@ -168,6 +221,20 @@ const { showTocButton = false } = Astro.props as Props;
 							</div>
 						</div>
 					</div>
+					<!-- Admin Dashboard link -->
+					<a
+						href="/admin"
+						class="mx-1 flex w-[calc(100%-0.5rem)] items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100/90 dark:text-zinc-300 dark:hover:bg-zinc-800"
+						role="menuitem"
+					>
+						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+							<rect x="3" y="3" width="7" height="7" rx="1" />
+							<rect x="14" y="3" width="7" height="7" rx="1" />
+							<rect x="14" y="14" width="7" height="7" rx="1" />
+							<rect x="3" y="14" width="7" height="7" rx="1" />
+						</svg>
+						后台
+					</a>
 					<!-- Settings button -->
 					<button
 						type="button"
@@ -178,8 +245,8 @@ const { showTocButton = false } = Astro.props as Props;
 						<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 							<path d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
 							<path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
-						</svg>
-						Settings
+					</svg>
+						设置
 					</button>
 					<!-- Footer: Logout -->
 					<div class="mt-1 border-t border-zinc-200/80 pb-1 pt-1 dark:border-zinc-700/80">
@@ -194,7 +261,7 @@ const { showTocButton = false } = Astro.props as Props;
 								<polyline points="16,17 21,12 16,7" />
 								<line x1="21" y1="12" x2="9" y2="12" />
 							</svg>
-							Logout
+							退出登录
 						</button>
 					</div>
 				</div>
@@ -278,6 +345,7 @@ const { showTocButton = false } = Astro.props as Props;
 </style>
 
 <script is:inline>
+(function() {
 	const initAuthButton = async () => {
 		const { storeTokenFromHash, getCurrentUser, logout } = window.__auth || {};
 		if (!storeTokenFromHash || !getCurrentUser || !logout) {
@@ -351,11 +419,23 @@ const { showTocButton = false } = Astro.props as Props;
 			if (e.key === 'Escape' && modal && !modal.classList.contains('invisible')) closeModal();
 		});
 
-		// Always attach click listener to user dropdown button (before async user fetch)
-		userDropdownButton?.addEventListener('click', (e) => {
-			e.stopPropagation();
-			toggleDropdown();
-		});
+		// Bind dropdown toggle click (only once)
+		if (userDropdownButton && !userDropdownButton.dataset.bound) {
+			userDropdownButton.dataset.bound = 'true';
+			userDropdownButton.addEventListener('click', (e) => {
+				e.stopPropagation();
+				e.preventDefault();
+				toggleDropdown();
+			});
+		}
+
+		// Bind document click to close dropdown (only once)
+		if (!window.__dropdownClickBound) {
+			window.__dropdownClickBound = true;
+			document.addEventListener('click', (e) => {
+				if (userDropdown && !userDropdown.contains(e.target)) closeDropdown();
+			});
+		}
 
 		try {
 			storeTokenFromHash();
@@ -363,36 +443,49 @@ const { showTocButton = false } = Astro.props as Props;
 
 			if (user) {
 				if (loginButton) loginButton.style.display = 'none';
-				if (userDropdown) userDropdown.style.display = 'block';
+				if (userDropdown) userDropdown.classList.remove('hidden');
 				if (userAvatar && user.avatar) userAvatar.src = user.avatar;
 				if (userName) userName.textContent = user.username || 'User';
 				const dropdownAvatar = document.getElementById('dropdown-user-avatar');
 				if (dropdownAvatar && user.avatar) dropdownAvatar.src = user.avatar;
 
-				logoutButton?.addEventListener('click', async () => {
-					closeDropdown();
-					await logout();
-					window.__authInitialized = false;
-					window.location.reload();
-				});
+				// Bind logout button (only once)
+				if (logoutButton && !logoutButton.dataset.bound) {
+					logoutButton.dataset.bound = 'true';
+					logoutButton.addEventListener('click', async () => {
+						closeDropdown();
+						await logout();
+						window.__authInitialized = false;
+						window.location.reload();
+					});
+				}
+
+				// Bind settings button (only once)
 				const settingsButton = document.getElementById('settings-button');
-				settingsButton?.addEventListener('click', () => {
-					closeDropdown();
-					document.getElementById('settings-modal')?.dispatchEvent(new CustomEvent('open-settings'));
-				});
-				document.addEventListener('click', (e) => {
-					if (userDropdown && !userDropdown.contains(e.target)) closeDropdown();
-				});
+				if (settingsButton && !settingsButton.dataset.bound) {
+					settingsButton.dataset.bound = 'true';
+					settingsButton.addEventListener('click', () => {
+						closeDropdown();
+						document.getElementById('settings-modal')?.dispatchEvent(new CustomEvent('open-settings'));
+					});
+				}
 			} else {
 				if (loginButton) loginButton.style.display = 'inline-flex';
-				if (userDropdown) userDropdown.style.display = 'none';
-				loginButton?.addEventListener('click', openModal);
+				if (userDropdown) userDropdown.classList.add('hidden');
+				// Bind login button (only once)
+				if (loginButton && !loginButton.dataset.bound) {
+					loginButton.dataset.bound = 'true';
+					loginButton.addEventListener('click', openModal);
+				}
 			}
 		} catch (error) {
 			console.error('Auth error:', error);
 			if (loginButton) loginButton.style.display = 'inline-flex';
-			if (userDropdown) userDropdown.style.display = 'none';
-			loginButton?.addEventListener('click', openModal);
+			if (userDropdown) userDropdown.classList.add('hidden');
+			if (loginButton && !loginButton.dataset.bound) {
+				loginButton.dataset.bound = 'true';
+				loginButton.addEventListener('click', openModal);
+			}
 		}
 	};
 
@@ -438,4 +531,5 @@ const { showTocButton = false } = Astro.props as Props;
 	// Rebind on client-side navigation because header can be re-rendered by View Transitions.
 	document.addEventListener('astro:page-load', initThemeToggle);
 	document.addEventListener('astro:after-swap', initThemeToggle);
+})();
 </script>
