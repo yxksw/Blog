@@ -4,7 +4,7 @@
 
 interface Props {
 	publishedAt: string | Date;
-	lastUpdated: string | Date;
+	lastUpdated?: string | Date;
 }
 
 const { publishedAt, lastUpdated } = Astro.props;
@@ -12,26 +12,31 @@ const publishedStr =
 	publishedAt instanceof Date ? publishedAt.toISOString() : publishedAt;
 const updatedStr =
 	lastUpdated instanceof Date ? lastUpdated.toISOString() : lastUpdated;
+
+// 判断是否有修订历史（有更新日期且与发布日期不同）
+const hasRevisionHistory = updatedStr && updatedStr !== publishedStr;
 ---
 
-<div id="outdated-notice" class="hidden mb-6 p-4 rounded-xl bg-zinc-800/50 border border-zinc-700 items-center gap-3 text-zinc-300">
-    <div class="h-8 w-8 rounded-lg bg-blue-500 flex items-center justify-center shrink-0">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-black">
+<div id="outdated-notice" class="hidden mb-6 p-4 rounded-xl bg-zinc-50 border border-zinc-200 dark:bg-zinc-800/50 dark:border-zinc-700 items-center gap-3 text-zinc-700 dark:text-zinc-300">
+    <div class="h-8 w-8 rounded-lg bg-blue-500 dark:bg-blue-400 flex items-center justify-center shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white dark:text-zinc-900">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="12" y1="16" x2="12" y2="12"></line>
             <line x1="12" y1="8" x2="12.01" y2="8"></line>
         </svg>
     </div>
-    <div class="text-sm leading-relaxed flex flex-col sm:flex-row sm:items-center gap-2">
+    <div class="text-sm leading-relaxed flex flex-col sm:flex-row sm:items-center gap-2 flex-1">
         <span id="outdated-message">正在计算文章时效性...</span>
-        <a id="history-link" href="#revision-history" class="hidden items-center gap-1 px-2 py-1 rounded bg-blue-500 text-black text-xs font-bold hover:opacity-80 transition-all w-fit whitespace-nowrap shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 3v5h5"></path>
-                <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path>
-                <path d="M12 7v5l4 2"></path>
-            </svg>
-            查看修订历史
-        </a>
+        {hasRevisionHistory && (
+            <a id="history-link" href="#post-diff" class="flex items-center gap-1 px-2 py-1 rounded bg-blue-500 dark:bg-blue-400 text-white dark:text-zinc-900 text-xs font-bold hover:opacity-80 transition-all w-fit whitespace-nowrap shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 3v5h5"></path>
+                    <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path>
+                    <path d="M12 7v5l4 2"></path>
+                </svg>
+                查看修订历史
+            </a>
+        )}
     </div>
 </div>
 
@@ -39,28 +44,42 @@ const updatedStr =
     function updateNotice() {
         const notice = document.getElementById('outdated-notice');
         const message = document.getElementById('outdated-message');
-        const historyLink = document.getElementById('history-link');
         if (!notice || !message) return;
 
         const publishedDate = new Date(publishedAt);
-        const updatedDate = new Date(lastUpdated);
+        const updatedDate = lastUpdated ? new Date(lastUpdated) : null;
         const now = new Date();
         
-        const diffTimeUpdated = Math.abs(now - updatedDate);
-        const diffDaysUpdated = Math.floor(diffTimeUpdated / (1000 * 60 * 60 * 24));
+        // 检查日期是否有效
+        const isValidPublished = !isNaN(publishedDate.getTime());
+        const isValidUpdated = updatedDate && !isNaN(updatedDate.getTime());
+
+        if (!isValidPublished) {
+            notice.classList.add('hidden');
+            return;
+        }
 
         const diffTimePublished = Math.abs(now - publishedDate);
         const diffDaysPublished = Math.floor(diffTimePublished / (1000 * 60 * 60 * 24));
 
         let statusText = "";
-        if (diffDaysUpdated === 0) {
-            statusText = "这篇文章今天刚刚更新，内容非常新鲜。";
-            if (historyLink) historyLink.classList.add('hidden');
+        
+        if (isValidUpdated && updatedDate.getTime() !== publishedDate.getTime()) {
+            // 有更新日期且与发布日期不同
+            const diffTimeUpdated = Math.abs(now - updatedDate);
+            const diffDaysUpdated = Math.floor(diffTimeUpdated / (1000 * 60 * 60 * 24));
+            
+            if (diffDaysUpdated === 0) {
+                statusText = "这篇文章今天刚刚更新，内容非常新鲜。";
+            } else {
+                statusText = `文章初次发布于 ${diffDaysPublished} 天前，最后修改于 ${diffDaysUpdated} 天前，部分技术细节可能已随时间演变，请结合实际情况参考。`;
+            }
         } else {
-            statusText = `文章初次发布于 ${diffDaysPublished} 天前，最后修改于 ${diffDaysUpdated} 天前，部分技术细节可能已随时间演变，请结合实际情况参考。`;
-            if (historyLink) {
-                historyLink.classList.remove('hidden');
-                historyLink.classList.add('flex');
+            // 没有更新日期或更新日期与发布日期相同
+            if (diffDaysPublished === 0) {
+                statusText = "这篇文章今天刚刚发布，内容非常新鲜。";
+            } else {
+                statusText = `文章发布于 ${diffDaysPublished} 天前，部分技术细节可能已随时间演变，请结合实际情况参考。`;
             }
         }
 
