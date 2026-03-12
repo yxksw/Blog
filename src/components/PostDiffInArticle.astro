@@ -1,81 +1,747 @@
 ---
-// 文章内差异展示组件
+// 文章内差异展示组件 - 基于 fuwari 实现重构
+// 功能：在文章页面显示具体变更内容（新增/删除高亮）
 ---
 
-<div id="post-diff-section" class="hidden mb-6 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 overflow-hidden">
-    <div class="px-4 py-3 border-b border-blue-200 dark:border-blue-800 bg-blue-100 dark:bg-blue-900/30 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue-600 dark:text-blue-400">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="12" y1="18" x2="12" y2="12"/>
-                <line x1="9" y1="15" x2="15" y2="15"/>
-            </svg>
-            <span class="text-sm font-medium text-blue-800 dark:text-blue-200">文章更新内容</span>
-        </div>
-        <button id="toggle-diff" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">
-            展开
-        </button>
-    </div>
-    <div id="diff-content" class="hidden p-4 text-sm text-zinc-700 dark:text-zinc-300 space-y-3">
-        <!-- 差异内容将在这里显示 -->
-    </div>
-</div>
+<script>
+	const NOTIFICATION_STATE_KEY = "blog-notification-state";
+	const DEBUG_PARAM_KEY = "__diff_debug";
+	const DEBUG_STATE_KEY = "blog-diff-debug-state";
+	const CONTEXT_LINES = 2;
+	const BASE_URL = import.meta.env.BASE_URL || "/";
 
-<script is:inline>
-    (function() {
-        async function init() {
-            // 只在文章页面运行
-            const postContainer = document.querySelector('.markdown-prose, .markdown-content');
-            const diffSection = document.getElementById('post-diff-section');
-            const diffContent = document.getElementById('diff-content');
-            const toggleBtn = document.getElementById('toggle-diff');
-            
-            if (!postContainer || !diffSection || !window.RSSUtils) return;
+	function normalizeGuid(guid, link) {
+		const value = (guid || link || "").trim();
+		if (!value) return "";
+		try {
+			const url = new URL(value, window.location.origin);
+			return `${url.pathname}${url.search}${url.hash}`;
+		} catch {
+			return value;
+		}
+	}
 
-            const currentPath = window.location.pathname;
-            
-            // 从 RSS 获取当前文章的历史内容
-            const post = await window.RSSUtils.getPostContentFromRSS(currentPath);
-            if (!post) return;
+	function getRelativePath(absoluteUrl) {
+		try {
+			const url = new URL(absoluteUrl, window.location.origin);
+			return `${url.pathname}${url.search}${url.hash}`;
+		} catch {
+			return absoluteUrl;
+		}
+	}
 
-            // 检查是否有更新（通过比较当前页面内容和 RSS 中的内容）
-            const currentContent = postContainer.innerHTML;
-            const rssContent = post.content || post.description;
-            
-            if (!rssContent || currentContent === rssContent) return;
+	function normalizePathname(pathname) {
+		const p = String(pathname || "");
+		if (!p) return "/";
+		const noQueryHash = p.split("#")[0].split("?")[0];
+		if (noQueryHash.length > 1) return noQueryHash.replace(/\/+$/, "");
+		return "/";
+	}
 
-            // 显示差异区域
-            diffSection.classList.remove('hidden');
-            
-            // 简单的差异展示
-            diffContent.innerHTML = `
-                <div class="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
-                    检测到文章有更新，以下是变更摘要：
-                </div>
-                <div class="bg-white dark:bg-zinc-800 rounded p-3 text-xs font-mono overflow-x-auto">
-                    <div class="text-green-600 dark:text-green-400">+ 文章已更新</div>
-                    <div class="text-zinc-500 dark:text-zinc-400 mt-1">
-                        最后更新: ${new Date().toLocaleDateString('zh-CN')}
-                    </div>
-                </div>
-            `;
+	function stripBasePath(pathname) {
+		const base = normalizePathname(BASE_URL);
+		const p = normalizePathname(pathname);
+		if (!base || base === "/") return p;
+		if (p === base) return "/";
+		if (p.startsWith(`${base}/`)) return p.slice(base.length) || "/";
+		return p;
+	}
 
-            // 展开/收起
-            let isExpanded = false;
-            toggleBtn?.addEventListener('click', () => {
-                isExpanded = !isExpanded;
-                diffContent.classList.toggle('hidden', !isExpanded);
-                toggleBtn.textContent = isExpanded ? '收起' : '展开';
-            });
+	function clearInlineDiff(container) {
+		container.querySelectorAll("[data-post-inline-diff-inline]").forEach((el) => {
+			if (!(el instanceof HTMLElement)) return;
+			const kind = el.getAttribute("data-post-inline-diff-inline") || "";
+			if (kind === "anchor") {
+				el.remove();
+				return;
+			}
+			if (kind === "add") {
+				el.remove();
+				return;
+			}
+			const text = document.createTextNode(el.textContent || "");
+			el.replaceWith(text);
+		});
+
+		container.querySelectorAll("[data-post-inline-diff]").forEach((el) => el.remove());
+		container
+			.querySelectorAll("[data-post-inline-diff-add-target]")
+			.forEach((el) => el.removeAttribute("data-post-inline-diff-add-target"));
+		container.querySelectorAll(".post-inline-diff-add-target").forEach((el) => el.classList.remove("post-inline-diff-add-target"));
+		container
+			.querySelectorAll("[data-post-inline-diff-add-target-img]")
+			.forEach((el) => el.removeAttribute("data-post-inline-diff-add-target-img"));
+		container.querySelectorAll(".post-inline-diff-add-target-img").forEach((el) => el.classList.remove("post-inline-diff-add-target-img"));
+		container
+			.querySelectorAll("[data-post-inline-diff-del-target]")
+			.forEach((el) => el.removeAttribute("data-post-inline-diff-del-target"));
+		container.querySelectorAll(".post-inline-diff-del-target").forEach((el) => el.classList.remove("post-inline-diff-del-target"));
+		container
+			.querySelectorAll("[data-post-inline-diff-del-target-img]")
+			.forEach((el) => el.removeAttribute("data-post-inline-diff-del-target-img"));
+		container.querySelectorAll(".post-inline-diff-del-target-img").forEach((el) => el.classList.remove("post-inline-diff-del-target-img"));
+	}
+
+	function buildRows(diffParts) {
+		const rows = [];
+
+		for (const part of diffParts) {
+			const type = part?.added ? "add" : part?.removed ? "del" : "ctx";
+			const value = String(part?.value ?? "");
+			const lines = value.split("\n");
+			if (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
+			for (const line of lines) rows.push({ type, text: line });
+		}
+
+		return rows;
+	}
+
+	function sliceWithContext(rows) {
+		const changeIndexes = [];
+		for (let i = 0; i < rows.length; i += 1) {
+			if (rows[i].type !== "ctx") changeIndexes.push(i);
+		}
+		if (changeIndexes.length === 0) return [];
+
+		const keep = new Array(rows.length).fill(false);
+		for (const idx of changeIndexes) {
+			const start = Math.max(0, idx - CONTEXT_LINES);
+			const end = Math.min(rows.length - 1, idx + CONTEXT_LINES);
+			for (let i = start; i <= end; i += 1) keep[i] = true;
+		}
+
+		const out = [];
+		let inGap = false;
+		for (let i = 0; i < rows.length; i += 1) {
+			if (keep[i]) {
+				out.push(rows[i]);
+				inGap = false;
+				continue;
+			}
+			if (!inGap) {
+				out.push({ type: "gap", text: "…" });
+				inGap = true;
+			}
+		}
+
+		return out;
+	}
+
+	function toHunks(rowsWithGaps) {
+		const hunks = [];
+		let current = [];
+
+		for (const row of rowsWithGaps) {
+			if (row.type === "gap") {
+				if (current.length) hunks.push(current);
+				current = [];
+				continue;
+			}
+			current.push(row);
+		}
+		if (current.length) hunks.push(current);
+		return hunks;
+	}
+
+	function normalizeLineText(text) {
+		return String(text ?? "")
+			.replace(/\r\n/g, "\n")
+			.replace(/\r/g, "\n")
+			.replace(/\u00A0/g, " ")
+			.replace(/[ \t]*\n[ \t]*/g, " ")
+			.replace(/[ \t]{2,}/g, " ")
+			.replace(/[ \t]+$/g, "")
+			.trim();
+	}
+
+	function extractImgSrc(line) {
+		const s = String(line ?? "");
+		const m = s.match(/<img[^>]*\s(?:src|data-src)=["']([^"']+)["']/i);
+		return m?.[1] ? String(m[1]).trim() : null;
+	}
+
+	function stripHtmlLine(line) {
+		const tmp = document.createElement("div");
+		tmp.innerHTML = String(line ?? "");
+		return tmp.textContent || tmp.innerText || "";
+	}
+
+	function normalizeForMatch(line) {
+		const text = normalizeLineText(stripHtmlLine(line));
+		if (text) return { kind: "text", value: text };
+		const imgSrc = extractImgSrc(line);
+		if (imgSrc) return { kind: "img", value: imgSrc };
+		const raw = normalizeLineText(line);
+		if (raw) return { kind: "text", value: raw };
+		return { kind: "none", value: "" };
+	}
+
+	function decodeHtmlEntities(value) {
+		const t = document.createElement("textarea");
+		t.innerHTML = String(value ?? "");
+		return t.value;
+	}
+
+	function normalizeUrlForCompare(raw) {
+		const v = decodeHtmlEntities(String(raw ?? "").trim());
+		if (!v) return "";
+		try {
+			const url = new URL(v, window.location.origin);
+			const entries = Array.from(url.searchParams.entries()).sort((a, b) => {
+				const k = String(a[0]).localeCompare(String(b[0]));
+				if (k !== 0) return k;
+				return String(a[1]).localeCompare(String(b[1]));
+			});
+			const qs = entries
+				.map(([k, val]) => `${encodeURIComponent(k)}=${encodeURIComponent(val)}`)
+				.join("&");
+			return `${url.pathname}${qs ? `?${qs}` : ""}`;
+		} catch {
+			return v;
+		}
+	}
+
+	function findImgBySrc(container, src) {
+		const normPath = normalizeUrlForCompare(src);
+		if (!normPath) return null;
+		const imgs = container.querySelectorAll("img");
+		for (const img of imgs) {
+			if (!(img instanceof HTMLImageElement)) continue;
+			let cand = img.getAttribute("src") || img.getAttribute("data-src") || "";
+			let candPath = normalizeUrlForCompare(cand);
+			if (candPath === normPath) return img;
+			if (candPath && normPath && (candPath.includes(normPath) || normPath.includes(candPath))) return img;
+		}
+		return null;
+	}
+
+	function findBlockByText(container, line) {
+		const key = normalizeForMatch(line);
+		if (key.kind !== "text") return null;
+		const needle = key.value.slice(0, 48);
+		const blocks = container.querySelectorAll("p, li, blockquote, pre, h1, h2, h3, h4, h5, h6");
+		for (const el of blocks) {
+			if (!(el instanceof HTMLElement)) continue;
+			if (el.closest(".post-inline-diff-add-line")) continue;
+			if (el.closest(".post-inline-diff-del-line")) continue;
+			if (el.classList.contains("post-inline-diff-del-target")) continue;
+			const content = el.textContent || "";
+			if (!normalizeLineText(content).includes(needle)) continue;
+			return el;
+		}
+
+		return null;
+	}
+
+	function findAnchorElement(container, hunk) {
+		const pick = (row) => String(row?.text ?? "").trim();
+		const ctx = hunk.find((r) => r.type === "ctx" && pick(r).length >= 6);
+		const anchorLine = ctx?.text ?? ""; 
+		if (!anchorLine) return null;
+		
+		const key = normalizeForMatch(anchorLine);
+		if (key.kind === "img") return findImgBySrc(container, key.value);
+		return findBlockByText(container, anchorLine);
+	}
+
+	function createDeletionNode(text, includeAnchor, useListItem) {
+		const el = document.createElement(useListItem ? "li" : "div");
+		el.setAttribute("data-post-inline-diff", "1");
+		el.className = "post-inline-diff-del-line";
+
+		if (includeAnchor) {
+			const anchor = document.createElement("span");
+			anchor.id = "post-diff";
+			anchor.setAttribute("data-post-inline-diff", "1");
+			el.appendChild(anchor);
+		}
+
+		const del = document.createElement("del");
+		const raw = normalizeLineText(text);
+		if (shouldRenderLineAsHtml(raw)) del.innerHTML = " " + sanitizeHtmlFragment(raw);
+		else del.textContent = ` ${raw}`;
+
+		el.appendChild(del);
+		return el;
+	}
+
+	function sanitizeHtmlFragment(html) {
+		const parser = new DOMParser();
+		const doc = parser.parseFromString(`<div>${String(html || "")}</div>`, "text/html");
+		const root = doc.body.firstElementChild;
+		if (!root) return String(html || "");
+
+		const scripts = root.querySelectorAll("script, iframe, object, embed, style");
+		scripts.forEach(el => el.remove());
+
+		const all = root.querySelectorAll("*");
+		all.forEach(el => {
+			const attrs = Array.from(el.attributes);
+			for (const attr of attrs) {
+				if (attr.name.startsWith("on")) el.removeAttribute(attr.name);
+			}
+		});
+
+		return root.innerHTML;
+	}
+
+	function shouldRenderLineAsHtml(line) {
+		const t = String(line || "").trim();
+		return /<[a-z][\s\S]*>/i.test(t) || /<\/[a-z][\s\S]*>/i.test(t);
+	}
+
+	function createAdditionNode(text, includeAnchor, useListItem) {
+		const el = document.createElement(useListItem ? "li" : "div");
+		el.setAttribute("data-post-inline-diff", "1");
+		el.className = "post-inline-diff-add-line";
+
+		if (includeAnchor) {
+			const anchor = document.createElement("span");
+			anchor.id = "post-diff";
+			anchor.setAttribute("data-post-inline-diff", "1");
+			el.appendChild(anchor);
+		}
+
+		const content = document.createElement("div");
+		content.className = "post-inline-diff-add-content";
+
+		const raw = String(text ?? "").trim();
+		if (shouldRenderLineAsHtml(raw)) content.innerHTML = sanitizeHtmlFragment(raw);
+		else content.textContent = raw;
+
+		el.appendChild(content);
+		return el;
+	}
+
+	function insertAfter(node, ref) {
+		const parent = ref?.parentNode;
+		if (!parent) return false;
+		parent.insertBefore(node, ref.nextSibling);
+		return true;
+	}
+
+	function applyInlineDiff(container, diffParts, isDebug) {
+		clearInlineDiff(container);
+		const rows = buildRows(diffParts);
+		const focused = sliceWithContext(rows);
+		const hunks = toHunks(focused);
+
+		const anchorState = { inserted: false };
+		for (const hunk of hunks) {
+			const insertionPoint = findAnchorElement(container, hunk);
+			let idx = 0;
+			while (idx < hunk.length) {
+				const row = hunk[idx];
+				if (idx + 1 < hunk.length) {
+					const next = hunk[idx + 1];
+					const isReplace = (row.type === "del" && next.type === "add") || (row.type === "add" && next.type === "del");
+					if (isReplace) {
+						const oldHtml = row.type === "del" ? row.text : next.text;
+						const newHtml = row.type === "add" ? row.text : next.text;
+						const oldKey = normalizeForMatch(oldHtml);
+						const newKey = normalizeForMatch(newHtml);
+						let target = null;
+						let isImgReplace = false;
+						
+						if (newKey.kind === "img") {
+							target = findImgBySrc(container, newKey.value);
+							isImgReplace = true;
+						} else {
+							target = findBlockByText(container, newHtml);
+						}
+						
+						if (target instanceof HTMLElement) {
+							if (isImgReplace) {
+								target.classList.add("post-inline-diff-add-target-img");
+								target.setAttribute("data-post-inline-diff-add-target-img", "1");
+							} else {
+								target.classList.add("post-inline-diff-add-target");
+								target.setAttribute("data-post-inline-diff-add-target", "1");
+							}
+							const t = oldKey.kind === "img" ? `[图片] ${oldKey.value}` : oldKey.value;
+							const node = createDeletionNode(t, !anchorState.inserted, false);
+							if (!anchorState.inserted) anchorState.inserted = true;
+							target.parentNode?.insertBefore(node, target);
+							idx += 2;
+							continue;
+						}
+					}
+				}
+
+				if (row.type === "add") {
+					let endIdx = idx;
+					while (endIdx + 1 < hunk.length && hunk[endIdx + 1].type === "add") {
+						endIdx++;
+					}
+					for (let i = idx; i <= endIdx; i++) {
+						const addRow = hunk[i];
+						const key = normalizeForMatch(addRow.text);
+						if (key.kind === "img") {
+							const img = findImgBySrc(container, key.value);
+							if (img instanceof HTMLElement) {
+								img.classList.add("post-inline-diff-add-target-img");
+								img.setAttribute("data-post-inline-diff-add-target-img", "1");
+								if (!anchorState.inserted) {
+									const anchor = document.createElement("span");
+									anchor.id = "post-diff";
+									anchor.setAttribute("data-post-inline-diff", "1");
+									img.parentNode?.insertBefore(anchor, img);
+									anchorState.inserted = true;
+								}
+							}
+						} else {
+							const target = findBlockByText(container, addRow.text);
+							if (target instanceof HTMLElement) {
+								// 找到匹配的元素，添加高亮样式
+								target.classList.add("post-inline-diff-add-target");
+								target.setAttribute("data-post-inline-diff-add-target", "1");
+								// 直接添加内联样式确保生效
+								target.style.textDecorationLine = "underline";
+								target.style.textDecorationThickness = "2px";
+								target.style.textUnderlineOffset = "0.2em";
+								target.style.textDecorationColor = "#4ade80";
+								if (!anchorState.inserted) {
+									const anchor = document.createElement("span");
+									anchor.id = "post-diff";
+									anchor.setAttribute("data-post-inline-diff", "1");
+									target.parentNode?.insertBefore(anchor, target);
+									anchorState.inserted = true;
+								}
+							} else {
+								// 未找到匹配的元素，创建新元素插入
+								const text = key.value;
+								const useListItem = insertionPoint?.tagName === "LI";
+								const node = createAdditionNode(text, !anchorState.inserted, useListItem);
+								if (!anchorState.inserted) anchorState.inserted = true;
+								
+								// 尝试在合适的位置插入
+								let inserted = false;
+								// 优先在删除内容之后插入
+								for (let j = i - 1; j >= idx; j--) {
+									const prevRow = hunk[j];
+									if (prevRow.type === "del") {
+										const prevKey = normalizeForMatch(prevRow.text);
+										const prevTarget = prevKey.kind === "img" 
+											? findImgBySrc(container, prevKey.value)
+											: findBlockByText(container, prevRow.text);
+										if (prevTarget instanceof HTMLElement) {
+											insertAfter(node, prevTarget);
+											inserted = true;
+											break;
+										}
+									}
+								}
+								// 如果没有找到删除内容，在上下文之后插入
+								if (!inserted) {
+									for (let j = i - 1; j >= 0; j--) {
+										const prevRow = hunk[j];
+										if (prevRow.type === "ctx") {
+											const prevTarget = findBlockByText(container, prevRow.text);
+											if (prevTarget instanceof HTMLElement) {
+												insertAfter(node, prevTarget);
+												inserted = true;
+												break;
+											}
+										}
+									}
+								}
+								// 最后尝试在 insertionPoint 之前插入
+								if (!inserted && insertionPoint?.parentNode) {
+									insertionPoint.parentNode.insertBefore(node, insertionPoint);
+									inserted = true;
+								}
+								// 如果都失败了，添加到容器末尾
+								if (!inserted) {
+									container.appendChild(node);
+								}
+							}
+						}
+					}
+					idx = endIdx + 1;
+					continue;
+				}
+
+				if (row.type !== "del") {
+					idx += 1;
+					continue;
+				}
+
+				const key = normalizeForMatch(row.text);
+				if (key.kind === "none") {
+					idx += 1;
+					continue;
+				}
+
+				if (key.kind === "img") {
+					const img = findImgBySrc(container, key.value);
+					if (img instanceof HTMLElement) {
+						img.classList.add("post-inline-diff-del-target-img");
+						img.setAttribute("data-post-inline-diff-del-target-img", "1");
+					}
+					idx += 1;
+					continue;
+				}
+				const target = findBlockByText(container, row.text);
+				if (target instanceof HTMLElement) {
+					target.classList.add("post-inline-diff-del-target");
+					target.setAttribute("data-post-inline-diff-del-target", "1");
+					idx += 1;
+					continue;
+				}
+
+				const t = key.kind === "img" ? `[图片] ${key.value}` : key.value;
+
+				let inserted = false;
+
+				for (let i = idx - 1; i >= 0; i -= 1) {
+					const prev = hunk[i];
+					if (prev?.type !== "ctx") continue;
+					const ctxEl = findBlockByText(container, prev.text);
+					if (!(ctxEl instanceof HTMLElement)) continue;
+					const useListItem = ctxEl.tagName === "LI";
+					const node = createDeletionNode(t, !anchorState.inserted, useListItem);
+					if (!anchorState.inserted) anchorState.inserted = true;
+					inserted = insertAfter(node, ctxEl);
+					break;
+				}
+
+				if (!inserted) {
+					for (let i = idx + 1; i < hunk.length; i += 1) {
+						const next = hunk[i];
+						if (next?.type !== "ctx") continue;
+						const ctxEl = findBlockByText(container, next.text);
+						if (!(ctxEl instanceof HTMLElement)) continue;
+						const useListItem = ctxEl.tagName === "LI";
+						const node = createDeletionNode(t, !anchorState.inserted, useListItem);
+						if (!anchorState.inserted) anchorState.inserted = true;
+						ctxEl.parentNode?.insertBefore(node, ctxEl);
+						inserted = true;
+						break;
+					}
+				}
+
+				if (!inserted) {
+					const useListItem = insertionPoint?.tagName === "LI";
+					const node = createDeletionNode(t, !anchorState.inserted, useListItem);
+					if (!anchorState.inserted) anchorState.inserted = true;
+					if (insertionPoint?.parentNode) insertionPoint.parentNode.insertBefore(node, insertionPoint);
+					else container.prepend(node);
+				}
+
+				idx += 1;
+			}
+		}
+	}
+
+	function applySimpleDiff(container, diffParts) {
+		container.innerHTML = "";
+		const rows = buildRows(diffParts);
+		
+		for (const row of rows) {
+			if (row.type === "ctx") {
+				const span = document.createElement("span");
+				span.textContent = row.text;
+				container.appendChild(span);
+			} else if (row.type === "add") {
+				const span = document.createElement("span");
+				span.className = "post-inline-diff-add-target";
+				span.textContent = row.text;
+				if (!container.querySelector("#post-diff")) {
+					const anchor = document.createElement("span");
+					anchor.id = "post-diff";
+					container.appendChild(anchor);
+				}
+				container.appendChild(span);
+			} else if (row.type === "del") {
+				const span = document.createElement("span");
+				span.className = "post-inline-diff-del-target";
+				span.textContent = row.text;
+				container.appendChild(span);
+			}
+		}
+	}
+
+	function initPostInlineDiff() {
+		const sp = new URLSearchParams(window.location.search);
+		const isDebug = sp.get(DEBUG_PARAM_KEY) === "1";
+
+		const stateStr = isDebug ? sessionStorage.getItem(DEBUG_STATE_KEY) : localStorage.getItem(NOTIFICATION_STATE_KEY);
+		if (!stateStr) {
+			return;
+		}
+
+		let state;
+		try {
+			state = JSON.parse(stateStr);
+		} catch {
+            const content = document.querySelector(".markdown-prose, .markdown-content");
+            if (content instanceof HTMLElement) clearInlineDiff(content);
+			return;
+		}
+
+		const items = Array.isArray(state?.items) ? state.items : [];
+		const currentPath = normalizePathname(window.location.pathname);
+		const currentStripped = stripBasePath(currentPath);
+		const currentCandidates = new Set([currentPath, currentStripped]);
+
+		const matched = items.find((post) => {
+			if (!post?.isUpdated || !post?.diff) return false;
+			const guidPath = normalizePathname(normalizeGuid(post.guid, post.link));
+			const linkPath = normalizePathname(getRelativePath(post.link));
+			const postCandidates = [guidPath, linkPath, stripBasePath(guidPath), stripBasePath(linkPath)];
+			return postCandidates.some((p) => currentCandidates.has(p));
+		});
+
+		// 检查是否需要应用 diff 样式
+		// 1. 调试模式
+		// 2. URL 中有 ?diff=1 参数
+		// 3. URL 中有 #post-diff 锚点
+		// 4. 从首页/通知面板点击进入（referrer 检查）
+		const diffParam = sp.get("diff") === "1";
+		const hasDiffHash = window.location.hash === "#post-diff";
+		
+		// 检查是否从首页或通知面板点击而来
+		const referrer = document.referrer;
+		const currentOrigin = window.location.origin;
+		const isFromInternal = referrer && referrer.startsWith(currentOrigin);
+		const isFromHome = isFromInternal && (referrer === currentOrigin + '/' || referrer.includes('/index.html') || referrer.endsWith(currentOrigin));
+		
+		// 如果是从内部页面跳转且文章有更新，自动显示 diff
+		const shouldAutoShow = matched && isFromInternal;
+		
+		const shouldApply = isDebug || diffParam || hasDiffHash || shouldAutoShow;
+
+
+
+		if (!shouldApply || !matched?.diff) {
+            const content = document.querySelector(".markdown-prose, .markdown-content");
+            if (content instanceof HTMLElement) clearInlineDiff(content);
+			return;
+		}
+
+        const diffType = matched.diffType || 'composite';
+        
+        let diffData = matched.diff;
+        
+        if (Array.isArray(diffData)) {
+            if (diffType === 'title') diffData = { title: diffData };
+            else if (diffType === 'description') diffData = { description: diffData };
+            else diffData = { content: diffData };
+        } else if (diffData.diff && (diffData.diffType === 'composite' || diffData.diffType === undefined)) {
+            diffData = diffData.diff;
         }
 
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', init);
-        } else {
-            init();
+        if (diffData.title) {
+            const container = document.getElementById('post-title');
+            if (container) applySimpleDiff(container, diffData.title);
+        }
+        
+        if (diffData.description) {
+            const container = document.getElementById('post-description');
+            if (container) applySimpleDiff(container, diffData.description);
+        }
+        
+        if (diffData.content) {
+            const container = document.querySelector(".markdown-prose, .markdown-content");
+            if (container) applyInlineDiff(container, diffData.content, isDebug);
         }
 
-        document.addEventListener('astro:page-load', init);
-    })();
+		const anchor = document.getElementById("post-diff");
+		if (anchor instanceof HTMLElement) anchor.scrollIntoView({ behavior: "smooth", block: "start" });
+	}
+
+	if (!(window as any).__blogPostInlineDiffBound) {
+		document.addEventListener("DOMContentLoaded", initPostInlineDiff);
+		document.addEventListener("astro:page-load", initPostInlineDiff);
+		window.addEventListener("blog:diff-debug-updated", initPostInlineDiff);
+		(window as any).__blogPostInlineDiffBound = true;
+	}
 </script>
+
+<style is:global>
+	/* 新增内容 - 绿色下划线 */
+	.post-inline-diff-add-target {
+		text-decoration-line: underline !important;
+		text-decoration-thickness: 2px !important;
+		text-underline-offset: 0.2em !important;
+		text-decoration-color: #4ade80 !important;
+		color: inherit !important;
+	}
+
+	.post-inline-diff-add-target-img {
+		outline: 2px solid #4ade80;
+		outline-offset: 2px;
+		border-radius: 0.5rem;
+	}
+
+	/* 删除内容 - 红色删除线 */
+	.post-inline-diff-del-line {
+		margin: 0.5rem 0;
+		color: #f87171;
+	}
+
+	.post-inline-diff-del-line del {
+		text-decoration-thickness: 2px;
+		text-decoration-color: #f87171;
+	}
+
+	.post-inline-diff-add-line {
+		margin: 0.5rem 0;
+		color: #4ade80 !important;
+		text-decoration-line: underline !important;
+		text-decoration-thickness: 2px !important;
+		text-underline-offset: 0.2em !important;
+		text-decoration-color: #4ade80 !important;
+	}
+
+	.post-inline-diff-add-line .post-inline-diff-add-content {
+		display: inline-block;
+		vertical-align: top;
+	}
+
+	.post-inline-diff-add-line img,
+	.post-inline-diff-add-content img {
+		outline: 2px solid #4ade80;
+		outline-offset: 2px;
+		border-radius: 0.5rem;
+		background-color: rgba(74, 222, 128, 0.1);
+	}
+
+	.post-inline-diff-del-line.post-inline-diff-del-line {
+		list-style: none;
+	}
+
+	.post-inline-diff-del-line img,
+	.post-inline-diff-del-line del img {
+		outline: 2px solid #f87171;
+		outline-offset: 2px;
+		border-radius: 0.5rem;
+		opacity: 0.8;
+	}
+
+	/* 删除目标 - 红色删除线 */
+	.post-inline-diff-del-target {
+		color: #f87171 !important;
+		text-decoration-line: line-through;
+		text-decoration-thickness: 2px;
+		text-decoration-color: #f87171;
+	}
+
+	h1.post-inline-diff-del-target,
+	h2.post-inline-diff-del-target,
+	h3.post-inline-diff-del-target,
+	h4.post-inline-diff-del-target,
+	h5.post-inline-diff-del-target,
+	h6.post-inline-diff-del-target {
+		color: #f87171 !important;
+		text-decoration-color: #f87171;
+	}
+
+	/* 删除图片目标 */
+	.post-inline-diff-del-target-img {
+		outline: 2px solid #f87171;
+		outline-offset: 2px;
+		border-radius: 0.5rem;
+		opacity: 0.7;
+	}
+</style>

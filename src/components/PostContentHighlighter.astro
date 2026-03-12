@@ -124,21 +124,35 @@
         }
 
         function scrollToDiff() {
+            // 优先跳转到 #post-diff 锚点（由 PostDiffInArticle 组件创建）
+            const diffAnchor = document.getElementById('post-diff');
+            if (diffAnchor) {
+                diffAnchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+            }
+
+            // 如果没有找到锚点，尝试滚动到第一个新增或删除的内容
             const container = document.querySelector('.markdown-prose, .markdown-content');
             if (!container) return;
 
-            // 简单的实现：滚动到第一个段落
+            const diffElement = container.querySelector('.post-inline-diff-add-target, .post-inline-diff-del-target, .post-inline-diff-add-line, .post-inline-diff-del-line');
+            if (diffElement) {
+                diffElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // 添加高亮动画
+                diffElement.style.backgroundColor = 'rgba(34, 197, 94, 0.2)';
+                diffElement.style.transition = 'background-color 2s ease';
+                
+                setTimeout(() => {
+                    diffElement.style.backgroundColor = 'transparent';
+                }, 3000);
+                return;
+            }
+
+            // 最后的兜底：滚动到第一个段落
             const firstParagraph = container.querySelector('p, h1, h2, h3, h4, h5, h6');
             if (firstParagraph) {
                 firstParagraph.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
-                // 添加高亮动画
-                firstParagraph.style.backgroundColor = 'rgba(34, 197, 94, 0.2)';
-                firstParagraph.style.transition = 'background-color 2s ease';
-                
-                setTimeout(() => {
-                    firstParagraph.style.backgroundColor = 'transparent';
-                }, 3000);
             }
         }
 

@@ -1,0 +1,237 @@
+---
+title: '博客新文章通知与历史修订功能实现'
+description: '基于 Astro + IndexedDB + diff 库实现的文章更新通知系统，支持 RSS 差异比较、文章内变更高亮显示'
+pubDate: 2026-03-13
+updatedDate: 2026-03-13
+tags: ['Astro', 'IndexedDB', 'diff', 'RSS', '博客开发']
+---
+
+## 前言
+
+在维护博客的过程中，经常需要更新已发布的文章。如何让读者知道文章有更新？如何展示具体变更内容？本文将介绍我基于 Astro 框架实现的新文章通知与历史修订功能。
+
+## 功能概述
+
+实现的功能包括：
+
+1. **新文章通知** - 右下角通知面板，显示新发布的文章和更新的文章
+2. **文章内差异高亮** - 在文章页面显示具体变更（新增/删除）
+3. **跳转到更新处** - 一键跳转到文章变更位置
+
+## 技术栈
+
+- **Astro** - 静态站点生成器
+- **IndexedDB** - 浏览器本地数据库存储 RSS 数据
+- **diff** - JavaScript 差异比较库
+- **RSS** - 文章数据源
+
+## 架构设计
+
+### 数据流向
+
+```
+RSS 数据
+    ↓
+NewPostNotification 获取并存储到 IndexedDB
+    ↓
+比较新旧 RSS 差异（diff）
+    ↓
+存储差异数据到 localStorage
+    ↓
+PostDiffInArticle 读取并渲染高亮
+```
+
+### 组件分工
+
+| 组件 | 职责 |
+|------|------|
+| `NewPostNotification` | 全局通知组件，RSS 获取、差异计算、IndexedDB 存储 |
+| `PostDiffInArticle` | 文章内差异展示，DOM 操作渲染高亮 |
+| `PostContentHighlighter` | 更新提示 Toast，跳转功能 |
+| `PostUpdateNotice` | 文章时效性提示 |
+
+## 核心实现
+
+### 1. RSS 存储与差异比较
+
+使用 IndexedDB 存储 RSS 数据，避免重复获取：
+
+```typescript
+const DB_NAME = 'blog-rss-store';
+const STORE_OLD = 'posts';
+const STORE_NEW = 'posts_new';
+
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            db.createObjectStore(STORE_OLD, { keyPath: 'id' });
+            db.createObjectStore(STORE_NEW, { keyPath: 'id' });
+        };
+        // ...
+    });
+}
+```
+
+使用 `diff` 库比较文章内容：
+
+```typescript
+import * as Diff from 'diff';
+
+function computeDiff(oldText, newText) {
+    const diffs = Diff.diffLines(oldText, newText);
+    return diffs.filter(part => part.added || part.removed);
+}
+```
+
+### 2. 文章内差异高亮
+
+差异数据格式：
+
+```typescript
+{
+    title: "文章标题",
+    isUpdated: true,
+    diff: {
+        content: [
+            { value: "旧内容", removed: true },
+            { value: "新内容", added: true }
+        ]
+    }
+}
+```
+
+渲染逻辑：
+
+```typescript
+// 找到匹配的 DOM 元素并添加样式
+const target = findBlockByText(container, addRow.text);
+if (target) {
+    target.classList.add("post-inline-diff-add-target");
+    target.style.textDecorationLine = "underline";
+    target.style.textDecorationColor = "#4ade80";
+} else {
+    // 创建新元素显示新增内容
+    const node = createAdditionNode(text);
+    container.appendChild(node);
+}
+```
+
+### 3. 样式设计
+
+```css
+/* 新增内容 - 绿色下划线 */
+.post-inline-diff-add-target {
+    text-decoration-line: underline !important;
+    text-decoration-thickness: 2px !important;
+    text-decoration-color: #4ade80 !important;
+}
+
+/* 删除内容 - 红色删除线 */
+.post-inline-diff-del-target {
+    color: #f87171 !important;
+    text-decoration-line: line-through !important;
+    text-decoration-color: #f87171 !important;
+}
+```
+
+### 4. 触发条件
+
+Diff 样式在以下情况自动显示：
+
+1. 从网站内部页面点击文章（通过 `document.referrer` 检测）
+2. URL 带 `?diff=1` 参数
+3. URL 带 `#post-diff` 锚点
+4. 调试模式 `?__diff_debug=1`
+
+```typescript
+const isFromInternal = document.referrer?.startsWith(window.location.origin);
+const shouldAutoShow = matched && isFromInternal;
+const shouldApply = isDebug || diffParam || hasDiffHash || shouldAutoShow;
+```
+
+## 使用方式
+
+### 对于读者
+
+1. **查看通知** - 访问博客时，右下角通知面板自动显示新文章和更新文章
+2. **查看差异** - 点击更新文章，自动显示变更高亮（红色删除/绿色新增）
+3. **跳转定位** - 点击"跳转到更新处"按钮，快速定位到变更位置
+
+### 对于开发者
+
+调试模式：
+
+```
+http://localhost:4321/blog/article-slug?__diff_debug=1
+```
+
+强制显示差异：
+
+```
+http://localhost:4321/blog/article-slug?diff=1#post-diff
+```
+
+## 实现细节
+
+### IndexedDB 版本管理
+
+当数据库结构变化时，需要升级版本：
+
+```typescript
+const DB_VERSION = 1;
+
+// 检查 object store 是否存在
+const hasStore = db.objectStoreNames.contains(STORE_OLD);
+if (!hasStore) {
+    db.close();
+    const upgradeRequest = indexedDB.open(DB_NAME, DB_VERSION + 1);
+    // 创建缺失的 store
+}
+```
+
+### 路径匹配
+
+处理不同部署路径的情况：
+
+```typescript
+function stripBasePath(pathname) {
+    const base = normalizePathname(BASE_URL);
+    const p = normalizePathname(pathname);
+    if (p.startsWith(`${base}/`)) return p.slice(base.length) || '/';
+    return p;
+}
+```
+
+### 图片变更处理
+
+图片变更通过 `outline` 样式标记：
+
+```css
+.post-inline-diff-add-target-img {
+    outline: 2px solid #4ade80;
+    outline-offset: 2px;
+}
+
+.post-inline-diff-del-target-img {
+    outline: 2px solid #f87171;
+    opacity: 0.7;
+}
+```
+
+## 总结
+
+通过 RSS + IndexedDB + diff 的组合，实现了完整的新文章通知和历史修订功能。读者可以：
+
+- 及时了解博客更新
+- 直观查看文章变更
+- 快速定位更新位置
+
+这套方案不依赖后端，完全在浏览器端实现，适合静态博客部署。
+
+## 参考
+
+- [diff 库文档](https://github.com/kpdecker/jsdiff)
+- [IndexedDB API](https://developer.mozilla.org/zh-CN/docs/Web/API/IndexedDB_API)
+- [Astro 文档](https://docs.astro.build/)
