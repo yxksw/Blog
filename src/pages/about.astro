@@ -3,13 +3,14 @@ import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import MobileDrawer from '../components/MobileDrawer.astro';
+import NewPostNotification from '../components/NewPostNotification.astro';
 import { SITE_TITLE } from '../consts';
 import { aboutData } from '../data/about';
 import { getCollection } from 'astro:content';
 
 // 获取 about.mdx 内容
 const aboutEntries = await getCollection('about');
-const aboutDoc = aboutEntries.find(entry => entry.slug === 'about') || aboutEntries[0];
+const aboutDoc = aboutEntries.find(entry => entry.id === 'about.mdx' || entry.id === 'about.md') || aboutEntries[0];
 const aboutContent = aboutDoc?.body || '';
 
 // 解析时间线数据
@@ -563,5 +564,6 @@ const description = '关于异飨客的博客';
     </main>
 
     <Footer />
+    <NewPostNotification />
 </body>
 </html>

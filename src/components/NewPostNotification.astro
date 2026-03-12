@@ -1,82 +1,174 @@
 ---
-// 新文章通知组件
+// 新文章通知组件 - 右下角固定图标
 ---
 
-<div id="new-post-notification" class="fixed top-24 right-4 z-50 transform translate-x-full opacity-0 transition-all duration-300 pointer-events-none max-w-sm">
-    <div class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg p-4 pointer-events-auto">
-        <div class="flex items-start gap-3">
-            <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                    <polyline points="22,6 12,13 2,6"/>
-                </svg>
-            </div>
-            <div class="flex-1 min-w-0">
-                <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100 mb-1">新文章发布</h3>
-                <div id="new-post-list" class="space-y-2 max-h-48 overflow-y-auto">
-                    <!-- 动态插入新文章列表 -->
-                </div>
-            </div>
-            <button id="close-new-post-notification" class="flex-shrink-0 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">
+<!-- 右下角固定图标 -->
+<div id="new-post-badge" class="fixed bottom-6 right-6 z-50 hidden">
+    <button id="new-post-toggle" class="relative flex items-center justify-center w-12 h-12 rounded-full bg-blue-500 text-white shadow-lg hover:bg-blue-600 transition-all hover:scale-110 active:scale-95">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+        </svg>
+        <!-- 未读数量角标 -->
+        <span id="new-post-count" class="absolute -top-1 -right-1 flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full border-2 border-white dark:border-zinc-900">0</span>
+    </button>
+</div>
+
+<!-- 展开的文章列表弹窗 -->
+<div id="new-post-popup" class="fixed bottom-20 right-6 z-50 w-80 max-w-[calc(100vw-3rem)] transform scale-95 opacity-0 pointer-events-none transition-all duration-200">
+    <div class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-xl overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50">
+            <h3 class="text-sm font-semibold text-zinc-900 dark:text-zinc-100">新文章</h3>
+            <button id="close-new-post-popup" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M18 6L6 18M6 6l12 12"/>
                 </svg>
             </button>
+        </div>
+        <div id="new-post-list" class="max-h-64 overflow-y-auto p-2">
+            <!-- 动态插入新文章列表 -->
+        </div>
+        <div class="px-4 py-2 border-t border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50">
+            <a href="/blog/" class="block text-center text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                查看全部文章 →
+            </a>
         </div>
     </div>
 </div>
 
 <script is:inline>
     (function() {
-        // 等待 RSSUtils 加载
+        let newPostsData = [];
+        let isPopupOpen = false;
+        let isInitialized = false;
+
         async function init() {
+            // 防止重复初始化
+            if (isInitialized) return;
+            isInitialized = true;
+
+            // 等待 RSSUtils 加载
             if (!window.RSSUtils) {
+                console.log('[NewPostNotification] Waiting for RSSUtils...');
                 setTimeout(init, 100);
                 return;
             }
 
-            const result = await window.RSSUtils.checkRSSUpdate();
-            if (!result || result.isFirstVisit) return;
+            console.log('[NewPostNotification] Initializing...');
 
-            if (result.newPosts.length > 0) {
-                showNotification(result.newPosts);
+            try {
+                const result = await window.RSSUtils.checkRSSUpdate();
+                console.log('[NewPostNotification] RSS check result:', result);
+                
+                if (!result) return;
+
+                // 存储新文章数据
+                newPostsData = result.newPosts || [];
+                
+                // 如果有新文章，显示图标和角标
+                if (newPostsData.length > 0) {
+                    console.log('[NewPostNotification] Found', newPostsData.length, 'new posts');
+                    showBadge(newPostsData.length);
+                } else {
+                    console.log('[NewPostNotification] No new posts');
+                }
+            } catch (error) {
+                console.error('[NewPostNotification] Error:', error);
             }
         }
 
-        function showNotification(newPosts) {
-            const notification = document.getElementById('new-post-notification');
-            const list = document.getElementById('new-post-list');
-            const closeBtn = document.getElementById('close-new-post-notification');
+        function showBadge(count) {
+            const badge = document.getElementById('new-post-badge');
+            const countEl = document.getElementById('new-post-count');
+            
+            if (!badge) {
+                console.error('[NewPostNotification] Badge element not found');
+                return;
+            }
 
-            if (!notification || !list) return;
+            console.log('[NewPostNotification] Showing badge with count:', count);
+            badge.classList.remove('hidden');
+            
+            if (countEl) {
+                countEl.textContent = count > 99 ? '99+' : count;
+                countEl.style.display = count > 0 ? 'flex' : 'none';
+            }
 
-            // 渲染新文章列表
-            list.innerHTML = newPosts.slice(0, 3).map(post => `
-                <a href="${post.link}" class="block text-sm text-zinc-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-2">
-                    ${escapeHtml(post.title)}
-                </a>
-            `).join('');
+            // 绑定点击事件（只绑定一次）
+            const toggle = document.getElementById('new-post-toggle');
+            const closeBtn = document.getElementById('close-new-post-popup');
 
-            // 显示通知
-            requestAnimationFrame(() => {
-                notification.classList.remove('translate-x-full', 'opacity-0', 'pointer-events-none');
+            toggle?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                isPopupOpen = !isPopupOpen;
+                togglePopup(isPopupOpen);
             });
 
-            // 关闭按钮
             closeBtn?.addEventListener('click', () => {
-                notification.classList.add('translate-x-full', 'opacity-0', 'pointer-events-none');
+                isPopupOpen = false;
+                togglePopup(false);
             });
 
-            // 5秒后自动关闭
-            setTimeout(() => {
-                notification.classList.add('translate-x-full', 'opacity-0', 'pointer-events-none');
-            }, 5000);
+            // 点击外部关闭
+            document.addEventListener('click', (e) => {
+                const popup = document.getElementById('new-post-popup');
+                if (isPopupOpen && !badge.contains(e.target) && !popup?.contains(e.target)) {
+                    isPopupOpen = false;
+                    togglePopup(false);
+                }
+            });
+        }
+
+        function togglePopup(show) {
+            const popup = document.getElementById('new-post-popup');
+            const list = document.getElementById('new-post-list');
+            
+            if (!popup) return;
+
+            if (show) {
+                popup.classList.remove('scale-95', 'opacity-0', 'pointer-events-none');
+                popup.classList.add('scale-100', 'opacity-100', 'pointer-events-auto');
+                
+                // 渲染列表
+                if (list) {
+                    if (newPostsData.length > 0) {
+                        list.innerHTML = newPostsData.map(post => `
+                            <a href="${post.link}" class="block p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+                                <div class="text-sm font-medium text-zinc-900 dark:text-zinc-100 line-clamp-1">${escapeHtml(post.title)}</div>
+                                <div class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">${formatDate(post.pubDate)}</div>
+                            </a>
+                        `).join('');
+                    } else {
+                        list.innerHTML = `
+                            <div class="p-4 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                                暂无新文章
+                            </div>
+                        `;
+                    }
+                }
+                
+                // 清除未读标记
+                const countEl = document.getElementById('new-post-count');
+                if (countEl) countEl.style.display = 'none';
+            } else {
+                popup.classList.add('scale-95', 'opacity-0', 'pointer-events-none');
+                popup.classList.remove('scale-100', 'opacity-100', 'pointer-events-auto');
+            }
         }
 
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        function formatDate(dateStr) {
+            try {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+            } catch {
+                return '';
+            }
         }
 
         // 页面加载完成后初始化
@@ -87,6 +179,9 @@
         }
 
         // 监听 Astro 页面切换
-        document.addEventListener('astro:page-load', init);
+        document.addEventListener('astro:page-load', () => {
+            isInitialized = false;
+            init();
+        });
     })();
 </script>
