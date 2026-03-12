@@ -1,0 +1,622 @@
+<!DOCTYPE html><html lang="en"> <head><!-- Global Metadata --><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><!-- Keep View Transitions globally enabled so only targeted links/routes opt out when needed. --><meta name="astro-view-transitions-enabled" content="true"><meta name="astro-view-transitions-fallback" content="animate"><script type="module" src="/Blog/_astro/ClientRouter.astro_astro_type_script_index_0_lang.CDGfc0hd.js"></script><link rel="icon" type="image/x-icon" href="/Blog/image/favicon.ico"><link rel="shortcut icon" href="/Blog/image/favicon.ico"><link rel="sitemap" href="/Blog/sitemap-index.xml"><link rel="alternate" type="application/rss+xml" title="YXK's Blog" href="/Blog/rss.xml"><meta name="generator" content="Astro v5.17.1"><!-- Font preconnect --><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><style>
+	{`
+		@font-face {
+			font-family: "Alibaba PuHuiTi";
+			src: url('${BASE}fonts/AlibabaPuHuiTi-3-55-RegularL3.woff2') format('woff2');
+			font-weight: 400;
+			font-style: normal;
+			font-display: swap;
+		}
+		@font-face {
+			font-family: "Alibaba PuHuiTi";
+			src: url('${BASE}fonts/AlibabaPuHuiTi-3-75-SemiBold.woff2') format('woff2');
+			font-weight: 600;
+			font-style: normal;
+			font-display: swap;
+		}
+	`}
+</style><!-- UI/body fonts prioritize immediate paint to reduce perceived loading delay. --><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+SC:wght@400;600&display=swap"><!-- Code font is optional to avoid post-paint metric swaps on large code blocks. --><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=optional"><!-- Canonical URL --><link rel="canonical" href="https://blog.261770.xyz/Blog/404/"><!-- Primary Meta Tags --><title>404 - Page Not Found</title><meta name="title" content="404 - Page Not Found"><meta name="description" content="Page not found"><meta name="google-site-verification" content="c9eLQFflOQPGAa5ykLn2PnyXDt5rup4VJNQe3P8hW7Y"><!-- Open Graph / Facebook --><meta property="og:type" content="website"><meta property="og:url" content="https://blog.261770.xyz/Blog/404/"><meta property="og:title" content="404 - Page Not Found"><meta property="og:description" content="Page not found"><meta property="og:image" content="https://blog.261770.xyz/Blog/_astro/fallback.dEW8vPJx.jpg"><!-- Twitter --><meta property="twitter:card" content="summary_large_image"><meta property="twitter:url" content="https://blog.261770.xyz/Blog/404/"><meta property="twitter:title" content="404 - Page Not Found"><meta property="twitter:description" content="Page not found"><meta property="twitter:image" content="https://blog.261770.xyz/Blog/_astro/fallback.dEW8vPJx.jpg"><script>
+	(() => {
+		// Apply theme before hydration to avoid light/dark flash during initial paint.
+		const storageKey = 'theme';
+		const root = document.documentElement;
+
+		const applyTheme = () => {
+			const stored = localStorage.getItem(storageKey);
+			const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+			const theme = stored === 'dark' || stored === 'light' ? stored : systemPrefersDark ? 'dark' : 'light';
+			root.classList.toggle('dark', theme === 'dark');
+			root.dataset.theme = theme;
+		};
+
+		// Apply on initial load
+		applyTheme();
+
+		// Re-apply theme after Astro View Transitions navigation
+		// This ensures theme persists when switching pages
+		document.addEventListener('astro:after-swap', applyTheme);
+	})();
+</script><script>
+	// Token handling and auth functions - expose to window for global access
+	(function() {
+		const API_BASE = 'https://api.261770.xyz';
+		const TOKEN_KEY = 'blog_token';
+
+		// Store on window
+		window.__API_BASE = API_BASE;
+		window.__TOKEN_KEY = TOKEN_KEY;
+
+		// Read token from URL hash
+		function readHashToken() {
+			const hash = window.location.hash || '';
+			const match = hash.match(/(?:^#|&)token=([^&]+)/);
+			if (!match) return null;
+			try {
+				return decodeURIComponent(match[1]);
+			} catch {
+				return match[1];
+			}
+		}
+
+		// Store token from URL hash to localStorage
+		function storeTokenFromHash() {
+			const token = readHashToken();
+			if (!token) return null;
+			localStorage.setItem(TOKEN_KEY, token);
+			history.replaceState(null, '', window.location.pathname);
+			return token;
+		}
+
+		// Get auth token
+		function getAuthToken() {
+			storeTokenFromHash();
+			return localStorage.getItem(TOKEN_KEY);
+		}
+
+		// Get current user
+		async function getCurrentUser() {
+			const token = getAuthToken();
+			if (!token) return null;
+
+			try {
+				const response = await fetch(`${API_BASE}/api/me`, {
+					method: 'GET',
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				});
+
+				if (!response.ok) {
+					if (response.status === 401) {
+						localStorage.removeItem(TOKEN_KEY);
+					}
+					return null;
+				}
+
+				const data = await response.json();
+				const user = data?.user ?? data ?? null;
+				if (!user || typeof user !== 'object') return null;
+
+				return {
+					id: user.id ?? '',
+					username: user.username ?? user.login ?? user.name ?? '',
+					avatar: user.avatar ?? user.avatarUrl ?? user.avatar_url ?? '',
+				};
+			} catch {
+				return null;
+			}
+		}
+
+		// Logout
+		async function logout() {
+			const token = getAuthToken();
+			if (!token) {
+				localStorage.removeItem(TOKEN_KEY);
+				return;
+			}
+
+			try {
+				await fetch(`${API_BASE}/api/auth/logout`, {
+					method: 'POST',
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				});
+			} finally {
+				localStorage.removeItem(TOKEN_KEY);
+			}
+		}
+
+		// Initial token processing on page load
+		storeTokenFromHash();
+
+		// Expose to window
+		window.__auth = {
+			storeTokenFromHash,
+			getAuthToken,
+			getCurrentUser,
+			logout,
+		};
+	})();
+</script><!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{&quot;token&quot;: &quot;352fbccc01ad4ecda30eb8031efa4a9b&quot;}"></script><!-- End Cloudflare Web Analytics --><!-- Custom Analytics Tracking --><script>
+	(function() {
+		const API_BASE = window.__API_BASE || 'https://api.261770.xyz';
+		
+		// Generate visitor ID
+		function getVisitorId() {
+			let id = localStorage.getItem('analytics_visitor_id');
+			if (!id) {
+				id = 'v_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+				localStorage.setItem('analytics_visitor_id', id);
+			}
+			return id;
+		}
+		
+		// Track page view
+		function trackPageView() {
+			const data = {
+				page_path: window.location.pathname,
+				page_title: document.title,
+				referrer: document.referrer,
+				visitor_id: getVisitorId(),
+			};
+			
+			fetch(`${API_BASE}/api/analytics/track`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(data),
+				keepalive: true,
+			}).catch(() => {}); // Silent fail
+		}
+		
+		// Track on page load
+		if (document.readyState === 'complete') {
+			trackPageView();
+		} else {
+			window.addEventListener('load', trackPageView);
+		}
+		
+		// Track on Astro page navigation
+		document.addEventListener('astro:page-load', trackPageView);
+	})();
+</script><!-- End Custom Analytics --><!-- Random Background Image - https://img.050815.xyz/ --><script src="/random-bg.js"></script><!-- KaTeX CSS for math formula rendering --><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous"><link rel="stylesheet" href="/Blog/_astro/_slug_.Dq70yCxR.css">
+<style>@keyframes astroFadeInOut{0%{opacity:1}to{opacity:0}}@keyframes astroFadeIn{0%{opacity:0;mix-blend-mode:plus-lighter}to{opacity:1;mix-blend-mode:plus-lighter}}@keyframes astroFadeOut{0%{opacity:1;mix-blend-mode:plus-lighter}to{opacity:0;mix-blend-mode:plus-lighter}}@keyframes astroSlideFromRight{0%{transform:translate(100%)}}@keyframes astroSlideFromLeft{0%{transform:translate(-100%)}}@keyframes astroSlideToRight{to{transform:translate(100%)}}@keyframes astroSlideToLeft{to{transform:translate(-100%)}}@media(prefers-reduced-motion){::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}[data-astro-transition-scope]{animation:none!important}}
+</style><style>[data-astro-transition-scope="astro-mvod7b7d-1"] { view-transition-name: astro-mvod7b7d-1; }@layer astro { ::view-transition-old(astro-mvod7b7d-1) { 
+	animation-duration: 180ms;
+	animation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);
+	animation-fill-mode: both;
+	animation-name: astroFadeOut; }::view-transition-new(astro-mvod7b7d-1) { 
+	animation-duration: 180ms;
+	animation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);
+	animation-fill-mode: both;
+	animation-name: astroFadeIn; }[data-astro-transition=back]::view-transition-old(astro-mvod7b7d-1) { 
+	animation-duration: 180ms;
+	animation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);
+	animation-fill-mode: both;
+	animation-name: astroFadeOut; }[data-astro-transition=back]::view-transition-new(astro-mvod7b7d-1) { 
+	animation-duration: 180ms;
+	animation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);
+	animation-fill-mode: both;
+	animation-name: astroFadeIn; } }[data-astro-transition-fallback="old"] [data-astro-transition-scope="astro-mvod7b7d-1"],
+			[data-astro-transition-fallback="old"][data-astro-transition-scope="astro-mvod7b7d-1"] { 
+	animation-duration: 180ms;
+	animation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);
+	animation-fill-mode: both;
+	animation-name: astroFadeOut; }[data-astro-transition-fallback="new"] [data-astro-transition-scope="astro-mvod7b7d-1"],
+			[data-astro-transition-fallback="new"][data-astro-transition-scope="astro-mvod7b7d-1"] { 
+	animation-duration: 180ms;
+	animation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);
+	animation-fill-mode: both;
+	animation-name: astroFadeIn; }[data-astro-transition=back][data-astro-transition-fallback="old"] [data-astro-transition-scope="astro-mvod7b7d-1"],
+			[data-astro-transition=back][data-astro-transition-fallback="old"][data-astro-transition-scope="astro-mvod7b7d-1"] { 
+	animation-duration: 180ms;
+	animation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);
+	animation-fill-mode: both;
+	animation-name: astroFadeOut; }[data-astro-transition=back][data-astro-transition-fallback="new"] [data-astro-transition-scope="astro-mvod7b7d-1"],
+			[data-astro-transition=back][data-astro-transition-fallback="new"][data-astro-transition-scope="astro-mvod7b7d-1"] { 
+	animation-duration: 180ms;
+	animation-timing-function: cubic-bezier(0.76, 0, 0.24, 1);
+	animation-fill-mode: both;
+	animation-name: astroFadeIn; }</style></head> <body> <header class="sticky top-0 z-50 border-b border-zinc-200/70 bg-zinc-50/72 backdrop-blur-xl transition-colors duration-200 dark:border-zinc-800/80 dark:bg-zinc-950/72"> <nav class="page-shell flex h-16 items-center justify-between gap-4"> <div class="flex items-center gap-6"> <!-- Stable trigger ID consumed by MobileDrawer script. --> <button type="button" id="mobile-menu-button" class="header-toolbar-button inline-flex items-center gap-2 px-3 py-2 text-sm font-medium md:hidden" aria-controls="mobile-drawer" aria-expanded="false"> <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" aria-hidden="true"> <path d="M4 6.5A1.5 1.5 0 0 1 5.5 5h13a1.5 1.5 0 1 1 0 3h-13A1.5 1.5 0 0 1 4 6.5Zm0 5.5a1.5 1.5 0 0 1 1.5-1.5h13a1.5 1.5 0 0 1 0 3h-13A1.5 1.5 0 0 1 4 12Zm1.5 4a1.5 1.5 0 1 0 0 3h13a1.5 1.5 0 0 0 0-3h-13Z"></path> </svg> <span>菜单</span> </button> <!-- TOC drawer binds to this trigger and only renders on mobile. -->  <a href="/Blog/" class="hidden text-base font-semibold tracking-tight text-zinc-900 no-underline md:inline dark:text-zinc-100"> YXK&#39;s Blog </a> <div class="hidden items-center gap-1 text-sm md:flex"> <a href="/Blog/" class="nav-item rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"> 首页 </a><div class="nav-dropdown relative group"> <button type="button" class="nav-item inline-flex items-center gap-1 rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100" aria-expanded="false" aria-haspopup="true"> 文章 <svg class="h-4 w-4 transition-transform duration-200 group-hover:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <polyline points="6,9 12,15 18,9"></polyline> </svg> </button> <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-48 rounded-xl border border-zinc-200/80 bg-white/95 py-2 opacity-0 invisible transition-all duration-200 group-hover:opacity-100 group-hover:visible dark:border-zinc-700/80 dark:bg-zinc-900/95"> <a href="/Blog/blog/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 所有文章 </a><a href="/Blog/tags/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 标签 </a><a href="/Blog/important/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 推荐文章 </a> </div> </div><a href="/Blog/board/" class="nav-item rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"> 说说 </a><div class="nav-dropdown relative group"> <button type="button" class="nav-item inline-flex items-center gap-1 rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100" aria-expanded="false" aria-haspopup="true"> 更多页面 <svg class="h-4 w-4 transition-transform duration-200 group-hover:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <polyline points="6,9 12,15 18,9"></polyline> </svg> </button> <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-48 rounded-xl border border-zinc-200/80 bg-white/95 py-2 opacity-0 invisible transition-all duration-200 group-hover:opacity-100 group-hover:visible dark:border-zinc-700/80 dark:bg-zinc-900/95"> <a href="/Blog/bangumi/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 追番 </a><a href="/Blog/equipment/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 装备 </a><a href="/Blog/sponsors/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 赞助 </a> </div> </div><div class="nav-dropdown relative group"> <button type="button" class="nav-item inline-flex items-center gap-1 rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100" aria-expanded="false" aria-haspopup="true"> 友链 <svg class="h-4 w-4 transition-transform duration-200 group-hover:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <polyline points="6,9 12,15 18,9"></polyline> </svg> </button> <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-48 rounded-xl border border-zinc-200/80 bg-white/95 py-2 opacity-0 invisible transition-all duration-200 group-hover:opacity-100 group-hover:visible dark:border-zinc-700/80 dark:bg-zinc-900/95"> <a href="/Blog/links/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 友情链接 </a><a href="/Blog/fc/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 友链朋友圈 </a> </div> </div><a href="/Blog/about/" class="nav-item rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"> 关于 </a> </div> </div> <div class="flex items-center gap-2"> <a href="https://github.com/yxksw/Blog" target="_blank" rel="noreferrer" aria-label="异飨客的博客仓库"> <img src="https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif" alt="异飨客头像" class="h-9 w-9 rounded-full border border-zinc-200/80 object-cover shadow-[0_6px_18px_rgba(15,23,42,0.08)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.03] hover:border-zinc-300 hover:shadow-[0_10px_22px_rgba(15,23,42,0.12)] active:scale-95 dark:border-zinc-700/80 dark:shadow-[0_8px_18px_rgba(0,0,0,0.18)] dark:hover:border-zinc-500"> </a> <div class="header-toolbar-group hidden md:inline-flex"> <a href="https://github.com/yxksw" target="_blank" rel="noreferrer" class="header-toolbar-icon icon-button inline-flex items-center justify-center" aria-label="GitHub"> <svg viewBox="0 0 24 24" class="h-5 w-5 fill-current" aria-hidden="true"> <path d="M12 .3A12 12 0 0 0 8.2 23.7c.6.1.8-.2.8-.6v-2.3c-3.3.7-4-1.4-4-1.4-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.1.1 1.8 1.1 1.8 1.1 1 .1 1.6.7 2 1.3.9.2 1.8.4 2.7.1.1-.7.4-1.3.7-1.7-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.1-3.2-.1-.3-.5-1.5.1-3.2 0 0 .9-.3 3.2 1.1a10.9 10.9 0 0 1 5.9 0c2.2-1.4 3.2-1.1 3.2-1.1.6 1.7.2 2.9.1 3.2.7.8 1.1 1.9 1.1 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .4.2.7.8.6A12 12 0 0 0 12 .3"></path> </svg> <span class="sr-only">GitHub</span> </a> <button type="button" id="theme-toggle" class="header-toolbar-icon icon-button inline-flex items-center justify-center" aria-label="Toggle theme"> <svg data-theme-icon="sun" viewBox="0 0 24 24" class="h-5 w-5 fill-current transition-transform duration-300" aria-hidden="true"> <path d="M12 4a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V5a1 1 0 0 1 1-1Zm0 13a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1Zm8-5a1 1 0 0 1-1 1h-1a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1ZM7 12a1 1 0 0 1-1 1H5a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1Zm9.7-5.3a1 1 0 0 1 0 1.4L16 8.8a1 1 0 1 1-1.4-1.4l.7-.7a1 1 0 0 1 1.4 0Zm-7.3 7.3a1 1 0 0 1 0 1.4l-.7.7a1 1 0 0 1-1.4-1.4l.7-.7a1 1 0 0 1 1.4 0Zm7.3 2.1a1 1 0 0 1-1.4 1.4l-.7-.7a1 1 0 0 1 1.4-1.4l.7.7ZM9.4 8.8A1 1 0 0 1 8 8.8l-.7-.7a1 1 0 1 1 1.4-1.4l.7.7a1 1 0 0 1 0 1.4ZM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z"></path> </svg> <span class="sr-only">Toggle theme</span> </button> <!-- Login button (shown when not logged in) --> <button type="button" id="auth-button" class="header-toolbar-button hidden h-9 items-center justify-center px-3 text-sm font-medium" data-auth-login>
+Login
+</button> </div> <a href="https://github.com/yxksw" target="_blank" rel="noreferrer" class="header-toolbar-icon icon-button inline-flex items-center justify-center md:hidden" aria-label="GitHub"> <svg viewBox="0 0 24 24" class="h-5 w-5 fill-current" aria-hidden="true"> <path d="M12 .3A12 12 0 0 0 8.2 23.7c.6.1.8-.2.8-.6v-2.3c-3.3.7-4-1.4-4-1.4-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.1.1 1.8 1.1 1.8 1.1 1 .1 1.6.7 2 1.3.9.2 1.8.4 2.7.1.1-.7.4-1.3.7-1.7-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.1-3.2-.1-.3-.5-1.5.1-3.2 0 0 .9-.3 3.2 1.1a10.9 10.9 0 0 1 5.9 0c2.2-1.4 3.2-1.1 3.2-1.1.6 1.7.2 2.9.1 3.2.7.8 1.1 1.9 1.1 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .4.2.7.8.6A12 12 0 0 0 12 .3"></path> </svg> <span class="sr-only">GitHub</span> </a> <button type="button" id="theme-toggle-mobile" class="header-toolbar-icon icon-button inline-flex items-center justify-center md:hidden" aria-label="Toggle theme"> <svg data-theme-icon="sun" viewBox="0 0 24 24" class="h-5 w-5 fill-current transition-transform duration-300" aria-hidden="true"> <path d="M12 4a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V5a1 1 0 0 1 1-1Zm0 13a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1Zm8-5a1 1 0 0 1-1 1h-1a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1ZM7 12a1 1 0 0 1-1 1H5a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1Zm9.7-5.3a1 1 0 0 1 0 1.4L16 8.8a1 1 0 1 1-1.4-1.4l.7-.7a1 1 0 0 1 1.4 0Zm-7.3 7.3a1 1 0 0 1 0 1.4l-.7.7a1 1 0 0 1-1.4-1.4l.7-.7a1 1 0 0 1 1.4 0Zm7.3 2.1a1 1 0 0 1-1.4 1.4l-.7-.7a1 1 0 0 1 1.4-1.4l.7.7ZM9.4 8.8A1 1 0 0 1 8 8.8l-.7-.7a1 1 0 1 1 1.4-1.4l.7.7a1 1 0 0 1 0 1.4ZM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z"></path> </svg> <span class="sr-only">Toggle theme</span> </button> <!-- User dropdown (shown when logged in) --> <div id="user-dropdown" class="relative hidden" data-auth-user> <button type="button" id="user-dropdown-button" class="flex items-center gap-2 rounded-full border border-zinc-200/85 bg-white/82 p-0.5 shadow-[0_8px_22px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-300 hover:bg-white/95 hover:shadow-[0_12px_26px_rgba(15,23,42,0.12)] dark:border-zinc-700/85 dark:bg-zinc-900/80 dark:shadow-[0_8px_18px_rgba(0,0,0,0.18)] dark:hover:border-zinc-500 dark:hover:bg-zinc-800/95" aria-expanded="false" aria-haspopup="true"> <img id="user-avatar" src="https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif" alt="User avatar" class="h-8 w-8 rounded-full object-cover"> </button> <div id="user-dropdown-menu" class="absolute right-0 mt-2 w-56 rounded-2xl border border-zinc-200/80 bg-white/92 py-1.5 shadow-[0_18px_40px_rgba(15,23,42,0.14)] opacity-0 invisible transition-all duration-200 dark:border-zinc-700/80 dark:bg-zinc-900/92" role="menu"> <!-- Header: avatar + username + subtitle --> <div class="border-b border-zinc-200/80 px-3 py-3 dark:border-zinc-700/80"> <div class="flex items-center gap-3"> <img id="dropdown-user-avatar" src="https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif" alt="User avatar" class="h-10 w-10 rounded-full object-cover"> <div class="min-w-0"> <p id="user-name" class="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">User</p> <p class="text-xs text-zinc-500 dark:text-zinc-400">Manage your account</p> </div> </div> </div> <!-- Admin Dashboard link --> <a href="/admin" class="mx-1 flex w-[calc(100%-0.5rem)] items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100/90 dark:text-zinc-300 dark:hover:bg-zinc-800" role="menuitem"> <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <rect x="3" y="3" width="7" height="7" rx="1"></rect> <rect x="14" y="3" width="7" height="7" rx="1"></rect> <rect x="14" y="14" width="7" height="7" rx="1"></rect> <rect x="3" y="14" width="7" height="7" rx="1"></rect> </svg>
+后台
+</a> <!-- Settings button --> <button type="button" id="settings-button" class="mx-1 flex w-[calc(100%-0.5rem)] items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100/90 dark:text-zinc-300 dark:hover:bg-zinc-800" role="menuitem"> <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"></path> <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path> </svg>
+设置
+</button> <!-- Footer: Logout --> <div class="mt-1 border-t border-zinc-200/80 pb-1 pt-1 dark:border-zinc-700/80"> <button type="button" id="logout-button" class="mx-1 flex w-[calc(100%-0.5rem)] items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-red-600 transition-colors hover:bg-zinc-100/90 dark:text-red-400 dark:hover:bg-zinc-800" role="menuitem"> <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"></path> <polyline points="16,17 21,12 16,7"></polyline> <line x1="21" y1="12" x2="9" y2="12"></line> </svg>
+退出登录
+</button> </div> </div> </div> </div> </nav> </header> <div id="login-modal" class="fixed inset-0 z-[100] invisible opacity-0 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-200 ease-out" aria-hidden="true"> <div class="modal-content mx-4 w-[360px] rounded-xl bg-white p-6 shadow-xl transition-all duration-200 ease-out dark:bg-zinc-900 scale-95 opacity-0" role="dialog" aria-modal="true" aria-labelledby="login-modal-title" id="login-modal-content"> <h2 id="login-modal-title" class="mb-6 text-center text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+Login
+</h2> <a href="https://api.261770.xyz/api/auth/github/start" class="flex w-full items-center justify-center gap-3 rounded-lg bg-black px-4 py-3 text-base font-medium text-white transition-colors hover:bg-gray-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-gray-200"> <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"> <path d="M12 .3A12 12 0 0 0 8.2 23.7c.6.1.8-.2.8-.6v-2.3c-3.3.7-4-1.4-4-1.4-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.1.1 1.8 1.1 1.8 1.1 1 .1 1.6.7 2 1.3.9.2 1.8.4 2.7.1.1-.7.4-1.3.7-1.7-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.1-3.2-.1-.3-.5-1.5.1-3.2 0 0 .9-.3 3.2 1.1a10.9 10.9 0 0 1 5.9 0c2.2-1.4 3.2-1.1 3.2-1.1.6 1.7.2 2.9.1 3.2.7.8 1.1 1.9 1.1 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .4.2.7.8.6A12 12 0 0 0 12 .3"></path> </svg>
+Login with GitHub
+</a> <button type="button" id="login-modal-close" class="mt-4 w-full rounded-lg border border-zinc-200 px-4 py-2 text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800">
+Cancel
+</button> </div> </div> <div id="settings-modal" class="fixed inset-0 z-[100] invisible opacity-0 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-200 ease-out" aria-hidden="true"> <div class="modal-content mx-4 w-[360px] rounded-xl bg-white p-6 shadow-xl transition-all duration-200 ease-out dark:bg-zinc-900 scale-95 opacity-0" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title" id="settings-modal-content"> <div class="flex items-center justify-between mb-6"> <h2 id="settings-modal-title" class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+Settings
+</h2> <button type="button" id="settings-modal-close" class="p-1 rounded-lg text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 transition-colors"> <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <path d="M6 18L18 6M6 6l12 12"></path> </svg> </button> </div> <div class="flex flex-col items-center py-4"> <img id="settings-avatar" src="https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avifp" alt="User avatar" class="h-20 w-20 rounded-full border-2 border-zinc-200 object-cover dark:border-zinc-700"> <h3 id="settings-username" class="mt-3 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+User
+</h3> <p id="settings-login" class="text-sm text-zinc-500 dark:text-zinc-400">
+@login
+</p> </div> </div> </div> <script>
+	const initSettingsModal = () => {
+		const modal = document.getElementById('settings-modal');
+		const modalClose = document.getElementById('settings-modal-close');
+		const settingsAvatar = document.getElementById('settings-avatar');
+		const settingsUsername = document.getElementById('settings-username');
+		const settingsLogin = document.getElementById('settings-login');
+
+		const openModal = async () => {
+			if (!modal) return;
+
+			// Fetch current user info
+			const { getCurrentUser } = window.__auth || {};
+			if (getCurrentUser) {
+				try {
+					const user = await getCurrentUser();
+					if (user) {
+						if (settingsAvatar && user.avatar) settingsAvatar.src = user.avatar;
+						if (settingsUsername) settingsUsername.textContent = user.username || 'User';
+						if (settingsLogin) settingsLogin.textContent = '@' + (user.login || user.username || 'user');
+					}
+				} catch (e) {
+					console.error('Failed to load user info:', e);
+				}
+			}
+
+			requestAnimationFrame(() => {
+				modal.classList.remove('opacity-0', 'invisible');
+				modal.classList.add('opacity-100');
+				const content = modal.querySelector('.modal-content');
+				if (content) {
+					content.classList.remove('scale-95', 'opacity-0');
+					content.classList.add('scale-100', 'opacity-100');
+				}
+				modal.setAttribute('aria-hidden', 'false');
+			});
+		};
+
+		const closeModal = () => {
+			if (!modal) return;
+			modal.classList.remove('opacity-100');
+			modal.classList.add('opacity-0');
+			const content = modal.querySelector('.modal-content');
+			if (content) {
+				content.classList.remove('scale-100', 'opacity-100');
+				content.classList.add('scale-95', 'opacity-0');
+			}
+			setTimeout(() => modal.classList.add('invisible'), 200);
+			modal.setAttribute('aria-hidden', 'true');
+		};
+
+		// Listen for custom open-settings event
+		modal?.addEventListener('open-settings', openModal);
+
+		// Close on backdrop click
+		modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+		// Close on close button click
+		modalClose?.addEventListener('click', closeModal);
+
+		// Close on Escape key
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape' && modal && !modal.classList.contains('invisible')) closeModal();
+		});
+	};
+
+	initSettingsModal();
+	document.addEventListener('astro:page-load', initSettingsModal);
+	document.addEventListener('astro:after-swap', initSettingsModal);
+</script>  <script>
+(function() {
+	const initAuthButton = async () => {
+		const { storeTokenFromHash, getCurrentUser, logout } = window.__auth || {};
+		if (!storeTokenFromHash || !getCurrentUser || !logout) {
+			setTimeout(initAuthButton, 100);
+			return;
+		}
+
+		if (window.__authInitialized) return;
+		window.__authInitialized = true;
+
+		const loginButton = document.getElementById('auth-button');
+		const userDropdown = document.getElementById('user-dropdown');
+		const userAvatar = document.getElementById('user-avatar');
+		const userName = document.getElementById('user-name');
+		const userDropdownButton = document.getElementById('user-dropdown-button');
+		const userDropdownMenu = document.getElementById('user-dropdown-menu');
+		const logoutButton = document.getElementById('logout-button');
+		const modal = document.getElementById('login-modal');
+		const modalClose = document.getElementById('login-modal-close');
+
+		const openModal = () => {
+			if (!modal) return;
+			requestAnimationFrame(() => {
+				modal.classList.remove('opacity-0', 'invisible');
+				modal.classList.add('opacity-100');
+				const content = modal.querySelector('.modal-content');
+				if (content) {
+					content.classList.remove('scale-95', 'opacity-0');
+					content.classList.add('scale-100', 'opacity-100');
+				}
+				modal.setAttribute('aria-hidden', 'false');
+			});
+		};
+
+		const closeModal = () => {
+			if (!modal) return;
+			modal.classList.remove('opacity-100');
+			modal.classList.add('opacity-0');
+			const content = modal.querySelector('.modal-content');
+			if (content) {
+				content.classList.remove('scale-100', 'opacity-100');
+				content.classList.add('scale-95', 'opacity-0');
+			}
+			setTimeout(() => modal.classList.add('invisible'), 200);
+			modal.setAttribute('aria-hidden', 'true');
+		};
+
+		const toggleDropdown = () => {
+			if (!userDropdownButton || !userDropdownMenu) return;
+			const isExpanded = userDropdownButton.getAttribute('aria-expanded') === 'true';
+			userDropdownButton.setAttribute('aria-expanded', String(!isExpanded));
+			if (isExpanded) {
+				userDropdownMenu.classList.add('opacity-0', 'invisible');
+				userDropdownMenu.classList.remove('opacity-100', 'visible');
+			} else {
+				userDropdownMenu.classList.remove('opacity-0', 'invisible');
+				userDropdownMenu.classList.add('opacity-100', 'visible');
+			}
+		};
+
+		const closeDropdown = () => {
+			if (!userDropdownButton || !userDropdownMenu) return;
+			userDropdownButton.setAttribute('aria-expanded', 'false');
+			userDropdownMenu.classList.add('opacity-0', 'invisible');
+			userDropdownMenu.classList.remove('opacity-100', 'visible');
+		};
+
+		modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+		modalClose?.addEventListener('click', closeModal);
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape' && modal && !modal.classList.contains('invisible')) closeModal();
+		});
+
+		// Bind dropdown toggle click (only once)
+		if (userDropdownButton && !userDropdownButton.dataset.bound) {
+			userDropdownButton.dataset.bound = 'true';
+			userDropdownButton.addEventListener('click', (e) => {
+				e.stopPropagation();
+				e.preventDefault();
+				toggleDropdown();
+			});
+		}
+
+		// Bind document click to close dropdown (only once)
+		if (!window.__dropdownClickBound) {
+			window.__dropdownClickBound = true;
+			document.addEventListener('click', (e) => {
+				if (userDropdown && !userDropdown.contains(e.target)) closeDropdown();
+			});
+		}
+
+		try {
+			storeTokenFromHash();
+			const user = await getCurrentUser();
+
+			if (user) {
+				if (loginButton) loginButton.style.display = 'none';
+				if (userDropdown) userDropdown.classList.remove('hidden');
+				if (userAvatar && user.avatar) userAvatar.src = user.avatar;
+				if (userName) userName.textContent = user.username || 'User';
+				const dropdownAvatar = document.getElementById('dropdown-user-avatar');
+				if (dropdownAvatar && user.avatar) dropdownAvatar.src = user.avatar;
+
+				// Bind logout button (only once)
+				if (logoutButton && !logoutButton.dataset.bound) {
+					logoutButton.dataset.bound = 'true';
+					logoutButton.addEventListener('click', async () => {
+						closeDropdown();
+						await logout();
+						window.__authInitialized = false;
+						window.location.reload();
+					});
+				}
+
+				// Bind settings button (only once)
+				const settingsButton = document.getElementById('settings-button');
+				if (settingsButton && !settingsButton.dataset.bound) {
+					settingsButton.dataset.bound = 'true';
+					settingsButton.addEventListener('click', () => {
+						closeDropdown();
+						document.getElementById('settings-modal')?.dispatchEvent(new CustomEvent('open-settings'));
+					});
+				}
+			} else {
+				if (loginButton) loginButton.style.display = 'inline-flex';
+				if (userDropdown) userDropdown.classList.add('hidden');
+				// Bind login button (only once)
+				if (loginButton && !loginButton.dataset.bound) {
+					loginButton.dataset.bound = 'true';
+					loginButton.addEventListener('click', openModal);
+				}
+			}
+		} catch (error) {
+			console.error('Auth error:', error);
+			if (loginButton) loginButton.style.display = 'inline-flex';
+			if (userDropdown) userDropdown.classList.add('hidden');
+			if (loginButton && !loginButton.dataset.bound) {
+				loginButton.dataset.bound = 'true';
+				loginButton.addEventListener('click', openModal);
+			}
+		}
+	};
+
+	document.addEventListener('astro:page-load', () => {
+		window.__authInitialized = false;
+		initAuthButton();
+	});
+
+	initAuthButton();
+
+	const initThemeToggle = () => {
+		const buttons = Array.from(document.querySelectorAll('[id="theme-toggle"], [id="theme-toggle-mobile"]'));
+		if (!buttons.length) return;
+
+		const root = document.documentElement;
+		const storageKey = 'theme';
+		const updateAria = () => {
+			const isDark = root.classList.contains('dark');
+			buttons.forEach((button) => {
+				button.setAttribute('aria-pressed', String(isDark));
+				const icon = button.querySelector('[data-theme-icon]');
+				if (icon) {
+					icon.classList.toggle('rotate-180', isDark);
+				}
+			});
+		};
+
+		buttons.forEach((button) => {
+			if (button.dataset.bound === 'true') return;
+			button.dataset.bound = 'true';
+			button.addEventListener('click', () => {
+				const isDark = root.classList.toggle('dark');
+				root.dataset.theme = isDark ? 'dark' : 'light';
+				localStorage.setItem(storageKey, isDark ? 'dark' : 'light');
+				updateAria();
+			});
+		});
+
+		updateAria();
+	};
+
+	initThemeToggle();
+	// Rebind on client-side navigation because header can be re-rendered by View Transitions.
+	document.addEventListener('astro:page-load', initThemeToggle);
+	document.addEventListener('astro:after-swap', initThemeToggle);
+})();
+</script> <div id="mobile-overlay" class="pointer-events-none fixed inset-0 z-[80] bg-black/40 opacity-0 transition-opacity duration-200 ease-out motion-reduce:transition-none md:hidden [will-change:opacity] hidden" aria-hidden="true"></div> <aside id="mobile-drawer" class="pointer-events-auto fixed left-0 top-0 z-[90] flex h-[100dvh] w-[88vw] max-w-sm -translate-x-full flex-col border-r border-zinc-200 bg-white/95 p-4 shadow-2xl backdrop-blur transition-transform duration-200 ease-out motion-reduce:transition-none md:hidden dark:border-zinc-800 dark:bg-zinc-950/95 [will-change:transform] hidden" aria-label="移动端导航" aria-hidden="true"> <div class="mb-6 flex items-center justify-between"> <p class="m-0 text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">YXK&#39;s Blog</p> <button type="button" id="mobile-menu-close" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 transition-colors hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-100" aria-label="关闭菜单"> <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" aria-hidden="true"> <path d="M6.7 5.3a1 1 0 0 0-1.4 1.4L10.6 12l-5.3 5.3a1 1 0 1 0 1.4 1.4l5.3-5.3 5.3 5.3a1 1 0 1 0 1.4-1.4L13.4 12l5.3-5.3a1 1 0 0 0-1.4-1.4L12 10.6 6.7 5.3Z"></path> </svg> </button> </div> <nav class="flex flex-col gap-2"> <a href="/Blog/" data-drawer-link class="block rounded-xl px-4 py-3 text-base font-medium text-zinc-700 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 首页 </a><div class="mobile-nav-group" data-mobile-nav-group> <button type="button" data-mobile-nav-toggle class="flex w-full items-center justify-between rounded-xl px-4 py-3 text-base font-medium text-zinc-700 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-100" aria-expanded="false"> <span>文章</span> <svg class="mobile-nav-arrow h-5 w-5 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <polyline points="6,9 12,15 18,9"></polyline> </svg> </button> <div class="mobile-nav-children hidden pl-4"> <a href="/Blog/blog/" data-drawer-link class="block rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 所有文章 </a><a href="/Blog/tags/" data-drawer-link class="block rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 标签 </a><a href="/Blog/important/" data-drawer-link class="block rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 推荐文章 </a> </div> </div><a href="/Blog/board/" data-drawer-link class="block rounded-xl px-4 py-3 text-base font-medium text-zinc-700 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 说说 </a><div class="mobile-nav-group" data-mobile-nav-group> <button type="button" data-mobile-nav-toggle class="flex w-full items-center justify-between rounded-xl px-4 py-3 text-base font-medium text-zinc-700 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-100" aria-expanded="false"> <span>更多页面</span> <svg class="mobile-nav-arrow h-5 w-5 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <polyline points="6,9 12,15 18,9"></polyline> </svg> </button> <div class="mobile-nav-children hidden pl-4"> <a href="/Blog/bangumi/" data-drawer-link class="block rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 追番 </a><a href="/Blog/equipment/" data-drawer-link class="block rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 装备 </a><a href="/Blog/sponsors/" data-drawer-link class="block rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 赞助 </a> </div> </div><div class="mobile-nav-group" data-mobile-nav-group> <button type="button" data-mobile-nav-toggle class="flex w-full items-center justify-between rounded-xl px-4 py-3 text-base font-medium text-zinc-700 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-100" aria-expanded="false"> <span>友链</span> <svg class="mobile-nav-arrow h-5 w-5 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <polyline points="6,9 12,15 18,9"></polyline> </svg> </button> <div class="mobile-nav-children hidden pl-4"> <a href="/Blog/links/" data-drawer-link class="block rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 友情链接 </a><a href="/Blog/fc/" data-drawer-link class="block rounded-xl px-4 py-2 text-sm font-medium text-zinc-600 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 友链朋友圈 </a> </div> </div><a href="/Blog/about/" data-drawer-link class="block rounded-xl px-4 py-3 text-base font-medium text-zinc-700 no-underline transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 关于 </a> </nav> </aside> <script>
+	const initMobileDrawer = () => {
+		const trigger = document.getElementById('mobile-menu-button');
+		const drawer = document.getElementById('mobile-drawer');
+		const overlay = document.getElementById('mobile-overlay');
+		const closeBtn = document.getElementById('mobile-menu-close');
+		// Avoid duplicate listeners after client-side route swaps.
+		if (!trigger || !drawer || !overlay || !closeBtn || trigger.dataset.drawerBound === 'true') return;
+		trigger.dataset.drawerBound = 'true';
+		const TRANSITION_MS = 220;
+		let closeTimer = null;
+
+		const forceClosedState = () => {
+			drawer.classList.add('-translate-x-full', 'hidden');
+			drawer.classList.remove('translate-x-0');
+			drawer.setAttribute('aria-hidden', 'true');
+			overlay.classList.add('opacity-0', 'pointer-events-none', 'hidden');
+			overlay.classList.remove('opacity-100', 'pointer-events-auto');
+			document.documentElement.classList.remove('overflow-hidden');
+			trigger.setAttribute('aria-expanded', 'false');
+		};
+
+		const setOpenVisualState = () => {
+			drawer.classList.remove('-translate-x-full');
+			drawer.classList.add('translate-x-0');
+			overlay.classList.remove('opacity-0', 'pointer-events-none');
+			overlay.classList.add('opacity-100', 'pointer-events-auto');
+		};
+
+		const closeDrawer = () => {
+			if (closeTimer) {
+				clearTimeout(closeTimer);
+				closeTimer = null;
+			}
+			trigger.setAttribute('aria-expanded', 'false');
+			drawer.setAttribute('aria-hidden', 'true');
+			drawer.classList.add('-translate-x-full');
+			drawer.classList.remove('translate-x-0');
+			overlay.classList.add('opacity-0', 'pointer-events-none');
+			overlay.classList.remove('opacity-100', 'pointer-events-auto');
+			document.documentElement.classList.remove('overflow-hidden');
+			closeTimer = window.setTimeout(() => {
+				drawer.classList.add('hidden');
+				overlay.classList.add('hidden');
+				closeTimer = null;
+			}, TRANSITION_MS);
+		};
+
+		const openDrawer = () => {
+			if (closeTimer) {
+				clearTimeout(closeTimer);
+				closeTimer = null;
+			}
+			trigger.setAttribute('aria-expanded', 'true');
+			drawer.setAttribute('aria-hidden', 'false');
+			drawer.classList.remove('hidden');
+			overlay.classList.remove('hidden');
+			document.documentElement.classList.add('overflow-hidden');
+			// Defer transform class toggle to next frame so transition runs reliably.
+			window.requestAnimationFrame(setOpenVisualState);
+		};
+
+		trigger.addEventListener('click', openDrawer);
+		closeBtn.addEventListener('click', closeDrawer);
+		overlay.addEventListener('click', closeDrawer);
+
+		const drawerLinks = drawer.querySelectorAll('[data-drawer-link]');
+		for (const link of drawerLinks) {
+			link.addEventListener('click', closeDrawer);
+		}
+
+		// Initialize mobile nav toggles
+		const navGroups = drawer.querySelectorAll('[data-mobile-nav-group]');
+		for (const group of navGroups) {
+			const toggle = group.querySelector('[data-mobile-nav-toggle]');
+			const children = group.querySelector('.mobile-nav-children');
+			const arrow = group.querySelector('.mobile-nav-arrow');
+			
+			if (toggle && children && arrow) {
+				toggle.addEventListener('click', () => {
+					const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+					toggle.setAttribute('aria-expanded', String(!isExpanded));
+					children.classList.toggle('hidden');
+					arrow.classList.toggle('rotate-180');
+				});
+			}
+		}
+
+		forceClosedState();
+	};
+
+	if (document.documentElement.dataset.drawerEscBound !== 'true') {
+		document.addEventListener('keydown', (event) => {
+			if (event.key !== 'Escape') return;
+			const trigger = document.getElementById('mobile-menu-button');
+			const drawer = document.getElementById('mobile-drawer');
+			const overlay = document.getElementById('mobile-overlay');
+			if (!trigger || !drawer || !overlay || trigger.getAttribute('aria-expanded') !== 'true') return;
+
+			trigger.setAttribute('aria-expanded', 'false');
+			drawer.setAttribute('aria-hidden', 'true');
+			drawer.classList.add('-translate-x-full');
+			drawer.classList.remove('translate-x-0');
+			overlay.classList.add('opacity-0', 'pointer-events-none');
+			overlay.classList.remove('opacity-100', 'pointer-events-auto');
+			document.documentElement.classList.remove('overflow-hidden');
+			window.setTimeout(() => {
+				drawer.classList.add('hidden');
+				overlay.classList.add('hidden');
+			}, 220);
+		});
+		// Bound once globally; avoids stacking ESC handlers across route transitions.
+		document.documentElement.dataset.drawerEscBound = 'true';
+	}
+
+	// Defensive: ensure scroll is unlocked when leaving page
+	window.addEventListener('pagehide', () => {
+		document.documentElement.classList.remove('overflow-hidden');
+	});
+
+	initMobileDrawer();
+	document.addEventListener('astro:page-load', initMobileDrawer);
+	document.addEventListener('astro:after-swap', initMobileDrawer);
+</script> <main class="grid min-h-[calc(100vh-4rem)] place-items-center bg-zinc-50 px-6 py-24 sm:py-32 lg:px-8 dark:bg-zinc-950" data-astro-transition-scope="astro-mvod7b7d-1"> <div class="text-center"> <p class="text-base font-semibold text-zinc-900 dark:text-zinc-100">404</p> <h1 class="mt-4 text-5xl font-semibold tracking-tight text-balance text-zinc-900 sm:text-7xl dark:text-white">Page not found</h1> <p class="mt-6 text-lg font-medium text-pretty text-zinc-500 sm:text-xl/8 dark:text-zinc-400">Sorry, we couldn't find the page you're looking for.</p> <div class="mt-10 flex items-center justify-center"> <a href="/Blog/" class="rounded-md bg-zinc-900 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
+Go back home
+</a> </div> </div> </main> <footer class="mt-16 border-t border-zinc-200 py-8 transition-colors duration-200 dark:border-zinc-800"> <div class="page-shell text-sm text-zinc-500 dark:text-zinc-400"> <p class="m-0">&copy; 2026 异飨客. All rights reserved.</p> </div> </footer> </body></html>

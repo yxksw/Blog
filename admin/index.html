@@ -1,0 +1,786 @@
+<!DOCTYPE html><html lang="zh-CN"> <head><!-- Global Metadata --><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><!-- Keep View Transitions globally enabled so only targeted links/routes opt out when needed. --><meta name="astro-view-transitions-enabled" content="true"><meta name="astro-view-transitions-fallback" content="animate"><script type="module" src="/Blog/_astro/ClientRouter.astro_astro_type_script_index_0_lang.CDGfc0hd.js"></script><link rel="icon" type="image/x-icon" href="/Blog/image/favicon.ico"><link rel="shortcut icon" href="/Blog/image/favicon.ico"><link rel="sitemap" href="/Blog/sitemap-index.xml"><link rel="alternate" type="application/rss+xml" title="YXK's Blog" href="/Blog/rss.xml"><meta name="generator" content="Astro v5.17.1"><!-- Font preconnect --><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><style>
+	{`
+		@font-face {
+			font-family: "Alibaba PuHuiTi";
+			src: url('${BASE}fonts/AlibabaPuHuiTi-3-55-RegularL3.woff2') format('woff2');
+			font-weight: 400;
+			font-style: normal;
+			font-display: swap;
+		}
+		@font-face {
+			font-family: "Alibaba PuHuiTi";
+			src: url('${BASE}fonts/AlibabaPuHuiTi-3-75-SemiBold.woff2') format('woff2');
+			font-weight: 600;
+			font-style: normal;
+			font-display: swap;
+		}
+	`}
+</style><!-- UI/body fonts prioritize immediate paint to reduce perceived loading delay. --><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Serif+SC:wght@400;600&display=swap"><!-- Code font is optional to avoid post-paint metric swaps on large code blocks. --><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=optional"><!-- Canonical URL --><link rel="canonical" href="https://blog.261770.xyz/Blog/admin/"><!-- Primary Meta Tags --><title>管理后台 - 博客管理</title><meta name="title" content="管理后台 - 博客管理"><meta name="description" content="用于管理博客评论和统计数据的管理后台"><meta name="google-site-verification" content="c9eLQFflOQPGAa5ykLn2PnyXDt5rup4VJNQe3P8hW7Y"><!-- Open Graph / Facebook --><meta property="og:type" content="website"><meta property="og:url" content="https://blog.261770.xyz/Blog/admin/"><meta property="og:title" content="管理后台 - 博客管理"><meta property="og:description" content="用于管理博客评论和统计数据的管理后台"><meta property="og:image" content="https://blog.261770.xyz/Blog/_astro/fallback.dEW8vPJx.jpg"><!-- Twitter --><meta property="twitter:card" content="summary_large_image"><meta property="twitter:url" content="https://blog.261770.xyz/Blog/admin/"><meta property="twitter:title" content="管理后台 - 博客管理"><meta property="twitter:description" content="用于管理博客评论和统计数据的管理后台"><meta property="twitter:image" content="https://blog.261770.xyz/Blog/_astro/fallback.dEW8vPJx.jpg"><script>
+	(() => {
+		// Apply theme before hydration to avoid light/dark flash during initial paint.
+		const storageKey = 'theme';
+		const root = document.documentElement;
+
+		const applyTheme = () => {
+			const stored = localStorage.getItem(storageKey);
+			const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+			const theme = stored === 'dark' || stored === 'light' ? stored : systemPrefersDark ? 'dark' : 'light';
+			root.classList.toggle('dark', theme === 'dark');
+			root.dataset.theme = theme;
+		};
+
+		// Apply on initial load
+		applyTheme();
+
+		// Re-apply theme after Astro View Transitions navigation
+		// This ensures theme persists when switching pages
+		document.addEventListener('astro:after-swap', applyTheme);
+	})();
+</script><script>
+	// Token handling and auth functions - expose to window for global access
+	(function() {
+		const API_BASE = 'https://api.261770.xyz';
+		const TOKEN_KEY = 'blog_token';
+
+		// Store on window
+		window.__API_BASE = API_BASE;
+		window.__TOKEN_KEY = TOKEN_KEY;
+
+		// Read token from URL hash
+		function readHashToken() {
+			const hash = window.location.hash || '';
+			const match = hash.match(/(?:^#|&)token=([^&]+)/);
+			if (!match) return null;
+			try {
+				return decodeURIComponent(match[1]);
+			} catch {
+				return match[1];
+			}
+		}
+
+		// Store token from URL hash to localStorage
+		function storeTokenFromHash() {
+			const token = readHashToken();
+			if (!token) return null;
+			localStorage.setItem(TOKEN_KEY, token);
+			history.replaceState(null, '', window.location.pathname);
+			return token;
+		}
+
+		// Get auth token
+		function getAuthToken() {
+			storeTokenFromHash();
+			return localStorage.getItem(TOKEN_KEY);
+		}
+
+		// Get current user
+		async function getCurrentUser() {
+			const token = getAuthToken();
+			if (!token) return null;
+
+			try {
+				const response = await fetch(`${API_BASE}/api/me`, {
+					method: 'GET',
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				});
+
+				if (!response.ok) {
+					if (response.status === 401) {
+						localStorage.removeItem(TOKEN_KEY);
+					}
+					return null;
+				}
+
+				const data = await response.json();
+				const user = data?.user ?? data ?? null;
+				if (!user || typeof user !== 'object') return null;
+
+				return {
+					id: user.id ?? '',
+					username: user.username ?? user.login ?? user.name ?? '',
+					avatar: user.avatar ?? user.avatarUrl ?? user.avatar_url ?? '',
+				};
+			} catch {
+				return null;
+			}
+		}
+
+		// Logout
+		async function logout() {
+			const token = getAuthToken();
+			if (!token) {
+				localStorage.removeItem(TOKEN_KEY);
+				return;
+			}
+
+			try {
+				await fetch(`${API_BASE}/api/auth/logout`, {
+					method: 'POST',
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				});
+			} finally {
+				localStorage.removeItem(TOKEN_KEY);
+			}
+		}
+
+		// Initial token processing on page load
+		storeTokenFromHash();
+
+		// Expose to window
+		window.__auth = {
+			storeTokenFromHash,
+			getAuthToken,
+			getCurrentUser,
+			logout,
+		};
+	})();
+</script><!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{&quot;token&quot;: &quot;352fbccc01ad4ecda30eb8031efa4a9b&quot;}"></script><!-- End Cloudflare Web Analytics --><!-- Custom Analytics Tracking --><script>
+	(function() {
+		const API_BASE = window.__API_BASE || 'https://api.261770.xyz';
+		
+		// Generate visitor ID
+		function getVisitorId() {
+			let id = localStorage.getItem('analytics_visitor_id');
+			if (!id) {
+				id = 'v_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+				localStorage.setItem('analytics_visitor_id', id);
+			}
+			return id;
+		}
+		
+		// Track page view
+		function trackPageView() {
+			const data = {
+				page_path: window.location.pathname,
+				page_title: document.title,
+				referrer: document.referrer,
+				visitor_id: getVisitorId(),
+			};
+			
+			fetch(`${API_BASE}/api/analytics/track`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(data),
+				keepalive: true,
+			}).catch(() => {}); // Silent fail
+		}
+		
+		// Track on page load
+		if (document.readyState === 'complete') {
+			trackPageView();
+		} else {
+			window.addEventListener('load', trackPageView);
+		}
+		
+		// Track on Astro page navigation
+		document.addEventListener('astro:page-load', trackPageView);
+	})();
+</script><!-- End Custom Analytics --><!-- Random Background Image - https://img.050815.xyz/ --><script src="/random-bg.js"></script><!-- KaTeX CSS for math formula rendering --><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous"><link rel="stylesheet" href="/Blog/_astro/_slug_.Dq70yCxR.css"></head> <body class="bg-zinc-50 dark:bg-zinc-900"> <header class="sticky top-0 z-50 border-b border-zinc-200/70 bg-zinc-50/72 backdrop-blur-xl transition-colors duration-200 dark:border-zinc-800/80 dark:bg-zinc-950/72"> <nav class="page-shell flex h-16 items-center justify-between gap-4"> <div class="flex items-center gap-6"> <!-- Stable trigger ID consumed by MobileDrawer script. --> <button type="button" id="mobile-menu-button" class="header-toolbar-button inline-flex items-center gap-2 px-3 py-2 text-sm font-medium md:hidden" aria-controls="mobile-drawer" aria-expanded="false"> <svg viewBox="0 0 24 24" class="h-4 w-4 fill-current" aria-hidden="true"> <path d="M4 6.5A1.5 1.5 0 0 1 5.5 5h13a1.5 1.5 0 1 1 0 3h-13A1.5 1.5 0 0 1 4 6.5Zm0 5.5a1.5 1.5 0 0 1 1.5-1.5h13a1.5 1.5 0 0 1 0 3h-13A1.5 1.5 0 0 1 4 12Zm1.5 4a1.5 1.5 0 1 0 0 3h13a1.5 1.5 0 0 0 0-3h-13Z"></path> </svg> <span>菜单</span> </button> <!-- TOC drawer binds to this trigger and only renders on mobile. -->  <a href="/Blog/" class="hidden text-base font-semibold tracking-tight text-zinc-900 no-underline md:inline dark:text-zinc-100"> YXK&#39;s Blog </a> <div class="hidden items-center gap-1 text-sm md:flex"> <a href="/Blog/" class="nav-item rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"> 首页 </a><div class="nav-dropdown relative group"> <button type="button" class="nav-item inline-flex items-center gap-1 rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100" aria-expanded="false" aria-haspopup="true"> 文章 <svg class="h-4 w-4 transition-transform duration-200 group-hover:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <polyline points="6,9 12,15 18,9"></polyline> </svg> </button> <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-48 rounded-xl border border-zinc-200/80 bg-white/95 py-2 opacity-0 invisible transition-all duration-200 group-hover:opacity-100 group-hover:visible dark:border-zinc-700/80 dark:bg-zinc-900/95"> <a href="/Blog/blog/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 所有文章 </a><a href="/Blog/tags/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 标签 </a><a href="/Blog/important/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 推荐文章 </a> </div> </div><a href="/Blog/board/" class="nav-item rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"> 说说 </a><div class="nav-dropdown relative group"> <button type="button" class="nav-item inline-flex items-center gap-1 rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100" aria-expanded="false" aria-haspopup="true"> 更多页面 <svg class="h-4 w-4 transition-transform duration-200 group-hover:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <polyline points="6,9 12,15 18,9"></polyline> </svg> </button> <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-48 rounded-xl border border-zinc-200/80 bg-white/95 py-2 opacity-0 invisible transition-all duration-200 group-hover:opacity-100 group-hover:visible dark:border-zinc-700/80 dark:bg-zinc-900/95"> <a href="/Blog/bangumi/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 追番 </a><a href="/Blog/equipment/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 装备 </a><a href="/Blog/sponsors/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 赞助 </a> </div> </div><div class="nav-dropdown relative group"> <button type="button" class="nav-item inline-flex items-center gap-1 rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100" aria-expanded="false" aria-haspopup="true"> 友链 <svg class="h-4 w-4 transition-transform duration-200 group-hover:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <polyline points="6,9 12,15 18,9"></polyline> </svg> </button> <div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-48 rounded-xl border border-zinc-200/80 bg-white/95 py-2 opacity-0 invisible transition-all duration-200 group-hover:opacity-100 group-hover:visible dark:border-zinc-700/80 dark:bg-zinc-900/95"> <a href="/Blog/links/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 友情链接 </a><a href="/Blog/fc/" class="block px-4 py-2 text-sm text-zinc-600 no-underline hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"> 友链朋友圈 </a> </div> </div><a href="/Blog/about/" class="nav-item rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"> 关于 </a> </div> </div> <div class="flex items-center gap-2"> <a href="https://github.com/yxksw/Blog" target="_blank" rel="noreferrer" aria-label="异飨客的博客仓库"> <img src="https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif" alt="异飨客头像" class="h-9 w-9 rounded-full border border-zinc-200/80 object-cover shadow-[0_6px_18px_rgba(15,23,42,0.08)] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.03] hover:border-zinc-300 hover:shadow-[0_10px_22px_rgba(15,23,42,0.12)] active:scale-95 dark:border-zinc-700/80 dark:shadow-[0_8px_18px_rgba(0,0,0,0.18)] dark:hover:border-zinc-500"> </a> <div class="header-toolbar-group hidden md:inline-flex"> <a href="https://github.com/yxksw" target="_blank" rel="noreferrer" class="header-toolbar-icon icon-button inline-flex items-center justify-center" aria-label="GitHub"> <svg viewBox="0 0 24 24" class="h-5 w-5 fill-current" aria-hidden="true"> <path d="M12 .3A12 12 0 0 0 8.2 23.7c.6.1.8-.2.8-.6v-2.3c-3.3.7-4-1.4-4-1.4-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.1.1 1.8 1.1 1.8 1.1 1 .1 1.6.7 2 1.3.9.2 1.8.4 2.7.1.1-.7.4-1.3.7-1.7-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.1-3.2-.1-.3-.5-1.5.1-3.2 0 0 .9-.3 3.2 1.1a10.9 10.9 0 0 1 5.9 0c2.2-1.4 3.2-1.1 3.2-1.1.6 1.7.2 2.9.1 3.2.7.8 1.1 1.9 1.1 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .4.2.7.8.6A12 12 0 0 0 12 .3"></path> </svg> <span class="sr-only">GitHub</span> </a> <button type="button" id="theme-toggle" class="header-toolbar-icon icon-button inline-flex items-center justify-center" aria-label="Toggle theme"> <svg data-theme-icon="sun" viewBox="0 0 24 24" class="h-5 w-5 fill-current transition-transform duration-300" aria-hidden="true"> <path d="M12 4a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V5a1 1 0 0 1 1-1Zm0 13a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1Zm8-5a1 1 0 0 1-1 1h-1a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1ZM7 12a1 1 0 0 1-1 1H5a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1Zm9.7-5.3a1 1 0 0 1 0 1.4L16 8.8a1 1 0 1 1-1.4-1.4l.7-.7a1 1 0 0 1 1.4 0Zm-7.3 7.3a1 1 0 0 1 0 1.4l-.7.7a1 1 0 0 1-1.4-1.4l.7-.7a1 1 0 0 1 1.4 0Zm7.3 2.1a1 1 0 0 1-1.4 1.4l-.7-.7a1 1 0 0 1 1.4-1.4l.7.7ZM9.4 8.8A1 1 0 0 1 8 8.8l-.7-.7a1 1 0 1 1 1.4-1.4l.7.7a1 1 0 0 1 0 1.4ZM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z"></path> </svg> <span class="sr-only">Toggle theme</span> </button> <!-- Login button (shown when not logged in) --> <button type="button" id="auth-button" class="header-toolbar-button hidden h-9 items-center justify-center px-3 text-sm font-medium" data-auth-login>
+Login
+</button> </div> <a href="https://github.com/yxksw" target="_blank" rel="noreferrer" class="header-toolbar-icon icon-button inline-flex items-center justify-center md:hidden" aria-label="GitHub"> <svg viewBox="0 0 24 24" class="h-5 w-5 fill-current" aria-hidden="true"> <path d="M12 .3A12 12 0 0 0 8.2 23.7c.6.1.8-.2.8-.6v-2.3c-3.3.7-4-1.4-4-1.4-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.1.1 1.8 1.1 1.8 1.1 1 .1 1.6.7 2 1.3.9.2 1.8.4 2.7.1.1-.7.4-1.3.7-1.7-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.1-3.2-.1-.3-.5-1.5.1-3.2 0 0 .9-.3 3.2 1.1a10.9 10.9 0 0 1 5.9 0c2.2-1.4 3.2-1.1 3.2-1.1.6 1.7.2 2.9.1 3.2.7.8 1.1 1.9 1.1 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .4.2.7.8.6A12 12 0 0 0 12 .3"></path> </svg> <span class="sr-only">GitHub</span> </a> <button type="button" id="theme-toggle-mobile" class="header-toolbar-icon icon-button inline-flex items-center justify-center md:hidden" aria-label="Toggle theme"> <svg data-theme-icon="sun" viewBox="0 0 24 24" class="h-5 w-5 fill-current transition-transform duration-300" aria-hidden="true"> <path d="M12 4a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V5a1 1 0 0 1 1-1Zm0 13a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1Zm8-5a1 1 0 0 1-1 1h-1a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1ZM7 12a1 1 0 0 1-1 1H5a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1Zm9.7-5.3a1 1 0 0 1 0 1.4L16 8.8a1 1 0 1 1-1.4-1.4l.7-.7a1 1 0 0 1 1.4 0Zm-7.3 7.3a1 1 0 0 1 0 1.4l-.7.7a1 1 0 0 1-1.4-1.4l.7-.7a1 1 0 0 1 1.4 0Zm7.3 2.1a1 1 0 0 1-1.4 1.4l-.7-.7a1 1 0 0 1 1.4-1.4l.7.7ZM9.4 8.8A1 1 0 0 1 8 8.8l-.7-.7a1 1 0 1 1 1.4-1.4l.7.7a1 1 0 0 1 0 1.4ZM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z"></path> </svg> <span class="sr-only">Toggle theme</span> </button> <!-- User dropdown (shown when logged in) --> <div id="user-dropdown" class="relative hidden" data-auth-user> <button type="button" id="user-dropdown-button" class="flex items-center gap-2 rounded-full border border-zinc-200/85 bg-white/82 p-0.5 shadow-[0_8px_22px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-300 hover:bg-white/95 hover:shadow-[0_12px_26px_rgba(15,23,42,0.12)] dark:border-zinc-700/85 dark:bg-zinc-900/80 dark:shadow-[0_8px_18px_rgba(0,0,0,0.18)] dark:hover:border-zinc-500 dark:hover:bg-zinc-800/95" aria-expanded="false" aria-haspopup="true"> <img id="user-avatar" src="https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif" alt="User avatar" class="h-8 w-8 rounded-full object-cover"> </button> <div id="user-dropdown-menu" class="absolute right-0 mt-2 w-56 rounded-2xl border border-zinc-200/80 bg-white/92 py-1.5 shadow-[0_18px_40px_rgba(15,23,42,0.14)] opacity-0 invisible transition-all duration-200 dark:border-zinc-700/80 dark:bg-zinc-900/92" role="menu"> <!-- Header: avatar + username + subtitle --> <div class="border-b border-zinc-200/80 px-3 py-3 dark:border-zinc-700/80"> <div class="flex items-center gap-3"> <img id="dropdown-user-avatar" src="https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif" alt="User avatar" class="h-10 w-10 rounded-full object-cover"> <div class="min-w-0"> <p id="user-name" class="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">User</p> <p class="text-xs text-zinc-500 dark:text-zinc-400">Manage your account</p> </div> </div> </div> <!-- Admin Dashboard link --> <a href="/admin" class="mx-1 flex w-[calc(100%-0.5rem)] items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100/90 dark:text-zinc-300 dark:hover:bg-zinc-800" role="menuitem"> <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <rect x="3" y="3" width="7" height="7" rx="1"></rect> <rect x="14" y="3" width="7" height="7" rx="1"></rect> <rect x="14" y="14" width="7" height="7" rx="1"></rect> <rect x="3" y="14" width="7" height="7" rx="1"></rect> </svg>
+后台
+</a> <!-- Settings button --> <button type="button" id="settings-button" class="mx-1 flex w-[calc(100%-0.5rem)] items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-zinc-700 transition-colors hover:bg-zinc-100/90 dark:text-zinc-300 dark:hover:bg-zinc-800" role="menuitem"> <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"></path> <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"></path> </svg>
+设置
+</button> <!-- Footer: Logout --> <div class="mt-1 border-t border-zinc-200/80 pb-1 pt-1 dark:border-zinc-700/80"> <button type="button" id="logout-button" class="mx-1 flex w-[calc(100%-0.5rem)] items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-red-600 transition-colors hover:bg-zinc-100/90 dark:text-red-400 dark:hover:bg-zinc-800" role="menuitem"> <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"></path> <polyline points="16,17 21,12 16,7"></polyline> <line x1="21" y1="12" x2="9" y2="12"></line> </svg>
+退出登录
+</button> </div> </div> </div> </div> </nav> </header> <div id="login-modal" class="fixed inset-0 z-[100] invisible opacity-0 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-200 ease-out" aria-hidden="true"> <div class="modal-content mx-4 w-[360px] rounded-xl bg-white p-6 shadow-xl transition-all duration-200 ease-out dark:bg-zinc-900 scale-95 opacity-0" role="dialog" aria-modal="true" aria-labelledby="login-modal-title" id="login-modal-content"> <h2 id="login-modal-title" class="mb-6 text-center text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+Login
+</h2> <a href="https://api.261770.xyz/api/auth/github/start" class="flex w-full items-center justify-center gap-3 rounded-lg bg-black px-4 py-3 text-base font-medium text-white transition-colors hover:bg-gray-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-gray-200"> <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"> <path d="M12 .3A12 12 0 0 0 8.2 23.7c.6.1.8-.2.8-.6v-2.3c-3.3.7-4-1.4-4-1.4-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.1.1 1.8 1.1 1.8 1.1 1 .1 1.6.7 2 1.3.9.2 1.8.4 2.7.1.1-.7.4-1.3.7-1.7-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.1-3.2-.1-.3-.5-1.5.1-3.2 0 0 .9-.3 3.2 1.1a10.9 10.9 0 0 1 5.9 0c2.2-1.4 3.2-1.1 3.2-1.1.6 1.7.2 2.9.1 3.2.7.8 1.1 1.9 1.1 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .4.2.7.8.6A12 12 0 0 0 12 .3"></path> </svg>
+Login with GitHub
+</a> <button type="button" id="login-modal-close" class="mt-4 w-full rounded-lg border border-zinc-200 px-4 py-2 text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800">
+Cancel
+</button> </div> </div> <div id="settings-modal" class="fixed inset-0 z-[100] invisible opacity-0 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-200 ease-out" aria-hidden="true"> <div class="modal-content mx-4 w-[360px] rounded-xl bg-white p-6 shadow-xl transition-all duration-200 ease-out dark:bg-zinc-900 scale-95 opacity-0" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title" id="settings-modal-content"> <div class="flex items-center justify-between mb-6"> <h2 id="settings-modal-title" class="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+Settings
+</h2> <button type="button" id="settings-modal-close" class="p-1 rounded-lg text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 transition-colors"> <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"> <path d="M6 18L18 6M6 6l12 12"></path> </svg> </button> </div> <div class="flex flex-col items-center py-4"> <img id="settings-avatar" src="https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avifp" alt="User avatar" class="h-20 w-20 rounded-full border-2 border-zinc-200 object-cover dark:border-zinc-700"> <h3 id="settings-username" class="mt-3 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+User
+</h3> <p id="settings-login" class="text-sm text-zinc-500 dark:text-zinc-400">
+@login
+</p> </div> </div> </div> <script>
+	const initSettingsModal = () => {
+		const modal = document.getElementById('settings-modal');
+		const modalClose = document.getElementById('settings-modal-close');
+		const settingsAvatar = document.getElementById('settings-avatar');
+		const settingsUsername = document.getElementById('settings-username');
+		const settingsLogin = document.getElementById('settings-login');
+
+		const openModal = async () => {
+			if (!modal) return;
+
+			// Fetch current user info
+			const { getCurrentUser } = window.__auth || {};
+			if (getCurrentUser) {
+				try {
+					const user = await getCurrentUser();
+					if (user) {
+						if (settingsAvatar && user.avatar) settingsAvatar.src = user.avatar;
+						if (settingsUsername) settingsUsername.textContent = user.username || 'User';
+						if (settingsLogin) settingsLogin.textContent = '@' + (user.login || user.username || 'user');
+					}
+				} catch (e) {
+					console.error('Failed to load user info:', e);
+				}
+			}
+
+			requestAnimationFrame(() => {
+				modal.classList.remove('opacity-0', 'invisible');
+				modal.classList.add('opacity-100');
+				const content = modal.querySelector('.modal-content');
+				if (content) {
+					content.classList.remove('scale-95', 'opacity-0');
+					content.classList.add('scale-100', 'opacity-100');
+				}
+				modal.setAttribute('aria-hidden', 'false');
+			});
+		};
+
+		const closeModal = () => {
+			if (!modal) return;
+			modal.classList.remove('opacity-100');
+			modal.classList.add('opacity-0');
+			const content = modal.querySelector('.modal-content');
+			if (content) {
+				content.classList.remove('scale-100', 'opacity-100');
+				content.classList.add('scale-95', 'opacity-0');
+			}
+			setTimeout(() => modal.classList.add('invisible'), 200);
+			modal.setAttribute('aria-hidden', 'true');
+		};
+
+		// Listen for custom open-settings event
+		modal?.addEventListener('open-settings', openModal);
+
+		// Close on backdrop click
+		modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+		// Close on close button click
+		modalClose?.addEventListener('click', closeModal);
+
+		// Close on Escape key
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape' && modal && !modal.classList.contains('invisible')) closeModal();
+		});
+	};
+
+	initSettingsModal();
+	document.addEventListener('astro:page-load', initSettingsModal);
+	document.addEventListener('astro:after-swap', initSettingsModal);
+</script>  <script>
+(function() {
+	const initAuthButton = async () => {
+		const { storeTokenFromHash, getCurrentUser, logout } = window.__auth || {};
+		if (!storeTokenFromHash || !getCurrentUser || !logout) {
+			setTimeout(initAuthButton, 100);
+			return;
+		}
+
+		if (window.__authInitialized) return;
+		window.__authInitialized = true;
+
+		const loginButton = document.getElementById('auth-button');
+		const userDropdown = document.getElementById('user-dropdown');
+		const userAvatar = document.getElementById('user-avatar');
+		const userName = document.getElementById('user-name');
+		const userDropdownButton = document.getElementById('user-dropdown-button');
+		const userDropdownMenu = document.getElementById('user-dropdown-menu');
+		const logoutButton = document.getElementById('logout-button');
+		const modal = document.getElementById('login-modal');
+		const modalClose = document.getElementById('login-modal-close');
+
+		const openModal = () => {
+			if (!modal) return;
+			requestAnimationFrame(() => {
+				modal.classList.remove('opacity-0', 'invisible');
+				modal.classList.add('opacity-100');
+				const content = modal.querySelector('.modal-content');
+				if (content) {
+					content.classList.remove('scale-95', 'opacity-0');
+					content.classList.add('scale-100', 'opacity-100');
+				}
+				modal.setAttribute('aria-hidden', 'false');
+			});
+		};
+
+		const closeModal = () => {
+			if (!modal) return;
+			modal.classList.remove('opacity-100');
+			modal.classList.add('opacity-0');
+			const content = modal.querySelector('.modal-content');
+			if (content) {
+				content.classList.remove('scale-100', 'opacity-100');
+				content.classList.add('scale-95', 'opacity-0');
+			}
+			setTimeout(() => modal.classList.add('invisible'), 200);
+			modal.setAttribute('aria-hidden', 'true');
+		};
+
+		const toggleDropdown = () => {
+			if (!userDropdownButton || !userDropdownMenu) return;
+			const isExpanded = userDropdownButton.getAttribute('aria-expanded') === 'true';
+			userDropdownButton.setAttribute('aria-expanded', String(!isExpanded));
+			if (isExpanded) {
+				userDropdownMenu.classList.add('opacity-0', 'invisible');
+				userDropdownMenu.classList.remove('opacity-100', 'visible');
+			} else {
+				userDropdownMenu.classList.remove('opacity-0', 'invisible');
+				userDropdownMenu.classList.add('opacity-100', 'visible');
+			}
+		};
+
+		const closeDropdown = () => {
+			if (!userDropdownButton || !userDropdownMenu) return;
+			userDropdownButton.setAttribute('aria-expanded', 'false');
+			userDropdownMenu.classList.add('opacity-0', 'invisible');
+			userDropdownMenu.classList.remove('opacity-100', 'visible');
+		};
+
+		modal?.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+		modalClose?.addEventListener('click', closeModal);
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape' && modal && !modal.classList.contains('invisible')) closeModal();
+		});
+
+		// Bind dropdown toggle click (only once)
+		if (userDropdownButton && !userDropdownButton.dataset.bound) {
+			userDropdownButton.dataset.bound = 'true';
+			userDropdownButton.addEventListener('click', (e) => {
+				e.stopPropagation();
+				e.preventDefault();
+				toggleDropdown();
+			});
+		}
+
+		// Bind document click to close dropdown (only once)
+		if (!window.__dropdownClickBound) {
+			window.__dropdownClickBound = true;
+			document.addEventListener('click', (e) => {
+				if (userDropdown && !userDropdown.contains(e.target)) closeDropdown();
+			});
+		}
+
+		try {
+			storeTokenFromHash();
+			const user = await getCurrentUser();
+
+			if (user) {
+				if (loginButton) loginButton.style.display = 'none';
+				if (userDropdown) userDropdown.classList.remove('hidden');
+				if (userAvatar && user.avatar) userAvatar.src = user.avatar;
+				if (userName) userName.textContent = user.username || 'User';
+				const dropdownAvatar = document.getElementById('dropdown-user-avatar');
+				if (dropdownAvatar && user.avatar) dropdownAvatar.src = user.avatar;
+
+				// Bind logout button (only once)
+				if (logoutButton && !logoutButton.dataset.bound) {
+					logoutButton.dataset.bound = 'true';
+					logoutButton.addEventListener('click', async () => {
+						closeDropdown();
+						await logout();
+						window.__authInitialized = false;
+						window.location.reload();
+					});
+				}
+
+				// Bind settings button (only once)
+				const settingsButton = document.getElementById('settings-button');
+				if (settingsButton && !settingsButton.dataset.bound) {
+					settingsButton.dataset.bound = 'true';
+					settingsButton.addEventListener('click', () => {
+						closeDropdown();
+						document.getElementById('settings-modal')?.dispatchEvent(new CustomEvent('open-settings'));
+					});
+				}
+			} else {
+				if (loginButton) loginButton.style.display = 'inline-flex';
+				if (userDropdown) userDropdown.classList.add('hidden');
+				// Bind login button (only once)
+				if (loginButton && !loginButton.dataset.bound) {
+					loginButton.dataset.bound = 'true';
+					loginButton.addEventListener('click', openModal);
+				}
+			}
+		} catch (error) {
+			console.error('Auth error:', error);
+			if (loginButton) loginButton.style.display = 'inline-flex';
+			if (userDropdown) userDropdown.classList.add('hidden');
+			if (loginButton && !loginButton.dataset.bound) {
+				loginButton.dataset.bound = 'true';
+				loginButton.addEventListener('click', openModal);
+			}
+		}
+	};
+
+	document.addEventListener('astro:page-load', () => {
+		window.__authInitialized = false;
+		initAuthButton();
+	});
+
+	initAuthButton();
+
+	const initThemeToggle = () => {
+		const buttons = Array.from(document.querySelectorAll('[id="theme-toggle"], [id="theme-toggle-mobile"]'));
+		if (!buttons.length) return;
+
+		const root = document.documentElement;
+		const storageKey = 'theme';
+		const updateAria = () => {
+			const isDark = root.classList.contains('dark');
+			buttons.forEach((button) => {
+				button.setAttribute('aria-pressed', String(isDark));
+				const icon = button.querySelector('[data-theme-icon]');
+				if (icon) {
+					icon.classList.toggle('rotate-180', isDark);
+				}
+			});
+		};
+
+		buttons.forEach((button) => {
+			if (button.dataset.bound === 'true') return;
+			button.dataset.bound = 'true';
+			button.addEventListener('click', () => {
+				const isDark = root.classList.toggle('dark');
+				root.dataset.theme = isDark ? 'dark' : 'light';
+				localStorage.setItem(storageKey, isDark ? 'dark' : 'light');
+				updateAria();
+			});
+		});
+
+		updateAria();
+	};
+
+	initThemeToggle();
+	// Rebind on client-side navigation because header can be re-rendered by View Transitions.
+	document.addEventListener('astro:page-load', initThemeToggle);
+	document.addEventListener('astro:after-swap', initThemeToggle);
+})();
+</script> <main class="min-h-screen py-10"> <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"> <!-- Admin Header --> <div class="mb-8"> <h1 class="text-3xl font-bold text-zinc-900 dark:text-zinc-100">管理后台</h1> <p class="mt-2 text-zinc-600 dark:text-zinc-400">管理评论、查看统计数据</p> </div> <!-- Login Required Message --> <div id="login-required" class="hidden"> <div class="rounded-lg border border-zinc-200 bg-white p-8 text-center dark:border-zinc-700 dark:bg-zinc-800"> <p class="text-zinc-600 dark:text-zinc-400">请先登录管理员账号</p> <a href="https://api.261770.xyz/api/auth/github/start?returnTo=https://blog.261770.xyz/admin/" class="mt-4 inline-flex items-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
+使用 GitHub 登录
+</a> </div> </div> <!-- Not Admin Message --> <div id="not-admin" class="hidden"> <div class="rounded-lg border border-red-200 bg-red-50 p-8 text-center dark:border-red-800 dark:bg-red-900/20"> <p class="text-red-600 dark:text-red-400">您没有管理员权限</p> </div> </div> <!-- Admin Dashboard --> <div id="admin-dashboard" class="hidden space-y-6"> <!-- Stats Cards --> <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"> <div class="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800"> <div class="flex items-center justify-between"> <div> <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">总评论</p> <p class="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-100" id="stat-total-comments">0</p> </div> <div class="rounded-full bg-zinc-100 p-3 dark:bg-zinc-700"> <svg class="h-6 w-6 text-zinc-600 dark:text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path> </svg> </div> </div> </div> <div class="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800"> <div class="flex items-center justify-between"> <div> <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">待审核</p> <p class="mt-2 text-3xl font-bold text-amber-600 dark:text-amber-400" id="stat-pending-comments">0</p> </div> <div class="rounded-full bg-amber-100 p-3 dark:bg-amber-900/30"> <svg class="h-6 w-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path> </svg> </div> </div> </div> <div class="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800"> <div class="flex items-center justify-between"> <div> <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">总用户数</p> <p class="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-100" id="stat-total-users">0</p> </div> <div class="rounded-full bg-blue-100 p-3 dark:bg-blue-900/30"> <svg class="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path> </svg> </div> </div> </div> <div class="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800"> <div class="flex items-center justify-between"> <div> <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">评论文章数</p> <p class="mt-2 text-3xl font-bold text-zinc-900 dark:text-zinc-100" id="stat-posts-with-comments">0</p> </div> <div class="rounded-full bg-green-100 p-3 dark:bg-green-900/30"> <svg class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path> </svg> </div> </div> </div> </div> <!-- Analytics Section --> <div class="rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-800"> <div class="mb-4 flex items-center justify-between"> <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">访问统计</h2> <select id="analytics-period" class="rounded-md border border-zinc-300 bg-white px-3 py-1 text-sm dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100"> <option value="7">最近7天</option> <option value="30">最近30天</option> <option value="90">最近90天</option> </select> </div> <div class="grid gap-4 sm:grid-cols-3"> <div class="text-center"> <p class="text-sm text-zinc-600 dark:text-zinc-400">总浏览量</p> <p class="mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-100" id="analytics-total-views">0</p> </div> <div class="text-center"> <p class="text-sm text-zinc-600 dark:text-zinc-400">独立访客</p> <p class="mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-100" id="analytics-unique-visitors">0</p> </div> <div class="text-center"> <p class="text-sm text-zinc-600 dark:text-zinc-400">被访问页面</p> <p class="mt-1 text-2xl font-bold text-zinc-900 dark:text-zinc-100" id="analytics-pages">0</p> </div> </div> <div class="mt-6"> <h3 class="mb-3 text-sm font-medium text-zinc-900 dark:text-zinc-100">热门页面</h3> <div id="analytics-top-pages" class="space-y-2"> <p class="text-sm text-zinc-500 dark:text-zinc-400">加载中...</p> </div> </div> </div> <!-- Comments Management --> <div class="rounded-lg border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800"> <div class="border-b border-zinc-200 p-6 dark:border-zinc-700"> <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"> <h2 class="text-lg font-semibold text-zinc-900 dark:text-zinc-100">评论管理</h2> <div class="flex gap-2"> <button data-filter="all" class="comment-filter rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900">全部</button> <button data-filter="pending" class="comment-filter rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">待审核</button> <button data-filter="approved" class="comment-filter rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">已通过</button> <button data-filter="rejected" class="comment-filter rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">已拒绝</button> </div> </div> </div> <div id="comments-list" class="divide-y divide-zinc-200 dark:divide-zinc-700"> <p class="p-6 text-center text-zinc-500 dark:text-zinc-400">加载中...</p> </div> <div class="border-t border-zinc-200 p-4 dark:border-zinc-700"> <div class="flex items-center justify-between"> <button id="prev-page" class="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700" disabled>上一页</button> <span id="page-info" class="text-sm text-zinc-600 dark:text-zinc-400">第 1 页 / 共 1 页</span> <button id="next-page" class="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700" disabled>下一页</button> </div> </div> </div> </div> </div> </main> <footer class="mt-16 border-t border-zinc-200 py-8 transition-colors duration-200 dark:border-zinc-800"> <div class="page-shell text-sm text-zinc-500 dark:text-zinc-400"> <p class="m-0">&copy; 2026 异飨客. All rights reserved.</p> </div> </footer> <script>
+			const API_BASE = 'https://api.261770.xyz';
+			const TOKEN_KEY = 'yxksw_blog_token';
+			
+			let currentPage = 1;
+			let currentFilter = 'all';
+			let totalPages = 1;
+
+			// Get auth token from window.__auth (shared with blog)
+			const getAdminToken = () => {
+				// Try window.__auth first (from BaseHead)
+				if (window.__auth?.getAuthToken) {
+					return window.__auth.getAuthToken();
+				}
+				// Fallback to localStorage
+				return localStorage.getItem(TOKEN_KEY);
+			};
+
+			// Store token from hash (OAuth callback) - use window.__auth if available
+			const adminStoreTokenFromHash = () => {
+				// Try window.__auth first (from BaseHead)
+				if (window.__auth?.storeTokenFromHash) {
+					return window.__auth.storeTokenFromHash();
+				}
+				// Fallback implementation
+				const hash = window.location.hash || '';
+				const match = hash.match(/(?:^#|&)token=([^&]+)/);
+				if (!match) return null;
+				try {
+					const token = decodeURIComponent(match[1]);
+					localStorage.setItem(TOKEN_KEY, token);
+					history.replaceState(null, '', window.location.pathname);
+					return token;
+				} catch {
+					const token = match[1];
+					localStorage.setItem(TOKEN_KEY, token);
+					history.replaceState(null, '', window.location.pathname);
+					return token;
+				}
+			};
+
+			// Check admin status
+			const checkAdmin = async () => {
+				// First check for token in hash (from OAuth callback)
+				adminStoreTokenFromHash();
+				
+				const token = getAdminToken();
+				if (!token) {
+					showLoginRequired();
+					return false;
+				}
+
+				try {
+					const response = await fetch(`${API_BASE}/api/admin/check`, {
+						headers: { 'Authorization': `Bearer ${token}` }
+					});
+					
+					if (!response.ok) {
+						showLoginRequired();
+						return false;
+					}
+
+					const data = await response.json();
+					if (!data.isAdmin) {
+						showNotAdmin();
+						return false;
+					}
+
+					showDashboard();
+					return true;
+				} catch (error) {
+					console.error('Admin check failed:', error);
+					showLoginRequired();
+					return false;
+				}
+			};
+
+			const showLoginRequired = () => {
+				const loginRequired = document.getElementById('login-required');
+				const notAdmin = document.getElementById('not-admin');
+				const adminDashboard = document.getElementById('admin-dashboard');
+				if (loginRequired) loginRequired.classList.remove('hidden');
+				if (notAdmin) notAdmin.classList.add('hidden');
+				if (adminDashboard) adminDashboard.classList.add('hidden');
+			};
+
+			const showNotAdmin = () => {
+				const loginRequired = document.getElementById('login-required');
+				const notAdmin = document.getElementById('not-admin');
+				const adminDashboard = document.getElementById('admin-dashboard');
+				if (loginRequired) loginRequired.classList.add('hidden');
+				if (notAdmin) notAdmin.classList.remove('hidden');
+				if (adminDashboard) adminDashboard.classList.add('hidden');
+			};
+
+			const showDashboard = () => {
+				const loginRequired = document.getElementById('login-required');
+				const notAdmin = document.getElementById('not-admin');
+				const adminDashboard = document.getElementById('admin-dashboard');
+				if (loginRequired) loginRequired.classList.add('hidden');
+				if (notAdmin) notAdmin.classList.add('hidden');
+				if (adminDashboard) adminDashboard.classList.remove('hidden');
+			};
+
+			// Load stats
+			const loadStats = async () => {
+				const token = getAdminToken();
+				try {
+					const response = await fetch(`${API_BASE}/api/admin/stats`, {
+						headers: { 'Authorization': `Bearer ${token}` }
+					});
+					const data = await response.json();
+
+					document.getElementById('stat-total-comments').textContent = data.comments?.total || 0;
+					document.getElementById('stat-pending-comments').textContent = data.comments?.pending || 0;
+					document.getElementById('stat-total-users').textContent = data.users?.total || 0;
+					document.getElementById('stat-posts-with-comments').textContent = data.posts?.withComments || 0;
+				} catch (error) {
+					console.error('Failed to load stats:', error);
+				}
+			};
+
+			// Load analytics
+			const loadAnalytics = async (days = 7) => {
+				const token = getAdminToken();
+				try {
+					const response = await fetch(`${API_BASE}/api/admin/analytics?days=${days}`, {
+						headers: { 'Authorization': `Bearer ${token}` }
+					});
+					const data = await response.json();
+
+					document.getElementById('analytics-total-views').textContent = data.summary?.totalViews?.toLocaleString() || 0;
+					document.getElementById('analytics-unique-visitors').textContent = data.summary?.uniqueVisitors?.toLocaleString() || 0;
+					document.getElementById('analytics-pages').textContent = data.summary?.pagesTracked || 0;
+
+					// Render top pages
+					const topPagesContainer = document.getElementById('analytics-top-pages');
+					if (data.pageViews && data.pageViews.length > 0) {
+						topPagesContainer.innerHTML = data.pageViews.slice(0, 5).map(page => `
+							<div class="flex items-center justify-between rounded-md bg-zinc-50 p-3 dark:bg-zinc-700/50">
+								<span class="truncate text-sm text-zinc-700 dark:text-zinc-300" title="${page.page_path}">${page.page_path}</span>
+								<span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">${page.views} 次</span>
+							</div>
+						`).join('');
+					} else {
+						topPagesContainer.innerHTML = '<p class="text-sm text-zinc-500 dark:text-zinc-400">暂无数据</p>';
+					}
+				} catch (error) {
+					console.error('Failed to load analytics:', error);
+				}
+			};
+
+			// Load comments
+			const loadComments = async () => {
+				const token = getAdminToken();
+				try {
+					const statusParam = currentFilter === 'all' ? '' : `&status=${currentFilter}`;
+					const response = await fetch(`${API_BASE}/api/admin/comments?page=${currentPage}${statusParam}`, {
+						headers: { 'Authorization': `Bearer ${token}` }
+					});
+					const data = await response.json();
+
+					totalPages = data.pagination?.totalPages || 1;
+					renderAdminComments(data.comments || []);
+					updatePagination();
+				} catch (error) {
+					console.error('Failed to load comments:', error);
+					document.getElementById('comments-list').innerHTML = '<p class="p-6 text-center text-zinc-500 dark:text-zinc-400">加载失败</p>';
+				}
+			};
+
+			const renderAdminComments = (comments) => {
+				const container = document.getElementById('comments-list');
+				if (comments.length === 0) {
+					container.innerHTML = '<p class="p-6 text-center text-zinc-500 dark:text-zinc-400">暂无评论</p>';
+					return;
+				}
+
+				container.innerHTML = comments.map(comment => {
+					const statusColors = {
+						pending: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+						approved: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+						rejected: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+					};
+					const statusLabels = {
+						pending: '待审核',
+						approved: '已通过',
+						rejected: '已拒绝'
+					};
+
+					return `
+						<div class="p-6" data-comment-id="${comment.id}">
+							<div class="flex items-start gap-4">
+								<img src="${comment.author?.avatar || 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avifp'}" 
+									 alt="${comment.author?.username || 'User'}" 
+									 class="h-10 w-10 rounded-full border border-zinc-200 object-cover dark:border-zinc-700">
+								<div class="min-w-0 flex-1">
+									<div class="flex flex-wrap items-center gap-2">
+										<span class="font-medium text-zinc-900 dark:text-zinc-100">${comment.author?.username || 'Anonymous'}</span>
+										<span class="text-sm text-zinc-500 dark:text-zinc-400">${new Date(comment.createdAt).toLocaleString('zh-CN')}</span>
+										<span class="rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[comment.status] || statusColors.pending}">${statusLabels[comment.status] || '待审核'}</span>
+									</div>
+									<p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">文章: ${comment.postSlug}</p>
+									<p class="mt-2 text-zinc-800 dark:text-zinc-200">${comment.content}</p>
+									<div class="mt-3 flex gap-2">
+										${comment.status !== 'approved' ? `<button onclick="updateCommentStatus('${comment.id}', 'approved')" class="rounded-md bg-green-600 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-green-700">通过</button>` : ''}
+										${comment.status !== 'rejected' ? `<button onclick="updateCommentStatus('${comment.id}', 'rejected')" class="rounded-md bg-red-600 px-3 py-1 text-sm font-medium text-white transition-colors hover:bg-red-700">拒绝</button>` : ''}
+										<button onclick="deleteComment('${comment.id}')" class="rounded-md border border-zinc-300 bg-white px-3 py-1 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">删除</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					`;
+				}).join('');
+			};
+
+			const updatePagination = () => {
+				document.getElementById('page-info').textContent = `第 ${currentPage} 页 / 共 ${totalPages} 页`;
+				document.getElementById('prev-page').disabled = currentPage <= 1;
+				document.getElementById('next-page').disabled = currentPage >= totalPages;
+			};
+
+			// Update comment status
+			window.updateCommentStatus = async (commentId, status) => {
+				const token = getAdminToken();
+				try {
+					const response = await fetch(`${API_BASE}/api/admin/comments/${commentId}`, {
+						method: 'PATCH',
+						headers: {
+							'Authorization': `Bearer ${token}`,
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify({ status })
+					});
+
+					if (response.ok) {
+						loadComments();
+						loadStats();
+					}
+				} catch (error) {
+					console.error('Failed to update comment:', error);
+					alert('操作失败');
+				}
+			};
+
+			// Delete comment
+			window.deleteComment = async (commentId) => {
+				if (!confirm('确定要删除这条评论吗？')) return;
+
+				const token = getAdminToken();
+				try {
+					const response = await fetch(`${API_BASE}/api/admin/comments/${commentId}`, {
+						method: 'DELETE',
+						headers: { 'Authorization': `Bearer ${token}` }
+					});
+
+					if (response.ok) {
+						loadComments();
+						loadStats();
+					}
+				} catch (error) {
+					console.error('Failed to delete comment:', error);
+					alert('删除失败');
+				}
+			};
+
+			// Initialize admin dashboard
+			const initAdminDashboard = async () => {
+				const isAdmin = await checkAdmin();
+				if (isAdmin) {
+					loadStats();
+					loadAnalytics();
+					loadComments();
+				}
+			};
+
+			// Event listeners - support both normal load and Astro view transitions
+			document.addEventListener('DOMContentLoaded', initAdminDashboard);
+			
+			// Listen for Astro page load event (for view transitions)
+			document.addEventListener('astro:page-load', initAdminDashboard);
+			
+			// Listen for auth changes from other tabs/pages
+			window.addEventListener('storage', (e) => {
+				if (e.key === TOKEN_KEY) {
+					// Token changed, reload page to check admin status
+					window.location.reload();
+				}
+			});
+
+			// Filter buttons
+			document.querySelectorAll('.comment-filter').forEach(btn => {
+				btn.addEventListener('click', (e) => {
+					document.querySelectorAll('.comment-filter').forEach(b => {
+						b.classList.remove('bg-zinc-900', 'text-white', 'dark:bg-zinc-100', 'dark:text-zinc-900');
+						b.classList.add('border', 'border-zinc-300', 'bg-white', 'text-zinc-700', 'dark:border-zinc-600', 'dark:bg-zinc-800', 'dark:text-zinc-300');
+					});
+					e.target.classList.remove('border', 'border-zinc-300', 'bg-white', 'text-zinc-700', 'dark:border-zinc-600', 'dark:bg-zinc-800', 'dark:text-zinc-300');
+					e.target.classList.add('bg-zinc-900', 'text-white', 'dark:bg-zinc-100', 'dark:text-zinc-900');
+					
+					currentFilter = e.target.dataset.filter;
+					currentPage = 1;
+					loadComments();
+				});
+			});
+
+			// Pagination
+			document.getElementById('prev-page').addEventListener('click', () => {
+				if (currentPage > 1) {
+					currentPage--;
+					loadComments();
+				}
+			});
+
+			document.getElementById('next-page').addEventListener('click', () => {
+				if (currentPage < totalPages) {
+					currentPage++;
+					loadComments();
+				}
+			});
+
+			// Analytics period selector
+			document.getElementById('analytics-period').addEventListener('change', (e) => {
+				loadAnalytics(parseInt(e.target.value));
+			});
+		</script> </body> </html>
