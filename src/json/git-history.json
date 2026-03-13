@@ -17,6 +17,12 @@
   ],
   "welcome-to-my-blog.mdx": [
     {
+      "hash": "8855600",
+      "fullHash": "885560062e65f2e77cf89f597393a33bfe8007ba",
+      "date": "2026年3月13日",
+      "message": "feat(通知组件): 优化通知组件的暗黑模式样式"
+    },
+    {
       "hash": "bb48ce8",
       "fullHash": "bb48ce828f00ae919c07f590b72ade30e9f092ee",
       "date": "2026年3月13日",

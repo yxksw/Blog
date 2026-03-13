@@ -8,10 +8,53 @@ import { SITE_TITLE } from '../consts';
 interface FCArticle {
 	title: string;
 	link: string;
-	date: string;
+	created: string;
 	updated?: string;
 	author: string;
 	avatar: string;
+}
+
+// 格式化日期函数
+function formatDate(dateStr: string | undefined): string {
+	if (!dateStr) return '未知日期';
+	
+	try {
+		const date = new Date(dateStr);
+		if (isNaN(date.getTime())) return '未知日期';
+		
+		const now = new Date();
+		const diffMs = now.getTime() - date.getTime();
+		const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+		
+		// 如果是今天
+		if (diffDays === 0) {
+			const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+			if (diffHours === 0) {
+				const diffMinutes = Math.floor(diffMs / (1000 * 60));
+				return diffMinutes === 0 ? '刚刚' : `${diffMinutes} 分钟前`;
+			}
+			return `${diffHours} 小时前`;
+		}
+		
+		// 如果是昨天
+		if (diffDays === 1) {
+			return '昨天';
+		}
+		
+		// 如果是本周内
+		if (diffDays < 7) {
+			return `${diffDays} 天前`;
+		}
+		
+		// 超过一周显示具体日期
+		return date.toLocaleDateString('zh-CN', { 
+			year: 'numeric',
+			month: 'short', 
+			day: 'numeric' 
+		});
+	} catch {
+		return '未知日期';
+	}
 }
 
 interface FCData {
@@ -60,12 +103,11 @@ async function loadFCData(): Promise<FCData> {
 }
 
 const fcData = await loadFCData();
-console.log('FC Data loaded:', fcData.article_data?.length || 0, 'articles');
 
 // 按日期排序（最新的在前）
 const sortedArticles = fcData.article_data?.sort((a, b) => {
-	const dateA = new Date(a.date || 0);
-	const dateB = new Date(b.date || 0);
+	const dateA = new Date(a.created || 0);
+	const dateB = new Date(b.created || 0);
 	return dateB.getTime() - dateA.getTime();
 }) || [];
 
@@ -216,7 +258,7 @@ const description = '聚合所有友链博客的最新文章';
                     <div class="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-1" x-text="stats.today">
                         {sortedArticles.filter(a => {
                             const today = new Date().toISOString().split('T')[0];
-                            return a.date?.startsWith(today);
+                            return a.created?.startsWith(today);
                         }).length}
                     </div>
                     <div class="text-sm text-zinc-600 dark:text-zinc-400">今日更新</div>
@@ -226,7 +268,7 @@ const description = '聚合所有友链博客的最新文章';
                         {sortedArticles.filter(a => {
                             const weekAgo = new Date();
                             weekAgo.setDate(weekAgo.getDate() - 7);
-                            return new Date(a.date || 0) >= weekAgo;
+                            return new Date(a.created || 0) >= weekAgo;
                         }).length}
                     </div>
                     <div class="text-sm text-zinc-600 dark:text-zinc-400">本周更新</div>
@@ -361,9 +403,9 @@ const description = '聚合所有友链博客的最新文章';
                                                             <line x1="3" x2="21" y1="10" y2="10"/>
                                                         </svg>
                                                         <span>
-                                                            {article.date ? new Date(article.date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }) : '未知日期'}
+                                                            {formatDate(article.created)}
                                                         </span>
-                                                        {article.updated && article.updated !== article.date && (
+                                                        {article.updated && article.updated !== article.created && (
                                                             <span class="text-emerald-500 dark:text-emerald-400 flex items-center gap-1">
                                                                 <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -427,6 +469,49 @@ const description = '聚合所有友链博客的最新文章';
                 articles: [],
                 authorList: [],
 
+                // 格式化日期函数
+                formatDate(dateStr) {
+                    if (!dateStr) return '未知日期';
+                    
+                    try {
+                        const date = new Date(dateStr);
+                        if (isNaN(date.getTime())) return '未知日期';
+                        
+                        const now = new Date();
+                        const diffMs = now.getTime() - date.getTime();
+                        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                        
+                        // 如果是今天
+                        if (diffDays === 0) {
+                            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                            if (diffHours === 0) {
+                                const diffMinutes = Math.floor(diffMs / (1000 * 60));
+                                return diffMinutes === 0 ? '刚刚' : `${diffMinutes} 分钟前`;
+                            }
+                            return `${diffHours} 小时前`;
+                        }
+                        
+                        // 如果是昨天
+                        if (diffDays === 1) {
+                            return '昨天';
+                        }
+                        
+                        // 如果是本周内
+                        if (diffDays < 7) {
+                            return `${diffDays} 天前`;
+                        }
+                        
+                        // 超过一周显示具体日期
+                        return date.toLocaleDateString('zh-CN', { 
+                            year: 'numeric',
+                            month: 'short', 
+                            day: 'numeric' 
+                        });
+                    } catch {
+                        return '未知日期';
+                    }
+                },
+
                 async init() {
                     // 检查服务端是否渲染了数据
                     const serverRendered = document.querySelector('[data-server-rendered="true"]');
@@ -452,8 +537,8 @@ const description = '聚合所有友链博客的最新文章';
                         }
 
                         this.articles = data.article_data.sort((a, b) => {
-                            const dateA = new Date(a.date || 0);
-                            const dateB = new Date(b.date || 0);
+                            const dateA = new Date(a.created || 0);
+                            const dateB = new Date(b.created || 0);
                             return dateB.getTime() - dateA.getTime();
                         });
 
@@ -547,8 +632,8 @@ const description = '聚合所有友链博客的最新文章';
                                                                 <line x1="8" x2="8" y1="2" y2="6"/>
                                                                 <line x1="3" x2="21" y1="10" y2="10"/>
                                                             </svg>
-                                                            <span>${article.date ? new Date(article.date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }) : '未知日期'}</span>
-                                                            ${article.updated && article.updated !== article.date ? `
+                                                            <span>${this.formatDate(article.created)}</span>
+                                                            ${article.updated && article.updated !== article.created ? `
                                                                 <span class="text-emerald-500 dark:text-emerald-400 flex items-center gap-1">
                                                                     <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -622,9 +707,9 @@ const description = '聚合所有友链博客的最新文章';
                     let todayCount = 0;
                     let weekCount = 0;
                     this.articles.forEach(article => {
-                        if (article.date) {
-                            if (article.date.startsWith(today)) todayCount++;
-                            if (new Date(article.date) >= weekAgo) weekCount++;
+                        if (article.created) {
+                            if (article.created.startsWith(today)) todayCount++;
+                            if (new Date(article.created) >= weekAgo) weekCount++;
                         }
                     });
                     
@@ -694,8 +779,8 @@ const description = '聚合所有友链博客的最新文章';
                     // 排序
                     if (this.sortBy === 'date') {
                         filtered.sort((a, b) => {
-                            const dateA = new Date(a.date || 0);
-                            const dateB = new Date(b.date || 0);
+                            const dateA = new Date(a.created || 0);
+                            const dateB = new Date(b.created || 0);
                             return dateB.getTime() - dateA.getTime();
                         });
                     } else if (this.sortBy === 'author') {
