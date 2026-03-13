@@ -606,7 +606,6 @@
 		const isFromInternal = referrer && referrer.startsWith(currentOrigin);
 		
 		// 检查 localStorage 中是否有未读通知（从通知面板点击时会设置）
-		const NOTIFICATION_STATE_KEY = "blog-notification-state";
 		const hasNotificationState = !!localStorage.getItem(NOTIFICATION_STATE_KEY);
 		
 		// 如果是从内部页面跳转或有通知状态，且文章有更新，自动显示 diff
