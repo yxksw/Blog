@@ -596,18 +596,21 @@
 		// 1. 调试模式
 		// 2. URL 中有 ?diff=1 参数
 		// 3. URL 中有 #post-diff 锚点
-		// 4. 从首页/通知面板点击进入（referrer 检查）
+		// 4. 从通知面板点击（localStorage 中有未读通知）
 		const diffParam = sp.get("diff") === "1";
 		const hasDiffHash = window.location.hash === "#post-diff";
 		
-		// 检查是否从首页或通知面板点击而来
+		// 检查是否从通知面板点击而来（通过 referrer 或 localStorage）
 		const referrer = document.referrer;
 		const currentOrigin = window.location.origin;
 		const isFromInternal = referrer && referrer.startsWith(currentOrigin);
-		const isFromHome = isFromInternal && (referrer === currentOrigin + '/' || referrer.includes('/index.html') || referrer.endsWith(currentOrigin));
 		
-		// 如果是从内部页面跳转且文章有更新，自动显示 diff
-		const shouldAutoShow = matched && isFromInternal;
+		// 检查 localStorage 中是否有未读通知（从通知面板点击时会设置）
+		const NOTIFICATION_STATE_KEY = "blog-notification-state";
+		const hasNotificationState = !!localStorage.getItem(NOTIFICATION_STATE_KEY);
+		
+		// 如果是从内部页面跳转或有通知状态，且文章有更新，自动显示 diff
+		const shouldAutoShow = matched && (isFromInternal || hasNotificationState);
 		
 		const shouldApply = isDebug || diffParam || hasDiffHash || shouldAutoShow;
 

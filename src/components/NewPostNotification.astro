@@ -224,8 +224,38 @@
     // Helper to get current RSS items
     async function fetchRSS() {
         try {
-            const response = await fetch('/rss.xml', { cache: 'no-store' });
+            // 尝试多个可能的 RSS 路径
+            const possiblePaths = [
+                basePath ? `${basePath}/rss.xml` : '/rss.xml',
+                '/rss.xml',
+                './rss.xml',
+                'rss.xml'
+            ];
+            
+            let response = null;
+            let successfulPath = '';
+            
+            for (const rssPath of possiblePaths) {
+                try {
+                    console.log('[NewPostNotification] Trying RSS path:', rssPath);
+                    response = await fetch(rssPath, { cache: 'no-store' });
+                    if (response.ok) {
+                        successfulPath = rssPath;
+                        console.log('[NewPostNotification] RSS fetch successful from:', rssPath);
+                        break;
+                    }
+                } catch (e) {
+                    console.log('[NewPostNotification] Failed to fetch from:', rssPath, e.message);
+                }
+            }
+            
+            if (!response || !response.ok) {
+                console.error('[NewPostNotification] RSS fetch failed for all paths');
+                return [];
+            }
+            
             const text = await response.text();
+            console.log('[NewPostNotification] RSS fetched from', successfulPath, 'length:', text.length);
             const parser = new DOMParser();
             const xml = parser.parseFromString(text, 'text/xml');
             
@@ -544,6 +574,8 @@
 
     // Main logic
     try {
+        console.log('[NewPostNotification] Starting...');
+        
         // Developer Mode Check
         const urlParams = new URLSearchParams(window.location.search);
         const isDevMode = urlParams.has('debug-notification');
@@ -572,11 +604,18 @@
         }
 
         const currentPosts = await fetchRSS();
-        if (currentPosts.length === 0) return;
+        console.log('[NewPostNotification] RSS posts count:', currentPosts.length);
+        if (currentPosts.length === 0) {
+            console.log('[NewPostNotification] No RSS posts found, showing empty notification');
+            showNotification([], Date.now(), false, Date.now());
+            return;
+        }
 
         const db = await openDB();
+        console.log('[NewPostNotification] IndexedDB opened');
         const storedPostsOld = await getStoredPosts(db, STORE_OLD);
         const storedPostsNew = await getStoredPosts(db, STORE_NEW);
+        console.log('[NewPostNotification] Stored posts:', storedPostsOld.length, 'old,', storedPostsNew.length, 'new');
         let storedPosts = storedPostsOld;
         if (storedPostsNew.length > 0) {
             storedPosts = storedPostsNew;
