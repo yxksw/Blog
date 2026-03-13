@@ -21,12 +21,24 @@ const courseMapByDayAndNode = new Map<string, TimetableCourseView[]>();
 
 for (const day of dayIndexes) {
 	for (const course of viewModel.coursesByDay[day] ?? []) {
-		const pairStartNode =
-			course.startNode % 2 === 1 ? course.startNode : course.startNode - 1;
-		const key = `${day}-${Math.max(1, pairStartNode)}`;
-		const list = courseMapByDayAndNode.get(key) ?? [];
-		list.push(course);
-		courseMapByDayAndNode.set(key, list);
+		// 将课程按每2节拆分，在每个时段都显示
+		const startNode = course.startNode;
+		const endNode = course.endNode;
+		
+		// 遍历课程覆盖的所有节次，每2节一个时段
+		for (let node = startNode; node <= endNode; node += 2) {
+			const pairStartNode = node % 2 === 1 ? node : node - 1;
+			const key = `${day}-${Math.max(1, pairStartNode)}`;
+			const list = courseMapByDayAndNode.get(key) ?? [];
+			
+			// 创建该时段的课程视图（保持原课程信息，但显示在当前时段）
+			const courseForThisSlot = {
+				...course,
+				// 可以在这里添加标记表示这是跨时段显示的课程
+			};
+			list.push(courseForThisSlot);
+			courseMapByDayAndNode.set(key, list);
+		}
 	}
 }
 ---
