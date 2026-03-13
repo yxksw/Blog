@@ -17,6 +17,7 @@ tags: ['Astro', 'IndexedDB', 'diff', 'RSS', '博客开发']
 1. **新文章通知** - 右下角通知面板，显示新发布的文章和更新的文章
 2. **文章内差异高亮** - 在文章页面显示具体变更（新增/删除）
 3. **跳转到更新处** - 一键跳转到文章变更位置
+4. **文章时效性提示** - 显示文章发布/更新时间
 
 ## 技术栈
 
@@ -57,7 +58,7 @@ PostDiffInArticle 读取并渲染高亮
 使用 IndexedDB 存储 RSS 数据，避免重复获取：
 
 ```typescript
-const DB_NAME = 'blog-rss-store';
+const DB_NAME = 'blog-rss-store-v2';
 const STORE_OLD = 'posts';
 const STORE_NEW = 'posts_new';
 
@@ -143,11 +144,13 @@ Diff 样式在以下情况自动显示：
 1. 从网站内部页面点击文章（通过 `document.referrer` 检测）
 2. URL 带 `?diff=1` 参数
 3. URL 带 `#post-diff` 锚点
-4. 调试模式 `?__diff_debug=1`
+4. localStorage 中有通知状态（从通知面板点击）
+5. 调试模式 `?__diff_debug=1`
 
 ```typescript
 const isFromInternal = document.referrer?.startsWith(window.location.origin);
-const shouldAutoShow = matched && isFromInternal;
+const hasNotificationState = !!localStorage.getItem(NOTIFICATION_STATE_KEY);
+const shouldAutoShow = matched && (isFromInternal || hasNotificationState);
 const shouldApply = isDebug || diffParam || hasDiffHash || shouldAutoShow;
 ```
 
@@ -173,22 +176,21 @@ http://localhost:4321/blog/article-slug?__diff_debug=1
 http://localhost:4321/blog/article-slug?diff=1#post-diff
 ```
 
+清除 IndexedDB（调试用途）：
+
+```
+http://localhost:4321/?__diff_debug_cleanup=1
+```
+
 ## 实现细节
 
 ### IndexedDB 版本管理
 
-当数据库结构变化时，需要升级版本：
+当数据库结构变化时，需要升级版本。为避免版本冲突，生产环境使用了新的数据库名称：
 
 ```typescript
+const DB_NAME = 'blog-rss-store-v2'; // 使用 v2 避免与旧版本冲突
 const DB_VERSION = 1;
-
-// 检查 object store 是否存在
-const hasStore = db.objectStoreNames.contains(STORE_OLD);
-if (!hasStore) {
-    db.close();
-    const upgradeRequest = indexedDB.open(DB_NAME, DB_VERSION + 1);
-    // 创建缺失的 store
-}
 ```
 
 ### 路径匹配
@@ -202,6 +204,19 @@ function stripBasePath(pathname) {
     if (p.startsWith(`${base}/`)) return p.slice(base.length) || '/';
     return p;
 }
+```
+
+### RSS 路径适配
+
+生产环境可能使用不同的 basePath，需要尝试多个 RSS 路径：
+
+```typescript
+const possiblePaths = [
+    basePath ? `${basePath}/rss.xml` : '/rss.xml',
+    '/rss.xml',
+    './rss.xml',
+    'rss.xml'
+];
 ```
 
 ### 图片变更处理
@@ -219,6 +234,38 @@ function stripBasePath(pathname) {
     opacity: 0.7;
 }
 ```
+
+## 遇到的问题与解决方案
+
+### 1. 子模块部署问题
+
+**问题**：Cloudflare Pages 部署时无法克隆 git 子模块
+
+**解决**：移除 `.gitmodules` 文件，将 `Blogs_worker` 和 `fuwari` 作为普通目录保留在本地
+
+### 2. IndexedDB 版本冲突
+
+**问题**：生产环境数据库版本与本地不一致，导致 `VersionError`
+
+**解决**：修改数据库名称为 `blog-rss-store-v2`，重新开始
+
+### 3. 变量重复定义
+
+**问题**：`NOTIFICATION_STATE_KEY` 在组件顶部和函数内重复定义，导致构建后变量提升问题
+
+**解决**：移除函数内的重复定义
+
+### 4. 日期字段不匹配
+
+**问题**：友链朋友圈 API 返回的日期字段是 `created` 而不是 `date`
+
+**解决**：统一使用 `created` 字段
+
+### 5. Referrer 不可靠
+
+**问题**：生产环境 `document.referrer` 可能为空
+
+**解决**：同时检查 localStorage 中是否有通知状态
 
 ## 总结
 
