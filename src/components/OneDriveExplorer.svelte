@@ -307,8 +307,9 @@
 
     <!-- 返回上一级 -->
     {#if pathStack.length > 1}
-      <div
-        class="item-row flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors group"
+      <button
+        type="button"
+        class="w-full text-left item-row flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors group"
         on:click={goBack}
       >
         <div
@@ -331,14 +332,15 @@
           class="text-zinc-500 dark:text-zinc-400 font-medium group-hover:text-zinc-700 dark:group-hover:text-zinc-200 transition-colors"
           >... (返回上一级)</span
         >
-      </div>
+      </button>
     {/if}
 
     {#each items as item}
       <div class="item-row">
         {#if item.type === "directory"}
-          <div
-            class="folder-item flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors group"
+          <button
+            type="button"
+            class="w-full text-left folder-item flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors group"
             on:click={() => navigateInto(item)}
           >
             <div
@@ -365,7 +367,7 @@
                 ><path d="m9 18 6-6-6-6" /></svg
               >
             </div>
-          </div>
+          </button>
         {:else}
           <a
             href={item.downloadUrl}

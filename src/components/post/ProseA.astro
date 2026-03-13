@@ -1,0 +1,101 @@
+---
+/**
+ * ProseA - 增强版链接组件
+ * 
+ * 功能：
+ * 1. 站外链接默认在新标签页打开，并添加安全属性
+ * 2. 鼠标悬停时显示域名提示
+ * 3. 根据域名自动显示对应图标（GitHub、Bilibili、QQ、微信等）
+ * 4. 支持自定义图标
+ */
+
+import { getDomainIcon, getDomain, isExtLink } from '../../utils/icon';
+
+interface Props {
+  href: string;
+  icon?: string;
+  title?: string;
+}
+
+const { href, icon: customIcon, title } = Astro.props;
+
+// 确定图标：优先使用自定义图标，否则根据域名匹配
+const icon = customIcon || getDomainIcon(href);
+
+// 获取域名用于提示
+const domain = isExtLink(href) ? getDomain(href) : href;
+
+// 判断是否为外部链接
+const isExternal = isExtLink(href);
+
+// 处理 base URL
+const BASE = (import.meta as any).env.BASE_URL || '/';
+const normalizeHref = (path: string) => {
+  if (!path) return path;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  if (path.startsWith('#') || path.startsWith('mailto:')) return path;
+  if (path.startsWith(BASE)) return path;
+  return `${BASE}${path.replace(/^\/+/, '')}`;
+};
+
+const normalizedHref = normalizeHref(href);
+---
+
+<a
+  href={normalizedHref}
+  class="prose-a-link"
+  title={title || domain}
+  {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer nofollow' } : {})}
+>
+  {icon && (
+    <img
+      src={`https://api.iconify.design/${icon}.svg`}
+      alt=""
+      class="domain-icon"
+      width="16"
+      height="16"
+      loading="lazy"
+    />
+  )}
+  <slot />
+</a>
+
+<style>
+  .prose-a-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+    margin: -0.1em -0.2em;
+    padding: 0.1em 0.2em;
+    background: linear-gradient(var(--c-primary-soft, rgba(59, 130, 246, 0.15)), var(--c-primary-soft, rgba(59, 130, 246, 0.15))) no-repeat center bottom / 100% 0.1em;
+    color: var(--c-primary, #3b82f6);
+    text-decoration: none;
+    border-radius: 0.2em;
+    transition: all 0.2s ease;
+  }
+
+  .prose-a-link:hover {
+    border-radius: 0.3em;
+    background-size: 100% 100%;
+    text-decoration: none;
+  }
+
+  .domain-icon {
+    flex-shrink: 0;
+    width: 1em;
+    height: 1em;
+    object-fit: contain;
+    vertical-align: middle;
+  }
+
+  /* 暗色模式适配 */
+  :global(.dark) .prose-a-link {
+    --c-primary: #60a5fa;
+    --c-primary-soft: rgba(96, 165, 250, 0.2);
+  }
+
+  /* 暗色模式下图标变为白色 */
+  :global(.dark) .domain-icon {
+    filter: brightness(0) invert(1);
+  }
+</style>

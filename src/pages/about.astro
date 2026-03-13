@@ -379,6 +379,13 @@ const description = '关于异飨客的博客';
             align-items: center;
             justify-content: center;
             font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .skill-icon img {
+            width: 16px;
+            height: 16px;
+            object-fit: contain;
         }
         
         /* Single Section */
@@ -534,8 +541,22 @@ const description = '关于异飨客的博客';
                     <div class="skills-grid">
                         {aboutData.skills.map((skill) => (
                             <div class="skill-item">
-                                <div class="skill-icon" style={`background: ${skill.color}; color: white;`}>
-                                    {skill.icon}
+                                <div class="skill-icon" style={`background: transparent; color: ${skill.color};`}>
+                                    {skill.iconType === 'emoji' && skill.icon}
+                                    {skill.iconType === 'iconify' && (
+                                        <img 
+                                            src={`https://api.iconify.design/${skill.icon}.svg`}
+                                            alt={skill.name}
+                                            loading="lazy"
+                                        />
+                                    )}
+                                    {skill.iconType === 'url' && (
+                                        <img 
+                                            src={skill.icon}
+                                            alt={skill.name}
+                                            loading="lazy"
+                                        />
+                                    )}
                                 </div>
                                 <span>{skill.name}</span>
                             </div>

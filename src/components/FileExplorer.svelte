@@ -144,6 +144,7 @@ function getFileIconSvg(type: string) {
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-400 flex-shrink-0"><path d="m9 18 6-6-6-6"/></svg>
             {/if}
             <button 
+                type="button"
                 class="px-2 py-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors {i === pathStack.length - 1 ? 'text-blue-500 font-medium' : 'text-zinc-600 dark:text-zinc-400'}"
                 on:click={() => navigateToLevel(i)}
             >
@@ -163,22 +164,24 @@ function getFileIconSvg(type: string) {
     <div class="file-list">
         <!-- 返回上一级 -->
         {#if pathStack.length > 1}
-            <div 
-                class="item-row flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors group"
+            <button 
+                type="button"
+                class="w-full text-left item-row flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors group"
                 on:click={goBack}
             >
                 <div class="flex items-center justify-center w-6 h-6 text-zinc-400 group-hover:text-blue-500 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
                 </div>
                 <span class="text-zinc-500 dark:text-zinc-400 font-medium group-hover:text-zinc-700 dark:group-hover:text-zinc-200 transition-colors">... (返回上一级)</span>
-            </div>
+            </button>
         {/if}
 
         {#each currentView.items as item}
             <div class="item-row">
                 {#if item.type === 'directory'}
-                    <div 
-                        class="folder-item flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors group"
+                    <button 
+                        type="button"
+                        class="w-full text-left folder-item flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors group"
                         on:click={() => navigateInto(item)}
                     >
                         <div class="flex items-center justify-center w-6 h-6 text-blue-500 group-hover:scale-110 transition-transform">
@@ -188,12 +191,13 @@ function getFileIconSvg(type: string) {
                         <div class="text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-400 transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                         </div>
-                    </div>
+                    </button>
                 {:else}
                     <a 
                         href={`/${item.path}`} 
                         download={item.name}
                         target="_blank" 
+                        rel="noopener noreferrer"
                         class="file-item flex items-center justify-between py-2 px-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors group no-underline"
                     >
                         <div class="flex items-center gap-2 flex-1">

@@ -1,5 +1,14 @@
 // 关于页面数据配置
 
+export type SkillIconType = 'emoji' | 'iconify' | 'url';
+
+export interface SkillItem {
+    name: string;
+    icon: string;
+    iconType: SkillIconType;
+    color: string;
+}
+
 export interface AboutData {
     author: {
         left: string[];
@@ -26,11 +35,7 @@ export interface AboutData {
         title1: string;
         title2: string;
     };
-    skills: {
-        name: string;
-        icon: string;
-        color: string;
-    }[];
+    skills: SkillItem[];
     single: {
         tip: string;
         title: string;
@@ -41,25 +46,25 @@ export interface AboutData {
 export const aboutData: AboutData = {
     author: {
         left: [
-            "💻 技术爱好者",
-            "📝 喜欢记录",
-            "🕊 追求简单",
+            "💻 前端入门者",
+            "📝 博客写作者",
+            "🕊 本质内向",
             "🧱 持续学习"
         ],
         right: [
-            "吃饭不如碎觉 💤",
-            "乐观 积极 向上 🤝",
-            "专攻各种困难 🔨",
-            "人不狠话超多 💢"
+            "长时间熬夜者 💤",
+            "和朋友关系好 🤝",
+            "喜欢钻研项目 🔨",
+            "只会CTRL CV 🤖"
         ],
-        avatar: "https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif",
+        avatar: "/image/yxk-avatar.avif",
         name: "异飨客"
     },
     myinfo: {
         title1: "你好，很高兴认识你👋",
         title2: "我叫",
         bloggerName: "异飨客",
-        content1: "是一名 工程师、学生、",
+        content1: "是一名 前端入门者、学生、",
         content2: "博主"
     },
     siteTips: {
@@ -71,20 +76,26 @@ export const aboutData: AboutData = {
     },
     maxim: {
         tip: "座右铭",
-        title1: "生活明朗，",
-        title2: "万物可爱。"
+        title1: "每一段旅行，",
+        title2: "都有终点。"
     },
     skills: [
-        { name: "Astro", icon: "🚀", color: "#FF5D01" },
-        { name: "React", icon: "⚛️", color: "#61DAFB" },
-        { name: "TypeScript", icon: "📘", color: "#3178C6" },
-        { name: "Python", icon: "🐍", color: "#3776AB" },
-        { name: "Cloudflare", icon: "☁️", color: "#F38020" },
-        { name: "Tailwind", icon: "🎨", color: "#06B6D4" }
+        // emoji 类型（默认）
+        { name: "Astro", icon: "lineicons:astro", iconType: "iconify", color: "#FFFFFF" },
+        { name: "React", icon: "material-icon-theme:react", iconType: "iconify", color: "#FFFFFF" },
+        { name: "TypeScript", icon: "catppuccin:typescript", iconType: "iconify", color: "#FFFFFF" },
+        { name: "Python", icon: "material-icon-theme:python", iconType: "iconify", color: "#FFFFFF" },
+        { name: "Cloudflare", icon: "devicon:cloudflare", iconType: "iconify", color: "#FFFFFF" },
+        { name: "Tailwind", icon: "material-icon-theme:tailwindcss", iconType: "iconify", color: "#06B6D4" },
+        // iconify 类型示例
+        { name: "Vue", icon: "logos:vue", iconType: "iconify", color: "#4FC08D" },
+        { name: "Node.js", icon: "logos:nodejs-icon", iconType: "iconify", color: "#339933" },
+        // url 类型示例（外链图标）
+        { name: "GitHub", icon: "https://api.iconify.design/logos:github-icon.svg", iconType: "url", color: "#181717" }
     ],
     single: {
-        tip: "心路历程",
-        title: "为何而建站",
+        tip: "建站历程",
+        title: "如何建站",
         history: "『异飨客』历史进程"
     }
 };

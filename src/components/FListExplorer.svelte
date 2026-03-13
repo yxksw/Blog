@@ -497,8 +497,9 @@
 
     <!-- 返回上一级（仅 github-repo 类型且在子目录时显示） -->
     {#if currentConfig.source === 'github-repo' && pathStack.length > 1}
-      <div
-        class="flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors group"
+      <button
+        type="button"
+        class="w-full flex items-center gap-2 py-2 px-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors group text-left"
         on:click={goBack}
       >
         <div class="flex items-center justify-center w-6 h-6 text-zinc-400 group-hover:text-blue-500 transition-colors">
@@ -507,14 +508,15 @@
           </svg>
         </div>
         <span class="text-zinc-500 dark:text-zinc-400 font-medium group-hover:text-zinc-700 dark:group-hover:text-zinc-200 transition-colors">.. (返回上一级)</span>
-      </div>
+      </button>
     {/if}
 
     {#each items as item}
       <div class="item-row">
         {#if item.type === "directory"}
-          <div 
-            class="folder-item grid grid-cols-[1fr_100px_140px_50px] gap-2 py-2 px-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors group items-center"
+          <button 
+            type="button"
+            class="w-full text-left folder-item grid grid-cols-[1fr_100px_140px_50px] gap-2 py-2 px-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors group items-center"
             on:click={() => navigateIntoFolder(item)}
           >
             <div class="flex items-center gap-2">
@@ -532,9 +534,9 @@
                 <path d="m9 18 6-6-6-6"/>
               </svg>
             </div>
-          </div>
+          </button>
         {:else}
-          <div class="file-item grid grid-cols-[1fr_100px_140px_50px] gap-2 py-2 px-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors group items-center">
+          <div class="file-item grid grid-cols-[1fr_100px_140px_50px] gap-2 py-2 px-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors group items-center" role="listitem">
             <div class="flex items-center gap-2 min-w-0">
               <div class="flex items-center justify-center w-6 h-6 text-zinc-400 flex-shrink-0">
                 {@html getFileIconSvg(getFileIcon(item.name))}
@@ -594,12 +596,12 @@
 
 <!-- 预览模态框 -->
 {#if previewItem}
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" on:click={closePreview}>
-    <div class="relative max-w-4xl max-h-[90vh] w-full bg-white dark:bg-zinc-900 rounded-lg overflow-hidden" on:click|stopPropagation>
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true" on:click={closePreview} on:keydown={(e) => e.key === 'Escape' && closePreview()} tabindex="-1" aria-label="文件预览">
+    <div class="relative max-w-4xl max-h-[90vh] w-full bg-white dark:bg-zinc-900 rounded-lg overflow-hidden" role="document" on:click|stopPropagation>
       <!-- 头部 -->
       <div class="flex items-center justify-between p-4 border-b border-zinc-200 dark:border-zinc-700">
         <span class="font-medium text-zinc-700 dark:text-zinc-300 truncate pr-4">{previewItem.name}</span>
-        <button on:click={closePreview} class="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+        <button on:click={closePreview} aria-label="关闭预览" class="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-500">
             <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
           </svg>
@@ -612,12 +614,12 @@
           <img src={previewItem.downloadUrl} alt={previewItem.name} class="max-w-full max-h-[70vh] object-contain rounded" />
         {:else if previewType === "video"}
           <video src={previewItem.downloadUrl} controls class="max-w-full max-h-[70vh] rounded">
-            <track kind="captions" />
+            <track kind="captions" src="" />
           </video>
         {:else if previewType === "audio"}
-          <audio src={previewItem.downloadUrl} controls class="w-full max-w-md" />
+          <audio src={previewItem.downloadUrl} controls class="w-full max-w-md"></audio>
         {:else if previewType === "pdf"}
-          <iframe src={previewItem.downloadUrl} title={previewItem.name} class="w-full h-[70vh] rounded border-0" />
+          <iframe src={previewItem.downloadUrl} title={previewItem.name} class="w-full h-[70vh] rounded border-0"></iframe>
         {/if}
       </div>
       

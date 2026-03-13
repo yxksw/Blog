@@ -44,9 +44,10 @@ function updateShadow(key: string, value: string | number) {
 }
 
 function hexToRgba(hex: string, alpha: number) {
-	const r = Number.parseInt(hex.slice(1, 3), 16);
-	const g = Number.parseInt(hex.slice(3, 5), 16);
-	const b = Number.parseInt(hex.slice(5, 7), 16);
+	const validHex = hex && hex.startsWith('#') ? hex : '#000000';
+	const r = Number.parseInt(validHex.slice(1, 3), 16);
+	const g = Number.parseInt(validHex.slice(3, 5), 16);
+	const b = Number.parseInt(validHex.slice(5, 7), 16);
 	return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
@@ -438,7 +439,7 @@ async function doExport() {
 		if (exportConfig.transparentBg) {
 			solidBgRect.setAttribute("fill", "none");
 		} else {
-			solidBgRect.setAttribute("fill", hexToRgba(bgColor, bgColorOpacity));
+			solidBgRect.setAttribute("fill", hexToRgba(bgColor || '#ffffff', bgColorOpacity));
 		}
 	}
 
@@ -526,6 +527,9 @@ function downloadLink(url: string, filename: string) {
       on:pointerup={handlePointerUp}
       on:pointercancel={handlePointerUp}
       on:pointerleave={handlePointerUp}
+      role="application"
+      aria-label="封面预览区域"
+      tabindex="-1"
   >
       <svg 
         bind:this={svgContainer}
@@ -547,7 +551,7 @@ function downloadLink(url: string, filename: string) {
 
         <!-- Background -->
         <rect width="100%" height="100%" fill="url(#checkerboard)" />
-        <rect width="100%" height="100%" fill={hexToRgba(bgColor, bgColorOpacity)} />
+        <rect width="100%" height="100%" fill={hexToRgba(bgColor || '#ffffff', bgColorOpacity)} />
         
         {#if bgImage}
             <image 
@@ -578,9 +582,9 @@ function downloadLink(url: string, filename: string) {
                 "
             >
                 <span style="
-                    font-size: {fontSize}px; 
-                    color: {color}; 
-                    text-shadow: {textShadow.x}px {textShadow.y}px {textShadow.blur}px {hexToRgba(textShadow.color, textShadow.alpha)};
+                    font-size: {fontSize}px;
+                    color: {color || '#000000'};
+                    text-shadow: {textShadow.x}px {textShadow.y}px {textShadow.blur}px {hexToRgba(textShadow.color || '#000000', textShadow.alpha)};
                     line-height: 1;
                     white-space: nowrap;
                 ">{leftText}</span>
@@ -592,7 +596,7 @@ function downloadLink(url: string, filename: string) {
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        background-color: {iconBgEnabled ? hexToRgba(iconBgColor, iconBgOpacity) : 'transparent'};
+                        background-color: {iconBgEnabled ? hexToRgba(iconBgColor || '#000000', iconBgOpacity) : 'transparent'};
                         backdrop-filter: {iconBgEnabled && iconBgBlur > 0 ? `blur(${iconBgBlur}px)` : 'none'};
                         -webkit-backdrop-filter: {iconBgEnabled && iconBgBlur > 0 ? `blur(${iconBgBlur}px)` : 'none'};
                         border-radius: {iconBgEnabled ? `${iconBgRadius}%` : '0'};
@@ -602,8 +606,8 @@ function downloadLink(url: string, filename: string) {
                             height: {iconSize}px; 
                             aspect-ratio: 1 / 1;
                             flex-shrink: 0;
-                            color: {useOriginalIconColor ? 'inherit' : iconColor}; 
-                            filter: drop-shadow({iconShadow.x}px {iconShadow.y}px {iconShadow.blur}px {hexToRgba(iconShadow.color, iconShadow.alpha)});
+                            color: {useOriginalIconColor ? 'inherit' : (iconColor || '#000000')};
+                            filter: drop-shadow({iconShadow.x}px {iconShadow.y}px {iconShadow.blur}px {hexToRgba(iconShadow.color || '#000000', iconShadow.alpha)});
                             display: flex;
                             align-items: center;
                             justify-content: center;
@@ -622,9 +626,9 @@ function downloadLink(url: string, filename: string) {
                 {/if}
 
                 <span style="
-                    font-size: {fontSize}px; 
-                    color: {color}; 
-                    text-shadow: {textShadow.x}px {textShadow.y}px {textShadow.blur}px {hexToRgba(textShadow.color, textShadow.alpha)};
+                    font-size: {fontSize}px;
+                    color: {color || '#000000'};
+                    text-shadow: {textShadow.x}px {textShadow.y}px {textShadow.blur}px {hexToRgba(textShadow.color || '#000000', textShadow.alpha)};
                     line-height: 1;
                     white-space: nowrap;
                 ">{rightText}</span>
@@ -681,7 +685,7 @@ function downloadLink(url: string, filename: string) {
       
       <div class="space-y-4">
           <div class="flex flex-col gap-2">
-              <label class="text-sm font-bold opacity-80">背景图片</label>
+              <span class="text-sm font-bold opacity-80">背景图片</span>
               <div class="relative">
                   <input type="file" accept="image/*" on:change={handleBgImageUpload} class="hidden" id="bg-upload" />
                   <label for="bg-upload" class="flex items-center justify-center w-full px-4 py-3 border-2 border-dashed border-zinc-300 dark:border-zinc-600 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-500/5 transition-all group">
@@ -698,19 +702,19 @@ function downloadLink(url: string, filename: string) {
                       >
                           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M6.4 19 5 17.6l5.6-5.6L5 6.4 6.4 5l5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6Z"/></svg>
                       </button>
-                      <div class="mt-2 space-y-1" on:click|stopPropagation>
+                      <div class="mt-2 space-y-1" on:click|stopPropagation role="group" aria-label="背景图片控制">
                           <div class="flex justify-between text-xs opacity-70">
-                              <label>模糊程度</label>
+                              <span>模糊程度</span>
                               <span>{bgBlur}px</span>
                           </div>
-                          <input type="range" bind:value={bgBlur} min="0" max="20" class="w-full accent-blue-500 h-1" />
+                          <input type="range" bind:value={bgBlur} min="0" max="20" class="w-full accent-blue-500 h-1" aria-label="模糊程度" />
                       </div>
-                      <div class="mt-2 space-y-1" on:click|stopPropagation>
+                      <div class="mt-2 space-y-1" on:click|stopPropagation role="group" aria-label="背景图片不透明度控制">
                           <div class="flex justify-between text-xs opacity-70">
-                              <label>不透明度</label>
+                              <span>不透明度</span>
                               <span>{Math.round(bgOpacity * 100)}%</span>
                           </div>
-                          <input type="range" bind:value={bgOpacity} min="0" max="1" step="0.01" class="w-full accent-blue-500 h-1" />
+                          <input type="range" bind:value={bgOpacity} min="0" max="1" step="0.01" class="w-full accent-blue-500 h-1" aria-label="不透明度" />
                       </div>
                       <p class="text-[10px] opacity-60 mt-1 text-center">
                           提示: 拖拽移动位置，滚轮缩放大小
@@ -720,17 +724,17 @@ function downloadLink(url: string, filename: string) {
           </div>
 
           <div class="flex flex-col gap-2">
-              <label class="text-sm font-bold opacity-80">左侧文字</label>
-              <input type="text" bind:value={leftText} class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-transparent focus:ring-2 focus:ring-blue-500 outline-none" />
+              <label for="left-text" class="text-sm font-bold opacity-80">左侧文字</label>
+              <input id="left-text" type="text" bind:value={leftText} class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-transparent focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
 
           <div class="flex flex-col gap-2">
-              <label class="text-sm font-bold opacity-80">右侧文字</label>
-              <input type="text" bind:value={rightText} class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-transparent focus:ring-2 focus:ring-blue-500 outline-none" />
+              <label for="right-text" class="text-sm font-bold opacity-80">右侧文字</label>
+              <input id="right-text" type="text" bind:value={rightText} class="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-transparent focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
 
           <div class="flex flex-col gap-2">
-              <label class="text-sm font-bold opacity-80">自定义字体</label>
+              <span class="text-sm font-bold opacity-80">自定义字体</span>
               <div class="relative">
                   <input type="file" accept=".ttf,.otf,.woff,.woff2" on:change={handleFontUpload} class="hidden" id="font-upload" />
                   <label for="font-upload" class="flex items-center justify-center w-full px-4 py-2 border-2 border-dashed border-zinc-300 dark:border-zinc-600 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-500/5 transition-all group">
@@ -797,12 +801,12 @@ function downloadLink(url: string, filename: string) {
           </div>
 
           <div class="flex flex-col gap-2">
-              <div class="flex justify-between text-sm"><label class="opacity-80 font-bold">字体粗细</label> <span class="font-mono">{fontWeight}</span></div>
-              <input type="range" bind:value={fontWeight} min="100" max="900" step="100" class="w-full accent-blue-500" />
+              <div class="flex justify-between text-sm"><label for="font-weight" class="opacity-80 font-bold">字体粗细</label> <span class="font-mono">{fontWeight}</span></div>
+              <input id="font-weight" type="range" bind:value={fontWeight} min="100" max="900" step="100" class="w-full accent-blue-500" />
           </div>
 
           <div class="flex flex-col gap-2">
-              <label class="text-sm font-bold opacity-80">图标设置</label>
+              <span class="text-sm font-bold opacity-80">图标设置</span>
               <div class="grid grid-cols-2 gap-2">
                   <div class="relative">
                       <input type="file" accept="image/*" on:change={handleLocalIconUpload} class="hidden" id="icon-upload" />
@@ -883,20 +887,20 @@ function downloadLink(url: string, filename: string) {
         <!-- Sizes -->
         <div class="space-y-6">
             <div class="flex flex-col gap-2">
-                <div class="flex justify-between text-sm"><label class="opacity-80 font-bold">字体大小</label> <span class="font-mono">{fontSize}px</span></div>
-                <input type="range" value={fontSize} on:input={handleFontSizeChange} min="20" max="700" class="w-full accent-blue-500" />
+                <div class="flex justify-between text-sm"><label for="font-size" class="opacity-80 font-bold">字体大小</label> <span class="font-mono">{fontSize}px</span></div>
+                <input id="font-size" type="range" value={fontSize} on:input={handleFontSizeChange} min="20" max="700" class="w-full accent-blue-500" />
             </div>
             <div class="flex flex-col gap-2">
-                <div class="flex justify-between text-sm"><label class="opacity-80 font-bold">图标大小</label> <span class="font-mono">{iconSize}px</span></div>
-                <input type="range" value={iconSize} on:input={handleIconSizeChange} min="20" max="700" class="w-full accent-blue-500" />
+                <div class="flex justify-between text-sm"><label for="icon-size" class="opacity-80 font-bold">图标大小</label> <span class="font-mono">{iconSize}px</span></div>
+                <input id="icon-size" type="range" value={iconSize} on:input={handleIconSizeChange} min="20" max="700" class="w-full accent-blue-500" />
             </div>
             <div class="flex flex-col gap-2">
-                <div class="flex justify-between text-sm"><label class="opacity-80 font-bold">图标圆角</label> <span class="font-mono">{iconRadius}%</span></div>
-                <input type="range" bind:value={iconRadius} min="0" max="50" class="w-full accent-blue-500" />
+                <div class="flex justify-between text-sm"><label for="icon-radius" class="opacity-80 font-bold">图标圆角</label> <span class="font-mono">{iconRadius}%</span></div>
+                <input id="icon-radius" type="range" bind:value={iconRadius} min="0" max="50" class="w-full accent-blue-500" />
             </div>
             <div class="flex flex-col gap-2">
-                <div class="flex justify-between text-sm"><label class="opacity-80 font-bold">间距</label> <span class="font-mono">{gap}px</span></div>
-                <input type="range" bind:value={gap} min="0" max="200" class="w-full accent-blue-500" />
+                <div class="flex justify-between text-sm"><label for="gap" class="opacity-80 font-bold">间距</label> <span class="font-mono">{gap}px</span></div>
+                <input id="gap" type="range" bind:value={gap} min="0" max="200" class="w-full accent-blue-500" />
             </div>
         </div>
 
@@ -916,38 +920,38 @@ function downloadLink(url: string, filename: string) {
             </div>
 
             <div class="flex items-center justify-between flex-wrap gap-2">
-                <label class="text-sm font-bold opacity-80 min-w-[4rem]">文字颜色</label>
+                <label for="text-color-text" class="text-sm font-bold opacity-80 min-w-[4rem]">文字颜色</label>
                 <div class="flex items-center gap-2">
-                    <input type="text" value={color} on:input={(e) => handleColorChange(e.currentTarget.value, 'text')} class="px-2 py-1 text-xs rounded border border-zinc-300 dark:border-zinc-600 bg-transparent w-24 font-mono text-center" />
+                    <input id="text-color-text" type="text" value={color} on:input={(e) => handleColorChange(e.currentTarget.value, 'text')} class="px-2 py-1 text-xs rounded border border-zinc-300 dark:border-zinc-600 bg-transparent w-24 font-mono text-center" />
                     <div class="relative w-8 h-8 rounded-full overflow-hidden border border-zinc-300 dark:border-zinc-600 shadow-sm shrink-0">
-                        <input type="color" value={color} on:input={(e) => handleColorChange(e.currentTarget.value, 'text')} class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] p-0 m-0 border-0 cursor-pointer" />
-                    </div>
-                </div>
-            </div>
-            
-            <div class="flex items-center justify-between flex-wrap gap-2">
-                <label class="text-sm font-bold opacity-80 min-w-[4rem]">图标颜色</label>
-                <div class="flex items-center gap-2">
-                    <input type="text" value={iconColor} disabled={useOriginalIconColor} on:input={(e) => handleColorChange(e.currentTarget.value, 'icon')} class="px-2 py-1 text-xs rounded border border-zinc-300 dark:border-zinc-600 bg-transparent w-24 font-mono text-center disabled:opacity-50" />
-                    <div class="relative w-8 h-8 rounded-full overflow-hidden border border-zinc-300 dark:border-zinc-600 shadow-sm shrink-0 {useOriginalIconColor ? 'opacity-50 pointer-events-none' : ''}">
-                        <input type="color" value={iconColor} on:input={(e) => handleColorChange(e.currentTarget.value, 'icon')} class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] p-0 m-0 border-0 cursor-pointer" />
+                        <input type="color" value={color || "#000000"} on:input={(e) => handleColorChange(e.currentTarget.value, 'text')} class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] p-0 m-0 border-0 cursor-pointer" aria-label="选择文字颜色" />
                     </div>
                 </div>
             </div>
 
             <div class="flex items-center justify-between flex-wrap gap-2">
-                <label class="text-sm font-bold opacity-80 min-w-[4rem]">背景颜色</label>
+                <label for="icon-color-text" class="text-sm font-bold opacity-80 min-w-[4rem]">图标颜色</label>
+                <div class="flex items-center gap-2">
+                    <input id="icon-color-text" type="text" value={iconColor} disabled={useOriginalIconColor} on:input={(e) => handleColorChange(e.currentTarget.value, 'icon')} class="px-2 py-1 text-xs rounded border border-zinc-300 dark:border-zinc-600 bg-transparent w-24 font-mono text-center disabled:opacity-50" />
+                    <div class="relative w-8 h-8 rounded-full overflow-hidden border border-zinc-300 dark:border-zinc-600 shadow-sm shrink-0 {useOriginalIconColor ? 'opacity-50 pointer-events-none' : ''}">
+                        <input type="color" value={iconColor || "#000000"} on:input={(e) => handleColorChange(e.currentTarget.value, 'icon')} class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] p-0 m-0 border-0 cursor-pointer" aria-label="选择图标颜色" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <label for="bg-color-text" class="text-sm font-bold opacity-80 min-w-[4rem]">背景颜色</label>
                 <div class="flex items-center gap-2">
                     <div class="flex flex-col items-end gap-1">
                         <div class="flex items-center gap-2">
-                            <input type="text" bind:value={bgColor} class="px-2 py-1 text-xs rounded border border-zinc-300 dark:border-zinc-600 bg-transparent w-24 font-mono text-center" />
+                            <input id="bg-color-text" type="text" bind:value={bgColor} class="px-2 py-1 text-xs rounded border border-zinc-300 dark:border-zinc-600 bg-transparent w-24 font-mono text-center" />
                             <div class="relative w-8 h-8 rounded-full overflow-hidden border border-zinc-300 dark:border-zinc-600 shadow-sm shrink-0">
-                                <input type="color" bind:value={bgColor} class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] p-0 m-0 border-0 cursor-pointer" />
+                                <input type="color" value={bgColor || "#ffffff"} on:input={(e) => bgColor = e.currentTarget.value} class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] p-0 m-0 border-0 cursor-pointer" aria-label="选择背景颜色" />
                             </div>
                         </div>
                         <div class="flex items-center gap-2 w-full justify-end">
                             <span class="text-[10px] opacity-50">不透明度 {Math.round(bgColorOpacity * 100)}%</span>
-                            <input type="range" bind:value={bgColorOpacity} min="0" max="1" step="0.01" class="w-16 accent-blue-500 h-1" />
+                            <input type="range" bind:value={bgColorOpacity} min="0" max="1" step="0.01" class="w-16 accent-blue-500 h-1" aria-label="背景颜色不透明度" />
                         </div>
                     </div>
                 </div>
@@ -975,43 +979,43 @@ function downloadLink(url: string, filename: string) {
             {#if iconBgEnabled}
                 <div class="space-y-3 pt-2 border-t border-zinc-300 dark:border-zinc-600">
                     <div class="flex items-center justify-between flex-wrap gap-2">
-                        <label class="text-xs opacity-60">背景颜色</label>
-                        <div class="flex items-center gap-2">
-                            <input type="text" bind:value={iconBgColor} class="px-2 py-1 text-xs rounded border border-zinc-300 dark:border-zinc-600 bg-transparent w-20 font-mono" />
-                            <div class="relative w-6 h-6 rounded-full overflow-hidden border border-zinc-300 dark:border-zinc-600 shadow-sm shrink-0">
-                                <input type="color" bind:value={iconBgColor} class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] p-0 m-0 border-0 cursor-pointer" />
-                            </div>
-                        </div>
+                <label for="icon-bg-color-text" class="text-xs opacity-60">背景颜色</label>
+                <div class="flex items-center gap-2">
+                    <input id="icon-bg-color-text" type="text" bind:value={iconBgColor} class="px-2 py-1 text-xs rounded border border-zinc-300 dark:border-zinc-600 bg-transparent w-20 font-mono" />
+                    <div class="relative w-6 h-6 rounded-full overflow-hidden border border-zinc-300 dark:border-zinc-600 shadow-sm shrink-0">
+                        <input type="color" value={iconBgColor || "#000000"} on:input={(e) => iconBgColor = e.currentTarget.value} class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] p-0 m-0 border-0 cursor-pointer" aria-label="选择图标背景颜色" />
                     </div>
+                </div>
+            </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div class="flex flex-col gap-1">
                             <div class="flex justify-between text-[10px] opacity-60">
-                                <label>内边距</label>
+                                <label for="icon-bg-padding">内边距</label>
                                 <span>{iconBgPadding}px</span>
                             </div>
-                            <input type="range" bind:value={iconBgPadding} min="0" max="100" class="w-full accent-blue-500 h-1" />
+                            <input id="icon-bg-padding" type="range" bind:value={iconBgPadding} min="0" max="100" class="w-full accent-blue-500 h-1" />
                         </div>
                         <div class="flex flex-col gap-1">
                             <div class="flex justify-between text-[10px] opacity-60">
-                                <label>圆角半径</label>
+                                <label for="icon-bg-radius">圆角半径</label>
                                 <span>{iconBgRadius}%</span>
                             </div>
-                            <input type="range" bind:value={iconBgRadius} min="0" max="50" class="w-full accent-blue-500 h-1" />
+                            <input id="icon-bg-radius" type="range" bind:value={iconBgRadius} min="0" max="50" class="w-full accent-blue-500 h-1" />
                         </div>
                         <div class="flex flex-col gap-1">
                             <div class="flex justify-between text-[10px] opacity-60">
-                                <label>模糊</label>
+                                <label for="icon-bg-blur">模糊</label>
                                 <span>{iconBgBlur}px</span>
                             </div>
-                            <input type="range" bind:value={iconBgBlur} min="0" max="20" class="w-full accent-blue-500 h-1" />
+                            <input id="icon-bg-blur" type="range" bind:value={iconBgBlur} min="0" max="20" class="w-full accent-blue-500 h-1" />
                         </div>
                         <div class="flex flex-col gap-1">
                             <div class="flex justify-between text-[10px] opacity-60">
-                                <label>不透明度</label>
+                                <label for="icon-bg-opacity">不透明度</label>
                                 <span>{Math.round(iconBgOpacity * 100)}%</span>
                             </div>
-                            <input type="range" bind:value={iconBgOpacity} min="0" max="1" step="0.01" class="w-full accent-blue-500 h-1" />
+                            <input id="icon-bg-opacity" type="range" bind:value={iconBgOpacity} min="0" max="1" step="0.01" class="w-full accent-blue-500 h-1" />
                         </div>
                     </div>
                 </div>
@@ -1050,41 +1054,41 @@ function downloadLink(url: string, filename: string) {
                 <div class="flex items-center gap-2">
                     <input type="text" value={shadowTarget === 'icon' ? iconShadow.color : textShadow.color} on:input={(e) => updateShadow('color', e.currentTarget.value)} class="px-2 py-1 text-xs rounded border border-zinc-300 dark:border-zinc-600 bg-transparent w-20 font-mono" />
                     <div class="relative w-6 h-6 rounded-full overflow-hidden border border-zinc-300 dark:border-zinc-600 shadow-sm shrink-0">
-                        <input type="color" value={shadowTarget === 'icon' ? iconShadow.color : textShadow.color} on:input={(e) => updateShadow('color', e.currentTarget.value)} class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] p-0 m-0 border-0 cursor-pointer" />
+                        <input type="color" value={(shadowTarget === 'icon' ? iconShadow.color : textShadow.color) || "#000000"} on:input={(e) => updateShadow('color', e.currentTarget.value)} class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] p-0 m-0 border-0 cursor-pointer" aria-label="选择阴影颜色" />
                     </div>
                 </div>
             </div>
-            
+
             <div class="grid grid-cols-3 gap-2">
                 <div class="flex flex-col gap-1">
-                    <label class="text-[10px] opacity-60 uppercase">模糊</label>
-                    <input type="number" value={shadowTarget === 'icon' ? iconShadow.blur : textShadow.blur} on:input={(e) => updateShadow('blur', e.currentTarget.valueAsNumber)} class="px-1 py-1 text-sm rounded border border-zinc-300 dark:border-zinc-600 bg-transparent" />
+                    <label for="shadow-blur" class="text-[10px] opacity-60 uppercase">模糊</label>
+                    <input id="shadow-blur" type="number" value={shadowTarget === 'icon' ? iconShadow.blur : textShadow.blur} on:input={(e) => updateShadow('blur', e.currentTarget.valueAsNumber)} class="px-1 py-1 text-sm rounded border border-zinc-300 dark:border-zinc-600 bg-transparent" />
                 </div>
                 <div class="flex flex-col gap-1">
-                    <label class="text-[10px] opacity-60 uppercase">水平偏移</label>
-                    <input type="number" value={shadowTarget === 'icon' ? iconShadow.x : textShadow.x} on:input={(e) => updateShadow('x', e.currentTarget.valueAsNumber)} class="px-1 py-1 text-sm rounded border border-zinc-300 dark:border-zinc-600 bg-transparent" />
+                    <label for="shadow-x" class="text-[10px] opacity-60 uppercase">水平偏移</label>
+                    <input id="shadow-x" type="number" value={shadowTarget === 'icon' ? iconShadow.x : textShadow.x} on:input={(e) => updateShadow('x', e.currentTarget.valueAsNumber)} class="px-1 py-1 text-sm rounded border border-zinc-300 dark:border-zinc-600 bg-transparent" />
                 </div>
                 <div class="flex flex-col gap-1">
-                    <label class="text-[10px] opacity-60 uppercase">垂直偏移</label>
-                    <input type="number" value={shadowTarget === 'icon' ? iconShadow.y : textShadow.y} on:input={(e) => updateShadow('y', e.currentTarget.valueAsNumber)} class="px-1 py-1 text-sm rounded border border-zinc-300 dark:border-zinc-600 bg-transparent" />
+                    <label for="shadow-y" class="text-[10px] opacity-60 uppercase">垂直偏移</label>
+                    <input id="shadow-y" type="number" value={shadowTarget === 'icon' ? iconShadow.y : textShadow.y} on:input={(e) => updateShadow('y', e.currentTarget.valueAsNumber)} class="px-1 py-1 text-sm rounded border border-zinc-300 dark:border-zinc-600 bg-transparent" />
                 </div>
                 <div class="col-span-3 flex flex-col gap-1 mt-1">
                     <div class="flex justify-between text-[10px] opacity-60 uppercase">
-                        <label>不透明度</label>
+                        <label for="shadow-alpha">不透明度</label>
                         <span>{Math.round((shadowTarget === 'icon' ? iconShadow.alpha : textShadow.alpha) * 100)}%</span>
                     </div>
-                    <input type="range" value={shadowTarget === 'icon' ? iconShadow.alpha : textShadow.alpha} on:input={(e) => updateShadow('alpha', parseFloat(e.currentTarget.value))} min="0" max="1" step="0.01" class="w-full accent-blue-500 h-1" />
+                    <input id="shadow-alpha" type="range" value={shadowTarget === 'icon' ? iconShadow.alpha : textShadow.alpha} on:input={(e) => updateShadow('alpha', parseFloat(e.currentTarget.value))} min="0" max="1" step="0.01" class="w-full accent-blue-500 h-1" />
                 </div>
             </div>
         </div>
 
         <!-- Ratios -->
         <div class="flex flex-col gap-3">
-            <label class="text-sm font-bold opacity-80">画板比例 (多选)</label>
+            <span class="text-sm font-bold opacity-80">画板比例 (多选)</span>
             <div class="grid grid-cols-2 gap-2">
-                {#each ratios as ratio}
+                {#each ratios as ratio, i}
                     <label class="flex items-center gap-2 p-2 border border-zinc-300 dark:border-zinc-600 rounded-lg cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors select-none">
-                        <input type="checkbox" bind:checked={ratio.checked} class="accent-blue-500 w-4 h-4" />
+                        <input id="ratio-{i}" type="checkbox" bind:checked={ratio.checked} class="accent-blue-500 w-4 h-4" />
                         <span class="text-sm font-mono">{ratio.label}</span>
                     </label>
                 {/each}
@@ -1097,12 +1101,12 @@ function downloadLink(url: string, filename: string) {
             
             <div class="space-y-3">
                 <div class="flex flex-col gap-1">
-                    <label class="text-xs opacity-60">文件名</label>
-                    <input type="text" bind:value={exportConfig.filename} class="w-full px-3 py-1 text-sm rounded border border-zinc-300 dark:border-zinc-600 bg-transparent" />
+                    <label for="export-filename" class="text-xs opacity-60">文件名</label>
+                    <input id="export-filename" type="text" bind:value={exportConfig.filename} class="w-full px-3 py-1 text-sm rounded border border-zinc-300 dark:border-zinc-600 bg-transparent" />
                 </div>
 
                 <div class="flex flex-col gap-1">
-                    <label class="text-xs opacity-60">格式</label>
+                    <span class="text-xs opacity-60">格式</span>
                     <div class="flex gap-2">
                         <label class="flex-1 flex items-center justify-center gap-1 p-2 border rounded-lg cursor-pointer transition-all text-xs {exportConfig.format === 'png' ? 'border-blue-500 bg-blue-500/5 text-blue-600 dark:text-blue-400' : 'border-zinc-300 dark:border-zinc-600 bg-transparent'}">
                             <input type="radio" bind:group={exportConfig.format} value="png" class="hidden" />
@@ -1118,7 +1122,7 @@ function downloadLink(url: string, filename: string) {
                 {#if exportConfig.format === 'png'}
                     <div class="flex flex-col gap-1">
                         <div class="flex justify-between text-xs opacity-60">
-                            <label>缩放倍率</label>
+                            <span>缩放倍率</span>
                         </div>
                         <div class="grid grid-cols-4 gap-1">
                             {#each [1, 2, 3, 4] as scale}
@@ -1152,7 +1156,7 @@ function downloadLink(url: string, filename: string) {
 
                 <div class="flex flex-col gap-1">
                     <div class="flex justify-between text-xs opacity-60">
-                        <label>导出尺寸 (可多选)</label>
+                        <span>导出尺寸 (可多选)</span>
                     </div>
                     <div class="grid grid-cols-4 gap-1">
                         {#each activeRatios.length === 0 ? [] : (activeRatios.length === 1 ? [] : ratios) as ratio}

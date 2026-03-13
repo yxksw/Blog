@@ -332,7 +332,7 @@ function getNumberValue(value: number | undefined): string {
 										class={`w-full rounded-lg border px-3 py-2 text-left transition ${selectedArrangementRef === item.arrangementIndex ? "border-blue-500 bg-blue-500/10" : "border-zinc-200 dark:border-zinc-700 hover:border-blue-500/50"}`}
 										on:click={() => selectArrangement(item.arrangementIndex)}
 									>
-										<div class="mb-1 text-sm font-semibold" style={`color:${item.color}`}>{item.title}</div>
+										<div class="mb-1 text-sm font-semibold" style={item.color ? `color:${item.color}` : undefined}>{item.title}</div>
 										<div class="text-xs opacity-70">{item.nodeText} · {item.weekText}</div>
 										<div class="text-xs opacity-60">{item.teacher} / {item.room}</div>
 									</button>
