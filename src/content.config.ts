@@ -23,6 +23,8 @@ const blog = defineCollection({
 			category: z.string().optional(),
 			slug: z.string().optional(),
 			draft: z.boolean().default(false),
+			// AI Summary
+			summary: z.string().optional(),
 			// For Typora image path compatibility
 			'typora-root-url': z.string().optional(),
 		}),

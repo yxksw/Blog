@@ -7,6 +7,7 @@
  */
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
+import svelte from "@astrojs/svelte";
 import { defineConfig } from "astro/config";
 import tailwindcss from "@tailwindcss/vite";
 import remarkMath from "remark-math";
@@ -145,7 +146,7 @@ export default defineConfig({
   base: runtimeBase,
   trailingSlash: "always",
   output: "static",
-  integrations: [mdx(), sitemap()],
+  integrations: [mdx(), sitemap(), svelte()],
   markdown: {
     // Keep markdown image URLs deployment-agnostic.
     remarkPlugins: [remarkGitHubAlertFallback, remarkMath],

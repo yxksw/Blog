@@ -23,6 +23,9 @@ export const getNavLinks = (base: string): NavLink[] => [
 			{ href: `${base}bangumi/`, label: '追番' },
 			{ href: `${base}equipment/`, label: '装备' },
 			{ href: `${base}sponsors/`, label: '赞助' },
+            { href: `${base}timetable/`, label: '课表' },
+            { href: `${base}cover/`, label: '封面' },
+            { href: `${base}files/`, label: '文件' },
 		],
 	},
 	{

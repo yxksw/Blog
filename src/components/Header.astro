@@ -1,4 +1,4 @@
-﻿﻿﻿---
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿---
 import { GITHUB_URL, SITE_TITLE } from '../consts';
 import { getNavLinks, type NavLink } from '../data/navLinks';
 import HeaderLink from './HeaderLink.astro';
@@ -84,22 +84,22 @@ const isLinkActive = (link: NavLink, pathname: string, baseUrl: string): boolean
 				{
 					NAV_LINKS.map((link) => (
 						link.children ? (
-							<div class="nav-dropdown relative group">
+							<div class="nav-dropdown relative" data-nav-dropdown>
 								<button
 									type="button"
 									class:list={[
-										'nav-item inline-flex items-center gap-1 rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100',
+										'nav-dropdown-trigger nav-item inline-flex items-center gap-1 rounded-lg px-3 py-2 font-sans text-zinc-600 no-underline hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100',
 										{ 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100': isLinkActive(link, Astro.url.pathname, BASE) },
 									]}
 									aria-expanded="false"
 									aria-haspopup="true"
 								>
 									{link.label}
-									<svg class="h-4 w-4 transition-transform duration-200 group-hover:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+									<svg class="nav-dropdown-arrow h-4 w-4 transition-transform duration-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
 										<polyline points="6,9 12,15 18,9" />
 									</svg>
 								</button>
-								<div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-48 rounded-xl border border-zinc-200/80 bg-white/95 py-2 opacity-0 invisible transition-all duration-200 group-hover:opacity-100 group-hover:visible dark:border-zinc-700/80 dark:bg-zinc-900/95">
+								<div class="nav-dropdown-menu absolute left-0 top-full mt-1 w-48 rounded-xl border border-zinc-200/80 bg-white/95 py-2 opacity-0 invisible transition-all duration-200 dark:border-zinc-700/80 dark:bg-zinc-900/95">
 									{link.children.map((child) => (
 										<a
 											href={child.href}
@@ -274,6 +274,28 @@ const isLinkActive = (link: NavLink, pathname: string, baseUrl: string): boolean
 <SettingsModal />
 
 <style is:global>
+	/* Nav dropdown hover support for desktop */
+	@media (hover: hover) and (pointer: fine) {
+		.nav-dropdown:hover .nav-dropdown-menu,
+		.nav-dropdown-menu:hover {
+			opacity: 1 !important;
+			visibility: visible !important;
+		}
+		.nav-dropdown:hover .nav-dropdown-arrow {
+			transform: rotate(180deg);
+		}
+	}
+
+	/* Active state for clicked dropdowns */
+	.nav-dropdown-trigger[aria-expanded="true"] + .nav-dropdown-menu,
+	.nav-dropdown-menu.visible {
+		opacity: 1 !important;
+		visibility: visible !important;
+	}
+	.nav-dropdown-trigger[aria-expanded="true"] .nav-dropdown-arrow {
+		transform: rotate(180deg);
+	}
+
 	.header-toolbar-group {
 		height: 2.5rem;
 		align-items: center;
@@ -531,5 +553,99 @@ const isLinkActive = (link: NavLink, pathname: string, baseUrl: string): boolean
 	// Rebind on client-side navigation because header can be re-rendered by View Transitions.
 	document.addEventListener('astro:page-load', initThemeToggle);
 	document.addEventListener('astro:after-swap', initThemeToggle);
+
+	// Initialize nav dropdowns for tablet/touch devices
+	const initNavDropdowns = () => {
+		const dropdowns = document.querySelectorAll('[data-nav-dropdown]');
+		
+		dropdowns.forEach((dropdown) => {
+			const trigger = dropdown.querySelector('.nav-dropdown-trigger');
+			const menu = dropdown.querySelector('.nav-dropdown-menu');
+			const arrow = dropdown.querySelector('.nav-dropdown-arrow');
+			
+			if (!trigger || !menu) return;
+			
+			// Skip if already bound
+			if (trigger.dataset.dropdownBound === 'true') return;
+			trigger.dataset.dropdownBound = 'true';
+			
+			const toggleDropdown = (e) => {
+				e.stopPropagation();
+				e.preventDefault();
+				
+				const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
+				
+				// Close all other dropdowns first
+				dropdowns.forEach((otherDropdown) => {
+					if (otherDropdown !== dropdown) {
+						const otherTrigger = otherDropdown.querySelector('.nav-dropdown-trigger');
+						const otherMenu = otherDropdown.querySelector('.nav-dropdown-menu');
+						const otherArrow = otherDropdown.querySelector('.nav-dropdown-arrow');
+						if (otherTrigger) otherTrigger.setAttribute('aria-expanded', 'false');
+						if (otherMenu) {
+							otherMenu.classList.add('opacity-0', 'invisible');
+							otherMenu.classList.remove('opacity-100', 'visible');
+						}
+						if (otherArrow) otherArrow.classList.remove('rotate-180');
+					}
+				});
+				
+				// Toggle current dropdown
+				trigger.setAttribute('aria-expanded', String(!isExpanded));
+				if (isExpanded) {
+					menu.classList.add('opacity-0', 'invisible');
+					menu.classList.remove('opacity-100', 'visible');
+					if (arrow) arrow.classList.remove('rotate-180');
+				} else {
+					menu.classList.remove('opacity-0', 'invisible');
+					menu.classList.add('opacity-100', 'visible');
+					if (arrow) arrow.classList.add('rotate-180');
+				}
+			};
+			
+			const closeDropdown = () => {
+				trigger.setAttribute('aria-expanded', 'false');
+				menu.classList.add('opacity-0', 'invisible');
+				menu.classList.remove('opacity-100', 'visible');
+				if (arrow) arrow.classList.remove('rotate-180');
+			};
+			
+			// Handle click on trigger
+			trigger.addEventListener('click', toggleDropdown);
+			
+			// Handle touch events for tablet
+			trigger.addEventListener('touchstart', (e) => {
+				// Prevent default only if menu is closed (to allow scrolling when open)
+				if (trigger.getAttribute('aria-expanded') !== 'true') {
+					e.preventDefault();
+					toggleDropdown(e);
+				}
+			}, { passive: false });
+		});
+		
+		// Close dropdowns when clicking outside
+		if (!window.__navDropdownOutsideBound) {
+			window.__navDropdownOutsideBound = true;
+			document.addEventListener('click', (e) => {
+				dropdowns.forEach((dropdown) => {
+					if (!dropdown.contains(e.target)) {
+						const trigger = dropdown.querySelector('.nav-dropdown-trigger');
+						const menu = dropdown.querySelector('.nav-dropdown-menu');
+						const arrow = dropdown.querySelector('.nav-dropdown-arrow');
+						if (trigger) trigger.setAttribute('aria-expanded', 'false');
+						if (menu) {
+							menu.classList.add('opacity-0', 'invisible');
+							menu.classList.remove('opacity-100', 'visible');
+						}
+						if (arrow) arrow.classList.remove('rotate-180');
+					}
+				});
+			});
+		}
+	};
+	
+	initNavDropdowns();
+	document.addEventListener('astro:page-load', initNavDropdowns);
+	document.addEventListener('astro:after-swap', initNavDropdowns);
 })();
 </script>

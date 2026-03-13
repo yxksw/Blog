@@ -1,0 +1,411 @@
+---
+title: '如何为 Astro 博客添加 AI 摘要功能'
+description: '详细介绍如何为 Astro 静态博客添加 AI 摘要功能，包括脚本编写、组件开发和样式设计'
+pubDate: 2026-03-13
+tags: ['Astro', 'AI', '博客开发', '教程']
+author: 异飨客
+lang: cn
+category: 技术教程
+summary: "本文详细介绍了为 Astro 博客添加 AI 摘要功能的完整流程，包括脚本编写、组件开发、样式设计和环境配置。"
+---
+# 如何为 Astro 博客添加 AI 摘要功能
+
+在这篇文章中，我将详细介绍如何为 Astro 静态博客添加 AI 摘要功能，让读者在打开文章时能够快速了解文章的核心内容。
+
+## 功能效果
+
+添加 AI 摘要后，文章页面会显示一个精美的摘要卡片：
+
+- 🤖 机器人图标 + "AI 摘要" 标题
+- ✨ 打字机动画效果展示摘要
+- 🏷️ "AI Generated" 标签
+- ⚠️ 免责声明
+
+## 实现原理
+
+整个方案分为三个部分：
+
+1. **摘要生成脚本** - 调用 AI API 为文章生成摘要
+2. **摘要展示组件** - 在文章页面渲染摘要卡片
+3. **样式设计** - 美观的卡片样式和动画效果
+
+## 第一步：创建摘要生成脚本
+
+创建 `scripts/generateSummary.ts` 文件：
+
+```typescript
+import fs from 'node:fs'
+import path from 'node:path'
+import dotenv from 'dotenv'
+
+dotenv.config()
+
+const ROOT = process.cwd()
+const BLOG_DIR = path.join(ROOT, 'src', 'content', 'blog')
+const SUMMARY_MAX_LEN = 150
+
+// 扫描所有文章
+function findMarkdownEntries(dir: string): string[] {
+  const results: string[] = []
+  const items = fs.readdirSync(dir, { withFileTypes: true })
+  for (const item of items) {
+    const fp = path.join(dir, item.name)
+    if (item.isDirectory()) {
+      results.push(...findMarkdownEntries(fp))
+    } else if (item.isFile() && /\.mdx?$/.test(item.name)) {
+      results.push(fp)
+    }
+  }
+  return results
+}
+
+// 提取 frontmatter 和正文
+function splitFrontmatterAndBody(content: string) {
+  content = content.replace(/^\uFEFF?/, '').trimStart()
+  const re = /^---\r?\n[\s\S]*?\r?\n---(?=\r?\n|$)/
+  const match = re.exec(content)
+  if (!match) return { frontmatter: '', body: content }
+  const fm = match[0]
+  const body = content.slice(match.index + fm.length).replace(/^\r?\n*/, '')
+  return { frontmatter: fm, body }
+}
+
+// 清洗正文内容
+function sanitizeBodyForAPI(body: string): string {
+  return body
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`[^`]*`/g, '')
+    .replace(/!\[[^\]]*\]\([^\)]+\)/g, '')
+    .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
+    .replace(/^[ \t]*#{1,6}[^\n]*\n/gm, '')
+    .replace(/\r?\n+/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+}
+
+// 调用 AI API 生成摘要
+async function callSummaryAPI(title: string, body: string): Promise<string | null> {
+  const api = process.env.AI_SUMMARY_API
+  const key = process.env.AI_SUMMARY_KEY
+  const model = process.env.AI_SUMMARY_MODEL || 'lite'
+
+  if (!api) return null
+
+  const prompt = `你是一个文章摘要生成助手。请用一句话（不超过120字）简洁总结给定文章的核心内容，使用陈述句，结尾必须用句号。只返回摘要内容，不要有任何前缀或解释。
+
+标题：${title}
+
+正文：${body.slice(0, 3000)}`
+
+  try {
+    const res = await fetch(api, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': key ? `Bearer ${key}` : ''
+      },
+      body: JSON.stringify({ model, content: prompt })
+    })
+    if (!res.ok) throw new Error('HTTP ' + res.status)
+    const data = await res.json()
+    let summary = data.choices?.[0]?.message?.content || data.summary || data.content
+    if (typeof summary !== 'string') return null
+    summary = summary.trim()
+    // 清理可能的 markdown 代码块
+    summary = summary.replace(/^```[\s\S]*?\n/, '').replace(/```$/, '').trim()
+    // 确保以句号结尾
+    if (!summary.endsWith('。') && !summary.endsWith('.')) {
+      summary = summary + '。'
+    }
+    // 限制长度
+    if (summary.length > SUMMARY_MAX_LEN) {
+      const lastPeriod = summary.lastIndexOf('。', SUMMARY_MAX_LEN)
+      if (lastPeriod > 50) {
+        summary = summary.slice(0, lastPeriod + 1)
+      } else {
+        summary = summary.slice(0, SUMMARY_MAX_LEN - 1) + '。'
+      }
+    }
+    return summary
+  } catch (err) {
+    console.error('API 调用失败:', err)
+    return null
+  }
+}
+
+// 在 frontmatter 中写入 summary
+function upsertSummaryInFrontmatter(frontmatter: string, summary: string): string {
+  if (!frontmatter) {
+    return `---\nsummary: "${summary.replace(/"/g, '\\"')}"\n---\n`
+  }
+  const lines = frontmatter.split('\n')
+  let endIdx = lines.findIndex((l, i) => i > 0 && l.trim() === '---')
+  if (endIdx === -1) endIdx = lines.length
+  const bodyLines = lines
+    .slice(1, endIdx)
+    .filter(l => !/^\s*summary\s*:/i.test(l))
+  const rebuilt = ['---', ...bodyLines, `summary: "${summary.replace(/"/g, '\\"')}"`, '---']
+  return rebuilt.join('\n') + '\n'
+}
+
+// 主函数
+async function run() {
+  const files = findMarkdownEntries(BLOG_DIR)
+  console.log(`找到 ${files.length} 篇文章`)
+
+  for (const file of files) {
+    const content = fs.readFileSync(file, 'utf8')
+    const { frontmatter, body } = splitFrontmatterAndBody(content)
+    
+    // 检查是否已有摘要
+    if (/summary\s*:/i.test(frontmatter)) {
+      console.log(`跳过已有摘要: ${path.basename(file)}`)
+      continue
+    }
+
+    const title = frontmatter.match(/title:\s*['"]?([^'"\n]+)['"]?/)?.[1] || ''
+    const cleanBody = sanitizeBodyForAPI(body)
+    
+    console.log(`生成摘要: ${path.basename(file)}`)
+    const summary = await callSummaryAPI(title, cleanBody)
+    
+    if (summary) {
+      const newFrontmatter = upsertSummaryInFrontmatter(frontmatter, summary)
+      const newContent = newFrontmatter + body
+      fs.writeFileSync(file, newContent, 'utf8')
+      console.log(`✓ 已写入摘要: ${summary.slice(0, 50)}...`)
+    } else {
+      console.log(`✗ 生成失败: ${path.basename(file)}`)
+    }
+  }
+}
+
+run().catch(console.error)
+```
+
+## 第二步：配置环境变量
+
+创建或修改 `.env` 文件：
+
+```bash
+# AI 摘要生成配置
+AI_SUMMARY_API=https://your-api-endpoint.com/v1/chat/completions
+AI_SUMMARY_KEY=your-api-key
+AI_SUMMARY_MODEL=gpt-3.5-turbo
+AISUMMARY_CONCURRENCY=2
+AISUMMARY_COVER_ALL=false
+```
+
+## 第三步：创建摘要展示组件
+
+创建 `src/components/AISummary.astro`：
+
+```astro
+---
+interface Props {
+  summary: string;
+}
+
+const { summary } = Astro.props;
+---
+
+<div class="aisummary-container">
+  <div class="aisummary-title">
+    <div class="aisummary-title-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48">
+        <path d="M34.7..." fill="currentColor"/>
+      </svg>
+    </div>
+    <div class="aisummary-title-text">AI 摘要</div>
+    <div class="aisummary-tag">AI Generated</div>
+  </div>
+  <div class="aisummary-explanation" data-ai-summary={summary}>{summary}</div>
+  <div class="aisummary-disclaimer">本摘要由 AI 生成，仅供参考，内容准确性请以原文为准。</div>
+</div>
+
+<script>
+  // 打字机动画
+  let isRunning = false;
+  
+  function typeWriter(element: HTMLElement, text: string) {
+    if (isRunning) return;
+    isRunning = true;
+    
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      element.textContent = text;
+      return;
+    }
+    
+    element.innerHTML = '<span class="text-zinc-400">生成中...</span><span class="blinking-cursor"></span>';
+    
+    let i = 0;
+    const type = () => {
+      if (i < text.length) {
+        element.innerHTML = text.slice(0, i + 1) + '<span class="blinking-cursor"></span>';
+        i++;
+        setTimeout(type, 20);
+      } else {
+        element.textContent = text;
+        isRunning = false;
+      }
+    };
+    
+    // 使用 IntersectionObserver 在可见时开始动画
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        setTimeout(type, 300);
+        observer.disconnect();
+      }
+    }, { threshold: 0.1 });
+    
+    observer.observe(element.closest('.aisummary-container')!);
+  }
+  
+  function init() {
+    const el = document.querySelector('.aisummary-explanation');
+    if (!el) return;
+    const summary = el.getAttribute('data-ai-summary');
+    if (summary) typeWriter(el as HTMLElement, summary);
+  }
+  
+  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('astro:page-load', init);
+</script>
+```
+
+## 第四步：添加样式
+
+在 `src/styles/global.css` 中添加：
+
+```css
+.aisummary-container {
+  @apply rounded-xl border border-zinc-200/80 bg-zinc-50/80 p-4 my-5;
+  @apply dark:border-zinc-700/80 dark:bg-zinc-900/60;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.aisummary-title {
+  @apply flex items-center gap-2 text-zinc-600 dark:text-zinc-400;
+}
+
+.aisummary-title-text {
+  @apply font-semibold text-sm;
+}
+
+.aisummary-tag {
+  @apply text-xs font-semibold px-2 py-1 rounded ml-auto bg-blue-500 text-white;
+}
+
+.aisummary-explanation {
+  @apply mt-3 px-4 py-3 rounded-lg border border-zinc-200/60 bg-white/90;
+  @apply dark:border-zinc-700/60 dark:bg-zinc-800/60;
+  @apply text-sm leading-relaxed text-zinc-700 dark:text-zinc-300;
+  position: relative;
+}
+
+.aisummary-explanation::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  @apply bg-blue-500 rounded-l-lg;
+}
+
+.aisummary-disclaimer {
+  @apply text-xs text-zinc-400 dark:text-zinc-500 mt-2 px-1;
+}
+
+.blinking-cursor {
+  @apply inline-block w-2 h-4 align-middle ml-1 rounded-sm bg-blue-500;
+  animation: blinking-cursor 0.6s infinite;
+}
+
+@keyframes blinking-cursor {
+  0%, 40% { opacity: 1; }
+  50%, 90% { opacity: 0; }
+  100% { opacity: 1; }
+}
+```
+
+## 第五步：修改文章布局
+
+在 `src/content/layouts/BlogPost.astro` 中添加：
+
+```astro
+---
+import AISummary from '../../components/AISummary.astro';
+// ... 其他导入
+
+type Props = {
+  // ... 其他属性
+  summary?: string;
+};
+
+const { summary, /* ... */ } = Astro.props;
+---
+
+<!-- 在文章正文前显示摘要 -->
+{summary && <AISummary summary={summary} />}
+```
+
+## 第六步：更新内容配置
+
+在 `src/content.config.ts` 中添加 summary 字段：
+
+```typescript
+const blog = defineCollection({
+  loader: glob({ base: './src/content/blog', pattern: '**/*.{md,mdx}' }),
+  schema: ({ image }) =>
+    z.object({
+      // ... 其他字段
+      summary: z.string().optional(),
+    }),
+});
+```
+
+## 第七步：生成摘要
+
+运行脚本为所有文章生成摘要：
+
+```bash
+npx tsx scripts/generateSummary.ts
+```
+
+强制重新生成所有摘要：
+
+```bash
+# PowerShell
+$env:AISUMMARY_COVER_ALL="true"; npx tsx scripts/generateSummary.ts
+
+# Bash
+AISUMMARY_COVER_ALL=true npx tsx scripts/generateSummary.ts
+```
+
+## 配置说明
+
+| 环境变量 | 说明 | 默认值 |
+|---------|------|--------|
+| `AI_SUMMARY_API` | AI API 端点 | - |
+| `AI_SUMMARY_KEY` | API 密钥 | - |
+| `AI_SUMMARY_MODEL` | 模型名称 | lite |
+| `AISUMMARY_CONCURRENCY` | 并发数 | 2 |
+| `AISUMMARY_COVER_ALL` | 是否覆盖已有摘要 | false |
+
+## 注意事项
+
+1. **API 兼容性**：脚本使用 `content` 字段发送请求，如果你的 API 使用 `messages` 格式，需要修改 `callSummaryAPI` 函数
+2. **字数控制**：摘要限制在 150 字以内，确保简洁明了
+3. **本地兜底**：当 API 不可用时，脚本会使用本地规则生成简单摘要
+4. **无障碍支持**：打字机动画会检测 `prefers-reduced-motion` 设置，尊重用户的动画偏好
+
+## 总结
+
+通过以上步骤，你就可以为 Astro 博客添加一个美观实用的 AI 摘要功能。读者打开文章时，会看到一个带有打字机动画的摘要卡片，快速了解文章核心内容。
+
+## 参考
+
+- [Astro Content Collections](https://docs.astro.build/en/guides/content-collections/)
+- [OpenAI API 文档](https://platform.openai.com/docs/api-reference)

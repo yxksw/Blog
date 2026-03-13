@@ -1,0 +1,215 @@
+---
+import fs from "node:fs";
+import path from "node:path";
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import MobileDrawer from '../components/MobileDrawer.astro';
+import FileExplorer from '../components/FileExplorer.svelte';
+import FListExplorer from '../components/FListExplorer.svelte';
+import { SITE_TITLE } from '../consts';
+
+interface FileItem {
+	name: string;
+	path: string;
+	type: "file" | "directory";
+	size?: number;
+	mtime?: Date;
+	children?: FileItem[];
+}
+
+function getFiles(dir: string, baseDir = ""): FileItem[] {
+	const files = fs.readdirSync(dir);
+	const result: FileItem[] = [];
+
+	// 排除列表
+	const exclude = [".DS_Store", "favicon", "icons", "js", "cdn", "aff"];
+
+	for (const file of files) {
+		if (exclude.includes(file)) continue;
+
+		const filePath = path.join(dir, file);
+		const stats = fs.statSync(filePath);
+		const relativePath = path.join(baseDir, file).replace(/\\/g, "/");
+
+		if (stats.isDirectory()) {
+			result.push({
+				name: file,
+				path: relativePath,
+				type: "directory",
+				children: getFiles(filePath, relativePath),
+			});
+		} else {
+			result.push({
+				name: file,
+				path: relativePath,
+				type: "file",
+				size: stats.size,
+				mtime: stats.mtime,
+			});
+		}
+	}
+
+	// 文件夹排在前面，按名称排序
+	return result.sort((a, b) => {
+		if (a.type === b.type) {
+			return a.name.localeCompare(b.name);
+		}
+		return a.type === "directory" ? -1 : 1;
+	});
+}
+
+const publicDir = path.join(process.cwd(), "public");
+const fileTree = getFiles(publicDir);
+
+const title = `文件 | ${SITE_TITLE}`;
+const description = '本站托管的各项公开资源，你可以点击查看并下载';
+---
+
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <BaseHead title={title} description={description} />
+    <style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-zinc-50 dark:bg-zinc-900">
+    <Header />
+    <MobileDrawer />
+
+    <main class="page-shell page-fade-in py-10">
+        <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+            <div class="card-surface p-6 md:p-8">
+                <!-- 标题 -->
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="h-8 w-8 rounded-lg bg-blue-500 flex items-center justify-center text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                    </div>
+                    <h1 class="text-2xl font-bold">文件索引</h1>
+                </div>
+
+                <!-- 说明 -->
+                <div class="mb-6 text-zinc-500 dark:text-zinc-400 text-sm flex flex-col gap-1">
+                    <p>这里展示了本站托管的各项公开资源，你可以点击查看并下载。</p>
+                    <p class="text-red-500/80 dark:text-red-400/80 text-xs italic">
+                        免责声明：本站不对任何文件的安全性做保证，请在下载或运行前自行核实，风险自担。
+                    </p>
+                </div>
+
+                <!-- Tab 切换 -->
+                <div class="flex gap-2 mb-6 border-b border-zinc-200 dark:border-zinc-700 pb-1 overflow-x-auto no-scrollbar">
+                    <button 
+                        id="tab-local"
+                        class="px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap bg-blue-500 text-white"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="20" height="14" x="2" y="3" rx="2"/>
+                            <line x1="8" x2="16" y1="21" y2="21"/>
+                            <line x1="12" x2="12" y1="17" y2="21"/>
+                        </svg>
+                        本站
+                    </button>
+                    <button 
+                        id="tab-flist"
+                        class="px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" x2="12" y1="3" y2="15"/>
+                        </svg>
+                        FList
+                    </button>
+                </div>
+
+                <!-- 内容区域 -->
+                <div id="content-local" class="tab-content">
+                    <FileExplorer client:load items={fileTree} />
+                </div>
+
+                <div id="content-flist" class="tab-content hidden">
+                    <FListExplorer 
+                        client:only="svelte" 
+                        configs={[
+                            {
+                                id: "github-repo",
+                                name: "FList repo",
+                                source: "github-repo",
+                                owner: "yxksw",
+                                repo: "FList-resources"
+                            },
+                            {
+                                id: "resources",
+                                name: "资源文件",
+                                source: "github-release",
+                                owner: "yxksw",
+                                repo: "FList-resources"
+                            },
+                            {
+                                id: "url",
+                                name: "直连",
+                                source: "url-list",
+                                urls: [
+                                    {
+                                        name: "头像",
+                                        url: "https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif",
+                                        size: 1024000
+                                    }
+                                ]
+                            }
+                        ]}
+                        defaultSourceId="flist-releases"
+                    />
+                </div>
+
+                <script is:inline>
+                    function setupTabs() {
+                        const localTab = document.getElementById('tab-local');
+                        const flistTab = document.getElementById('tab-flist');
+                        const localContent = document.getElementById('content-local');
+                        const flistContent = document.getElementById('content-flist');
+
+                        if (!localTab || !flistTab) return;
+
+                        const activeClasses = ['bg-blue-500', 'text-white'];
+                        const inactiveClasses = ['text-zinc-500', 'hover:bg-zinc-100', 'dark:text-zinc-400', 'dark:hover:bg-zinc-800'];
+
+                        function switchTab(activeTab, inactiveTab, activeContent, inactiveContent) {
+                            activeTab.classList.add(...activeClasses);
+                            activeTab.classList.remove(...inactiveClasses);
+                            
+                            inactiveTab.classList.remove(...activeClasses);
+                            inactiveTab.classList.add(...inactiveClasses);
+
+                            activeContent.classList.remove('hidden');
+                            inactiveContent.classList.add('hidden');
+                        }
+
+                        localTab.addEventListener('click', () => {
+                            switchTab(localTab, flistTab, localContent, flistContent);
+                        });
+
+                        flistTab.addEventListener('click', () => {
+                            switchTab(flistTab, localTab, flistContent, localContent);
+                        });
+                    }
+
+                    setupTabs();
+                    document.addEventListener('astro:page-load', setupTabs);
+                </script>
+            </div>
+        </div>
+    </main>
+
+    <Footer />
+</body>
+</html>

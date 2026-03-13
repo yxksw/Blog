@@ -1,0 +1,91 @@
+---
+import fs from "node:fs";
+import path from "node:path";
+import type { TimetableViewModel } from "../../types/timetable";
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import MobileDrawer from '../../components/MobileDrawer.astro';
+import TimetablePageContent from '../../components/timetable/TimetablePageContent.astro';
+import {
+	buildTimetableViewModel,
+	resolveCurrentWeek,
+} from '../../utils/timetable-normalizer';
+import { parseTimetableFile } from '../../utils/timetable-parser-server';
+import { SITE_TITLE } from '../../consts';
+
+const filePath = "src/data/timetable/default.json";
+const absoluteFilePath = path.join(process.cwd(), filePath);
+
+let viewModel: TimetableViewModel | null = null;
+let loadError = "";
+let isCurrentWeek = false;
+let baselineText = "";
+
+const weekParam = Number(Astro.params.week);
+
+try {
+	baselineText = fs.readFileSync(absoluteFilePath, "utf-8");
+	const parsedData = parseTimetableFile(filePath);
+	const currentWeek = resolveCurrentWeek(
+		parsedData.meta.startDate,
+		parsedData.meta.maxWeek,
+	);
+	const selectedWeek =
+		Number.isFinite(weekParam) && weekParam >= 1
+			? Math.floor(weekParam)
+			: currentWeek;
+	viewModel = buildTimetableViewModel(parsedData, selectedWeek);
+	isCurrentWeek = viewModel.currentWeek === currentWeek;
+} catch (error) {
+	loadError = error instanceof Error ? error.message : "课表数据加载失败";
+}
+
+const title = viewModel ? `课表 - 第${viewModel.currentWeek}周 | ${SITE_TITLE}` : `课表 | ${SITE_TITLE}`;
+const description = "我的课程表";
+
+export function getStaticPaths() {
+	const parsedData = parseTimetableFile("src/data/timetable/default.json");
+	const maxWeek = Math.max(1, parsedData.meta.maxWeek || 1);
+	return Array.from({ length: maxWeek }, (_, index) => ({
+		params: {
+			week: String(index + 1),
+		},
+	}));
+}
+---
+
+<!doctype html>
+<html lang="zh-CN">
+<head>
+	<BaseHead title={title} description={description} />
+</head>
+<body class="bg-zinc-50 dark:bg-zinc-900">
+	<Header />
+	<MobileDrawer />
+
+	<main class="page-shell page-fade-in py-10">
+		{viewModel ? (
+			<TimetablePageContent
+				viewModel={viewModel}
+				isCurrentWeek={isCurrentWeek}
+				baselineText={baselineText}
+			/>
+		) : (
+			<div class="card-surface p-6 md:p-8">
+				<div class="flex items-center gap-2 mb-6">
+					<div class="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center text-white">
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+					</div>
+					<h1 class="text-2xl font-bold">课程表</h1>
+				</div>
+				<div class="rounded-lg border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-400">
+					课表加载失败：{loadError || "未知错误"}
+				</div>
+			</div>
+		)}
+	</main>
+
+	<Footer />
+</body>
+</html>

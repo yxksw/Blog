@@ -7,6 +7,17 @@ interface Props {
 	class?: string;
 }
 
+// Git 历史记录项类型
+interface GitCommit {
+	hash: string;
+	fullHash: string;
+	date: string;
+	message: string;
+}
+
+// Git 历史记录类型
+type GitHistory = Record<string, GitCommit[]>;
+
 const { slug, extension = 'mdx', class: className = '' } = Astro.props;
 
 // GitHub 编辑配置
@@ -18,7 +29,8 @@ const gitHubEditConfig = {
 
 // 获取文章历史
 const fileName = slug ? `${slug}.${extension}` : '';
-const history = (gitHistory[fileName] || []).map(commit => ({
+const typedGitHistory: GitHistory = gitHistory;
+const history: Array<GitCommit & { url: string }> = (typedGitHistory[fileName] || []).map((commit) => ({
 	...commit,
 	url: `${gitHubEditConfig.repoUrl}/commit/${commit.fullHash}`
 }));
