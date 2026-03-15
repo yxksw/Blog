@@ -105,10 +105,10 @@ const description = '用音乐感染人心';
 
   <!-- 加载 MetingJS -->
   <script is:inline src="/js/Meting.js"></script>
-  
+
   <!-- 优化的主脚本 -->
   <script is:inline>
-    
+
     var local = false;
     var isScrolling = false;
     var scrollTimer = null;
@@ -124,11 +124,6 @@ const description = '用音乐感染人心';
     if (typeof userType === 'undefined') {
       var userType = "playlist";
     }
-
-    // 直接加载 MetingJS
-    var script = document.createElement('script');
-    script.src = '/js/Meting.js';
-    document.body.appendChild(script);
 
     var volume = 0.8;
     const params = new URLSearchParams(window.location.search);
