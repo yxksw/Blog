@@ -1,0 +1,48 @@
+---
+import Layout from './Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import MobileDrawer from '../components/MobileDrawer.astro';
+
+interface Props {
+	title?: string;
+	description?: string;
+	image?: string;
+	showHeader?: boolean;
+	showFooter?: boolean;
+	showDrawer?: boolean;
+	showNotification?: boolean;
+}
+
+const {
+	title,
+	description,
+	image,
+	showHeader = true,
+	showFooter = true,
+	showDrawer = true,
+	showNotification = true,
+} = Astro.props;
+---
+
+<Layout title={title} description={description} image={image} showNotification={showNotification}>
+	<slot name="head" slot="head" />
+	<slot name="body-end" slot="body-end" />
+
+	<!-- 这些组件SWUP 容器外面，不会被替换 -->
+	{showHeader && <Header />}
+	{showDrawer && <MobileDrawer />}
+
+	<main class="page-shell page-fade-in">
+		<slot />
+	</main>
+
+	{showFooter && <Footer />}
+</Layout>
+
+<style>
+	.page-shell {
+		min-height: calc(100vh - 4rem);
+		padding-top: 4rem;
+	}
+</style>

@@ -63,7 +63,6 @@
                 localStorage.setItem(storageKey, currentText);
             } else if (cachedText !== currentText) {
                 // 内容有变化
-                console.log('[PostHighlighter] Content change detected');
                 currentDiff = findDiff(cachedText, currentText);
                 if (currentDiff) {
                     showDiffToast();

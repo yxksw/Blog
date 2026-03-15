@@ -1,0 +1,935 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { SITE_TITLE, AUTHOR_NAME } from '../consts';
+import { shuoshuoData, authorInfo, bannerConfig } from '../data/shuoshuo';
+
+const title = `说说 | ${SITE_TITLE}`;
+const description = '记录生活中的点滴';
+
+// 按日期排序，最新的在前面
+const sortedShuoshuoData = [...shuoshuoData].sort((a, b) => {
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+});
+
+// 格式化日期
+function formatDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    });
+}
+
+// 格式化时间
+function formatTime(dateStr: string): string {
+    const date = new Date(dateStr);
+    return date.toLocaleTimeString('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+---
+
+<MainLayout title={title} description={description}>
+    <!-- Banner Section - 复刻 AstraBay 风格 -->
+    <div class="author-content author-content-item single sharePage" style={`background-image: url('${bannerConfig.cover}')`}>
+        <div class="card-content">
+            <div class="author-content-item-tips">{bannerConfig.tips}</div>
+            <span class="author-content-item-title">{bannerConfig.title}</span>
+        </div>
+    </div>
+
+    <div class="shuoshuo-container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Timeline -->
+        <div id="bber">
+            <section class="timeline">
+                <div class="masonry-grid" id="masonryGrid">
+                    {sortedShuoshuoData.map((item, index) => (
+                        <div class="masonry-item" data-index={index}>
+                            <div class="item">
+                                <!-- Meta Info -->
+                                <div class="meta">
+                                    <img class="avatar" src={authorInfo.avatar} alt={authorInfo.name} />
+                                    <div class="info">
+                                        <span class="bber_nick">{authorInfo.name}</span>
+                                        <time class="datetime bber_date" datetime={item.date}>
+                                            {formatDate(item.date)} {formatTime(item.date)}
+                                        </time>
+                                    </div>
+                                </div>
+
+                                <!-- Content -->
+                                <div class="bber-content">
+                                    <div class="datacont">{item.content}</div>
+                                    
+                                    <!-- Images -->
+                                    {item.images && item.images.length > 0 && (
+                                        <div class="bber-content-img">
+                                            {item.images.map((img) => (
+                                                <img src={img} alt={item.content || "图片"} loading="lazy" class="lightbox-img" />
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <!-- Music -->
+                                {item.music && (
+                                    <div class="bber-music" data-music-server={item.music.server} data-music-id={item.music.id}>
+                                        <div class="aplayer-container" id={`aplayer-${item.id}`}></div>
+                                    </div>
+                                )}
+
+                                <!-- Video -->
+                                {item.video && (
+                                    <div class="bber-video">
+                                        {item.video.player && (
+                                            <video src={item.video.player} controls style="object-fit: cover;" />
+                                        )}
+                                        {item.video.bilibili && (
+                                            <iframe
+                                                src={`//player.bilibili.com/player.html?autoplay=0&bvid=${item.video.bilibili}`}
+                                                scrolling="no"
+                                                frameborder="0"
+                                                allowfullscreen={true}
+                                            />
+                                        )}
+                                    </div>
+                                )}
+
+                                <!-- Bottom Info -->
+                                <div class="bber-bottom">
+                                    <div class="bber-info">
+                                        <div class="bber-info-time">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+                                                <line x1="16" x2="16" y1="2" y2="6"/>
+                                                <line x1="8" x2="8" y1="2" y2="6"/>
+                                                <line x1="3" x2="21" y1="10" y2="10"/>
+                                            </svg>
+                                            <time datetime={item.date}>{formatDate(item.date)}</time>
+                                        </div>
+                                        {item.location && (
+                                            <div class="bber-info-location">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                                                    <circle cx="12" cy="10" r="3"/>
+                                                </svg>
+                                                {item.location}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div class="bber-actions">
+                                        {item.link && (
+                                            <a class="bber-content-link" href={item.link} target="_blank" rel="noopener noreferrer">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                                                </svg>
+                                            </a>
+                                        )}
+                                        <button class="bber-comment-btn" aria-label="评论">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            <!-- Tips -->
+            <div id="bber-tips">
+                共 {sortedShuoshuoData.length} 条说说
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div
+        id="shuoshuo-lightbox"
+        class="fixed inset-0 z-[999] hidden items-center justify-center overflow-auto bg-black/70 p-4 md:p-8 dark:bg-black/80"
+        aria-hidden="true"
+    >
+        <button
+            id="shuoshuo-lightbox-close"
+            type="button"
+            class="fixed right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/35 text-white transition-colors hover:bg-black/55"
+            aria-label="关闭图片预览"
+            data-lightbox-close
+        >
+            <svg viewBox="0 0 24 24" class="h-5 w-5 fill-current" aria-hidden="true">
+                <path d="M6.7 5.3a1 1 0 0 0-1.4 1.4L10.6 12l-5.3 5.3a1 1 0 1 0 1.4 1.4l5.3-5.3 5.3 5.3a1 1 0 1 0 1.4-1.4L13.4 12l5.3-5.3a1 1 0 0 0-1.4-1.4L12 10.6 6.7 5.3Z" />
+            </svg>
+        </button>
+        <img
+            id="shuoshuo-lightbox-target"
+            src=""
+            alt=""
+            class="mx-auto block h-auto max-h-[92dvh] max-w-[92vw] rounded-xl object-contain shadow-lg"
+        />
+    </div>
+
+    <!-- Masonry Layout Script -->
+    <script is:inline>
+        // MetingJS 类型声明
+        if (typeof window !== 'undefined') {
+            window.Meting = window.Meting || undefined;
+        }
+
+        (function() {
+            function initMasonry() {
+                const grid = document.getElementById('masonryGrid');
+                if (!grid) return;
+                
+                const items = grid.querySelectorAll('.masonry-item');
+                if (items.length === 0) return;
+                
+                // 获取列数
+                const getColumns = () => {
+                    if (window.innerWidth <= 768) return 1;
+                    if (window.innerWidth <= 1200) return 2;
+                    return 3;
+                };
+                
+                let columns = getColumns();
+                const gap = 16; // 1rem = 16px
+                
+                // 计算每列的高度
+                const columnHeights = new Array(columns).fill(0);
+                
+                items.forEach((item, index) => {
+                    // 找到最短的列
+                    const shortestColumn = columnHeights.indexOf(Math.min(...columnHeights));
+                    
+                    // 计算位置
+                    const columnWidth = (grid.offsetWidth - (columns - 1) * gap) / columns;
+                    const left = shortestColumn * (columnWidth + gap);
+                    const top = columnHeights[shortestColumn];
+                    
+                    // 设置位置
+                    item.style.position = 'absolute';
+                    item.style.left = left + 'px';
+                    item.style.top = top + 'px';
+                    item.style.width = columnWidth + 'px';
+                    
+                    // 更新列高度
+                    columnHeights[shortestColumn] += item.offsetHeight + gap;
+                });
+                
+                // 设置容器高度
+                const maxHeight = Math.max(...columnHeights);
+                grid.style.height = maxHeight + 'px';
+            }
+            
+            // 初始化 MetingJS
+            const initMeting = () => {
+                // 如果 MetingJS 已加载，手动触发解析
+                if (typeof window.Meting !== 'undefined') {
+                    window.Meting.parse();
+                }
+            };
+
+            // 初始化
+            const init = () => {
+                const grid = document.getElementById('masonryGrid');
+                if (grid) {
+                    grid.style.position = 'relative';
+                    initMasonry();
+                    // 瀑布流布局完成后初始化音乐播放器
+                    setTimeout(initMeting, 100);
+                }
+            };
+
+            // 页面加载完成后初始化
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+
+            // 图片加载完成后重新计算
+            window.addEventListener('load', init);
+
+            // 窗口大小改变时重新计算
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(init, 250);
+            });
+
+            // Astro 页面切换后重新初始化
+            document.addEventListener('astro:page-load', init);
+            document.addEventListener('astro:after-swap', init);
+        })();
+    </script>
+
+    <!-- Lightbox Script -->
+    <script is:inline>
+        (function() {
+            let lockedScrollY = 0;
+            let isBodyLocked = false;
+
+            const getLightboxElements = () => {
+                const overlay = document.getElementById('shuoshuo-lightbox');
+                const target = document.getElementById('shuoshuo-lightbox-target');
+                return { overlay, target };
+            };
+
+            const closeLightbox = () => {
+                const { overlay, target } = getLightboxElements();
+                if (!overlay || !target || overlay.classList.contains('hidden')) return;
+
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex');
+                overlay.setAttribute('aria-hidden', 'true');
+                target.setAttribute('src', '');
+                target.setAttribute('alt', '');
+
+                if (isBodyLocked) {
+                    // 使用 requestAnimationFrame 确保平滑恢复
+                    requestAnimationFrame(() => {
+                        document.body.style.overflow = '';
+                        document.body.style.paddingRight = '';
+                        window.scrollTo(0, lockedScrollY);
+                        isBodyLocked = false;
+                    });
+                }
+            };
+
+            const openLightbox = (src, altText) => {
+                const { overlay, target } = getLightboxElements();
+                if (!overlay || !target || !src) return;
+
+                if (!isBodyLocked) {
+                    lockedScrollY = window.scrollY;
+                    // 计算滚动条宽度，避免页面抖动
+                    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+                    document.body.style.overflow = 'hidden';
+                    if (scrollbarWidth > 0) {
+                        document.body.style.paddingRight = scrollbarWidth + 'px';
+                    }
+                    isBodyLocked = true;
+                }
+
+                target.setAttribute('src', src);
+                target.setAttribute('alt', altText || '');
+                overlay.classList.remove('hidden');
+                overlay.classList.add('flex');
+                overlay.setAttribute('aria-hidden', 'false');
+            };
+
+            const initLightbox = () => {
+                document.addEventListener('click', (event) => {
+                    const rawTarget = event.target;
+                    if (!(rawTarget instanceof Element)) return;
+
+                    const { overlay } = getLightboxElements();
+                    if (overlay && !overlay.classList.contains('hidden')) {
+                        if (rawTarget === overlay || rawTarget.closest('[data-lightbox-close]')) {
+                            event.preventDefault();
+                            closeLightbox();
+                            return;
+                        }
+                    }
+
+                    // 检查是否点击了说说页面的图片
+                    if (!(rawTarget instanceof HTMLImageElement)) return;
+                    if (!rawTarget.classList.contains('lightbox-img')) return;
+
+                    const imgSrc = rawTarget.currentSrc || rawTarget.src;
+                    if (!imgSrc) return;
+                    openLightbox(imgSrc, rawTarget.alt || '');
+                });
+
+                document.addEventListener('keydown', (event) => {
+                    if (event.key !== 'Escape') return;
+                    closeLightbox();
+                });
+            };
+
+            // 初始化
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initLightbox);
+            } else {
+                initLightbox();
+            }
+
+            // Astro 页面切换后重新初始化
+            document.addEventListener('astro:page-load', initLightbox);
+            document.addEventListener('astro:after-swap', initLightbox);
+        })();
+    </script>
+
+    <!-- APlayer CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.css">
+    <!-- APlayer JS -->
+    <script src="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js"></script>
+    <script is:inline>
+        // 初始化音乐播放器
+        (function() {
+            const initMusicPlayers = async () => {
+                const musicContainers = document.querySelectorAll('.bber-music[data-music-server][data-music-id]');
+
+                for (const container of musicContainers) {
+                    const server = container.dataset.musicServer;
+                    const id = container.dataset.musicId;
+                    const playerId = container.querySelector('.aplayer-container')?.id;
+
+                    if (!playerId || !server || !id) continue;
+
+                    // 如果已经初始化，跳过
+                    if (container.dataset.initialized === 'true') continue;
+
+                    try {
+                        // 从 API 获取音乐信息
+                        const apiUrl = `https://v.iarc.top/?server=${server}&type=song&id=${id}`;
+                        const response = await fetch(apiUrl);
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+
+                        const songData = await response.json();
+
+                        // 处理 API 返回的数据格式
+                        let audio;
+                        if (Array.isArray(songData) && songData.length > 0) {
+                            audio = songData[0];
+                        } else if (songData && songData.data && Array.isArray(songData.data) && songData.data.length > 0) {
+                            audio = songData.data[0];
+                        } else if (songData && songData.data) {
+                            audio = songData.data;
+                        } else if (songData && typeof songData === 'object') {
+                            audio = songData;
+                        }
+
+                        if (!audio || !audio.url) {
+                            console.error('Invalid audio data:', audio);
+                            throw new Error('Failed to load song data');
+                        }
+
+                        // 创建 APlayer 实例
+                        const ap = new APlayer({
+                            container: document.getElementById(playerId),
+                            audio: [{
+                                name: audio.name || audio.title || '未知歌曲',
+                                artist: audio.artist || audio.author || '未知歌手',
+                                url: audio.url,
+                                cover: audio.pic || audio.cover || audio.picUrl || '',
+                            }],
+                            mini: false,
+                            mutex: true,
+                            preload: 'metadata',
+                            theme: '#3b82f6',
+                            lrcType: 0,
+                        });
+
+                        // 处理播放错误
+                        ap.on('error', () => {
+                            // 静默处理播放错误
+                        });
+
+                        container.dataset.initialized = 'true';
+                    } catch (error) {
+                        console.error('Failed to load music:', error);
+                        container.innerHTML = '<div class="music-error">音乐加载失败</div>';
+                    }
+                }
+            };
+
+            // 初始化
+            const init = () => {
+                if (typeof APlayer !== 'undefined') {
+                    initMusicPlayers();
+                } else {
+                    setTimeout(init, 500);
+                }
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+
+            // Astro 页面切换后重新初始化
+            document.addEventListener('astro:page-load', init);
+            document.addEventListener('astro:after-swap', init);
+        })();
+    </script>
+</MainLayout>
+
+<style>
+    /* Banner Section - 复刻 AstraBay 风格 */
+    .author-content {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        width: 100%;
+        gap: 0.5rem;
+    }
+
+    .author-content.author-content-item.single.sharePage {
+        height: 19rem;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: cover;
+        color: white;
+        overflow: hidden;
+        margin-top: 0;
+        margin-bottom: 12px;
+        position: relative;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        animation: slide-in 0.6s 0.1s backwards;
+    }
+
+    :global(.dark) .author-content.author-content-item.single.sharePage {
+        border-color: rgba(255, 255, 255, 0.05);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .author-content.author-content-item.single.sharePage::before {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.3);
+        opacity: 0.3;
+        z-index: 1;
+        top: 0;
+        left: 0;
+    }
+
+    .author-content-item.single {
+        width: 100%;
+    }
+
+    .card-content {
+        position: absolute;
+        width: 100%;
+        z-index: 2;
+        height: 100%;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 2.5rem 2rem;
+        justify-content: flex-start;
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    @media (max-width: 768px) {
+        .card-content {
+            padding: 1.5rem 1rem;
+        }
+    }
+
+    .author-content-item-tips {
+        opacity: 0.8;
+        font-size: 0.75rem;
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.05em;
+    }
+
+    .author-content-item-title {
+        font-size: 36px;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .author-content-item-title {
+            font-size: 28px;
+        }
+    }
+
+    @keyframes slide-in {
+        0% {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Container */
+    .shuoshuo-container {
+        min-height: calc(100vh - 300px);
+    }
+
+    /* Main Container */
+    #bber {
+        margin-top: 0.5rem;
+        width: 100%;
+    }
+
+    /* Timeline */
+    .timeline {
+        width: 100%;
+    }
+
+    /* Masonry Grid */
+    .masonry-grid {
+        position: relative;
+        width: 100%;
+    }
+
+    .masonry-item {
+        break-inside: avoid;
+        margin-bottom: 1rem;
+    }
+
+    /* Item */
+    .item {
+        position: relative;
+        width: 100%;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 1.25rem;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        align-items: flex-start;
+        background: white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        height: fit-content;
+    }
+
+    :global(.dark) .item {
+        border-color: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .item:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        transform: translateY(-2px);
+    }
+
+    :global(.dark) .item:hover {
+        border-color: #60a5fa;
+        box-shadow: 0 4px 12px rgba(96, 165, 250, 0.15);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .shuoshuo-banner {
+            height: 200px;
+        }
+        
+        .banner-title {
+            font-size: 1.75rem;
+        }
+    }
+
+    /* Meta Section */
+    .meta {
+        display: flex;
+        align-items: center;
+        line-height: 1.5;
+        position: relative;
+        width: 100%;
+        margin-bottom: 12px;
+    }
+
+    .avatar {
+        margin: 0;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid rgba(59, 130, 246, 0.2);
+    }
+
+    .info {
+        display: flex;
+        flex-direction: column;
+        margin-left: 12px;
+    }
+
+    .bber_nick {
+        color: #18181b;
+        font-size: 0.95rem;
+        font-weight: 600;
+    }
+
+    :global(.dark) .bber_nick {
+        color: #f4f4f5;
+    }
+
+    .bber_date {
+        font-size: 12px;
+        opacity: 0.6;
+        color: #71717a;
+    }
+
+    :global(.dark) .bber_date {
+        color: #a1a1aa;
+    }
+
+    /* Content */
+    .bber-content {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .datacont {
+        font-size: 0.95rem;
+        font-weight: 400;
+        color: #27272a;
+        width: 100%;
+        line-height: 1.7;
+        margin-bottom: 0.75rem;
+        word-wrap: break-word;
+    }
+
+    :global(.dark) .datacont {
+        color: #e4e4e7;
+    }
+
+    /* Images */
+    .bber-content-img {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 8px;
+        margin: 0.5rem 0;
+        width: 100%;
+    }
+
+    .bber-content-img img {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 8px;
+        cursor: zoom-in;
+        transition: transform 0.3s ease;
+    }
+
+    .bber-content-img img:hover {
+        transform: scale(1.02);
+    }
+
+    /* Music */
+    .bber-music {
+        width: 100%;
+        margin: 0.5rem 0;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .aplayer-container {
+        width: 100%;
+    }
+
+    :global(.aplayer) {
+        margin: 0 !important;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: none !important;
+        background: var(--efu-card-bg, #f9fafb) !important;
+        border: 1px solid var(--style-border, #e5e7eb);
+        font-family: inherit !important;
+    }
+
+    :global(.dark .aplayer) {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    :global(.aplayer .aplayer-body) {
+        display: flex;
+        align-items: center;
+    }
+
+    :global(.aplayer .aplayer-pic) {
+        width: 66px !important;
+        height: 66px !important;
+        flex-shrink: 0;
+    }
+
+    :global(.aplayer .aplayer-info) {
+        flex: 1;
+        padding: 8px 12px !important;
+        margin-left: 0 !important;
+    }
+
+    :global(.aplayer .aplayer-music) {
+        margin-bottom: 4px !important;
+        display: flex;
+        align-items: center;
+    }
+
+    :global(.aplayer .aplayer-title) {
+        font-size: 14px !important;
+        color: var(--efu-fontcolor, #27272a) !important;
+    }
+
+    :global(.dark .aplayer .aplayer-title) {
+        color: #e4e4e7 !important;
+    }
+
+    :global(.aplayer .aplayer-author) {
+        font-size: 12px !important;
+        color: var(--efu-secondtext, #71717a) !important;
+    }
+
+    :global(.dark .aplayer .aplayer-author) {
+        color: #a1a1aa !important;
+    }
+
+    :global(.aplayer .aplayer-controller) {
+        display: flex;
+        align-items: center;
+        padding: 0 !important;
+    }
+
+    :global(.aplayer .aplayer-bar-wrap) {
+        flex: 1;
+        margin: 0 10px !important;
+    }
+
+    :global(.aplayer .aplayer-time) {
+        font-size: 11px !important;
+        color: var(--efu-secondtext, #71717a) !important;
+    }
+
+    :global(.aplayer .aplayer-icon) {
+        fill: var(--efu-fontcolor, #27272a) !important;
+    }
+
+    :global(.dark .aplayer .aplayer-icon) {
+        fill: #e4e4e7 !important;
+    }
+
+    .music-error {
+        padding: 12px;
+        text-align: center;
+        color: #ef4444;
+        font-size: 12px;
+        background: rgba(239, 68, 68, 0.1);
+        border-radius: 8px;
+    }
+
+    /* Video */
+    .bber-video {
+        position: relative;
+        padding: 56.25% 0 0 0;
+        margin: 0.5rem 0;
+        width: 100%;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .bber-video video,
+    .bber-video iframe {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        left: 0;
+        top: 0;
+        margin: 0;
+        border-radius: 8px;
+        border: none;
+    }
+
+    /* Bottom Section */
+    .bber-bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        margin-top: 0.75rem;
+        padding-top: 12px;
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    :global(.dark) .bber-bottom {
+        border-top-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .bber-info {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .bber-info-time,
+    .bber-info-location {
+        color: #71717a;
+        font-size: 0.7rem;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    :global(.dark) .bber-info-time,
+    :global(.dark) .bber-info-location {
+        color: #a1a1aa;
+    }
+
+    .bber-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .bber-content-link,
+    .bber-comment-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        color: #71717a;
+        background-color: rgba(0, 0, 0, 0.05);
+        border-radius: 50%;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+
+    :global(.dark) .bber-content-link,
+    :global(.dark) .bber-comment-btn {
+        color: #a1a1aa;
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .bber-content-link:hover,
+    .bber-comment-btn:hover {
+        background-color: #3b82f6;
+        color: white;
+    }
+
+    :global(.dark) .bber-content-link:hover,
+    :global(.dark) .bber-comment-btn:hover {
+        background-color: #60a5fa;
+    }
+
+    /* Tips */
+    #bber-tips {
+        font-size: 14px;
+        display: flex;
+        justify-content: center;
+        margin-top: 2rem;
+        color: #71717a;
+    }
+
+    :global(.dark) #bber-tips {
+        color: #a1a1aa;
+    }
+</style>

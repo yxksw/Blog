@@ -1,0 +1,434 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { SITE_TITLE } from '../consts';
+
+const title = `音乐 | ${SITE_TITLE}`;
+const description = '用音乐感染人心';
+---
+
+<MainLayout title={title} description={description} showHeader={true} showFooter={false}>
+  <!-- HeoMusic CSS 文件 -->
+  <link rel="stylesheet" type="text/css" href="/css/APlayer.css" slot="head" />
+  <link rel="stylesheet" type="text/css" href="/css/main.css" slot="head" />
+  
+  <style slot="head">
+    /* 适配 MainLayout 的覆盖样式 */
+    body {
+      background: rgb(13, 13, 13);
+    }
+    
+    /* 调整页面容器以适应 MainLayout 的 header */
+    #heoMusic-page {
+      margin-top: 20px;
+      height: calc(100vh - 84px);
+    }
+    
+    #heoMusic-page .aplayer {
+      height: calc(100vh - 170px);
+    }
+    
+    /* 背景图设置 - 降低模糊度以提升性能 */
+    #music_bg {
+      background-image: url(/cover.webp);
+      background-size: cover;
+      background-position: center;
+    }
+    
+    #music_bg::before {
+      /* 降低模糊半径，使用更高效的渲染 */
+      backdrop-filter: blur(80px);
+      -webkit-backdrop-filter: blur(80px);
+      will-change: transform;
+    }
+    
+    /* 隐藏页脚 */
+    footer {
+      display: none !important;
+    }
+    
+    /* 确保主内容区域占满视口 */
+    main.page-shell {
+      min-height: calc(100vh - 4rem);
+      padding: 0 !important;
+    }
+    
+    /* 优化歌词渲染性能 */
+    #heoMusic-page .aplayer-info .aplayer-lrc p {
+      /* 使用更高效的属性 */
+      will-change: opacity, filter;
+      contain: layout style;
+    }
+    
+    /* 减少动画复杂度 */
+    #heoMusic-page .aplayer-info .aplayer-lrc p.aplayer-lrc-current {
+      text-shadow: none;
+      transition: all 0.3s ease-out;
+    }
+    
+    /* 移动端适配调整 */
+    @media screen and (max-width: 768px) {
+      #heoMusic-page {
+        height: calc(100vh - 140px);
+      }
+      
+      #music_bg::before {
+        backdrop-filter: blur(40px);
+        -webkit-backdrop-filter: blur(40px);
+      }
+    }
+    
+    /* 减少 GPU 负担 */
+    .aplayer .aplayer-lrc .aplayer-lrc-contents {
+      transform: none;
+    }
+  </style>
+
+  <!-- 背景 -->
+  <div id="music_bg"></div>
+
+  <!-- 音乐播放器容器 -->
+  <div id="heoMusic-page"></div>
+
+  <!-- 配置 -->
+  <script is:inline>
+    // Meting API 配置
+    window.meting_api = 'https://v.iarc.top/?server=:server&type=:type&id=:id&r=:r';
+    
+    // 默认播放列表配置
+    var userId = "13681647281";
+    var userServer = "netease";
+    var userType = "playlist";
+  </script>
+
+  <!-- 加载 APlayer -->
+  <script is:inline src="/js/APlayer.min.js"></script>
+
+  <!-- 加载 MetingJS -->
+  <script is:inline src="/js/Meting.js"></script>
+  
+  <!-- 优化的主脚本 -->
+  <script is:inline>
+    
+    var local = false;
+    var isScrolling = false;
+    var scrollTimer = null;
+    var animationFrameId = null;
+    var lastScrollTime = 0;
+
+    if (typeof userId === 'undefined') {
+      var userId = "8152976493";
+    }
+    if (typeof userServer === 'undefined') {
+      var userServer = "netease";
+    }
+    if (typeof userType === 'undefined') {
+      var userType = "playlist";
+    }
+
+    // 直接加载 MetingJS
+    var script = document.createElement('script');
+    script.src = '/js/Meting.js';
+    document.body.appendChild(script);
+
+    var volume = 0.8;
+    const params = new URLSearchParams(window.location.search);
+
+    var heo = {
+      handleScrollOrTouch: function(event, isTouchEvent) {
+        // 节流处理
+        const now = Date.now();
+        if (now - lastScrollTime < 50) return;
+        lastScrollTime = now;
+        
+        let targetElement = event.target;
+        let isInTargetArea = false;
+        
+        while (targetElement && targetElement !== document) {
+          if (targetElement.classList) {
+            if (isTouchEvent) {
+              if (targetElement.classList.contains('aplayer-body') || 
+                  targetElement.classList.contains('aplayer-lrc')) {
+                isInTargetArea = true;
+                break;
+              }
+            } else {
+              if (targetElement.classList.contains('aplayer-body')) {
+                isInTargetArea = true;
+                break;
+              }
+            }
+          }
+          targetElement = targetElement.parentNode;
+        }
+        
+        if (isInTargetArea) {
+          if (animationFrameId !== null) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+          }
+          
+          isScrolling = true;
+          
+          if(scrollTimer !== null) {
+            clearTimeout(scrollTimer);
+          }
+          
+          const timeoutDuration = isTouchEvent ? 2000 : 1500;
+          scrollTimer = setTimeout(function() {
+            isScrolling = false;
+            heo.scrollLyric();
+          }, timeoutDuration);
+        }
+      },
+      
+      initScrollEvents: function() {
+        // 使用 passive 监听器提升滚动性能
+        document.addEventListener('wheel', (event) => {
+          this.handleScrollOrTouch(event, false);
+        }, { passive: true });
+        
+        document.addEventListener('touchmove', (event) => {
+          this.handleScrollOrTouch(event, true);
+        }, { passive: true });
+      },
+
+      scrollLyric: function () {
+        if (isScrolling) {
+          return;
+        }
+        
+        const lrcContent = document.querySelector('.aplayer-lrc');
+        const currentLyric = document.querySelector('.aplayer-lrc-current');
+
+        if (lrcContent && currentLyric) {
+          let startScrollTop = lrcContent.scrollTop;
+          let targetScrollTop = currentLyric.offsetTop - (window.innerHeight - 150) * 0.3;
+          let distance = targetScrollTop - startScrollTop;
+          
+          // 如果距离很小，直接设置，不使用动画
+          if (Math.abs(distance) < 5) {
+            lrcContent.scrollTop = targetScrollTop;
+            return;
+          }
+          
+          let duration = 400;
+          let startTime = null;
+
+          function easeOutQuad(t) {
+            return t * (2 - t);
+          }
+
+          function animateScroll(currentTime) {
+            if (isScrolling) {
+              animationFrameId = null;
+              return;
+            }
+            
+            if (startTime === null) startTime = currentTime;
+            let timeElapsed = currentTime - startTime;
+            let progress = Math.min(timeElapsed / duration, 1);
+            let easeProgress = window.innerWidth < 768 ? progress : easeOutQuad(progress);
+            lrcContent.scrollTop = startScrollTop + (distance * easeProgress);
+            
+            if (timeElapsed < duration) {
+              animationFrameId = requestAnimationFrame(animateScroll);
+            } else {
+              animationFrameId = null;
+            }
+          }
+
+          if (animationFrameId !== null) {
+            cancelAnimationFrame(animationFrameId);
+          }
+          
+          animationFrameId = requestAnimationFrame(animateScroll);
+        }
+      },
+
+      getCustomPlayList: function () {
+        const heoMusicPage = document.getElementById("heoMusic-page");
+        const playlistType = params.get("type") || "playlist";
+
+        if (params.get("id") && params.get("server")) {
+          var id = params.get("id")
+          var server = params.get("server")
+          heoMusicPage.innerHTML = `<meting-js id="${id}" server="${server}" type="${playlistType}" mutex="true" preload="metadata" order="random"></meting-js>`;
+        } else {
+          heoMusicPage.innerHTML = `<meting-js id="${userId}" server="${userServer}" type="${userType}" mutex="true" preload="metadata" order="random"></meting-js>`;
+        }
+      },
+
+      addLyricClickEvent: function () {
+        const lrcContent = document.querySelector('.aplayer-lrc-contents');
+
+        if (lrcContent && !lrcContent.dataset.clickEventAdded) {
+          lrcContent.dataset.clickEventAdded = "true";
+          lrcContent.addEventListener('click', function (event) {
+            if (event.target.tagName.toLowerCase() === 'p') {
+              const lyrics = lrcContent.getElementsByTagName('p');
+              for (let i = 0; i < lyrics.length; i++) {
+                if (lyrics[i] === event.target) {
+                  const player = ap;
+                  if (player.lrc.current[i]) {
+                    const time = player.lrc.current[i][0];
+                    player.seek(time);
+                    isScrolling = false;
+                    clearTimeout(scrollTimer);
+                    if (player.paused) {
+                      player.play();
+                    }
+                  }
+                  event.stopPropagation();
+                  break;
+                }
+              }
+            }
+          });
+        }
+      },
+      
+      setMediaMetadata: function (aplayerObj, isSongPlaying) {
+        const audio = aplayerObj.list.audios[aplayerObj.list.index]
+        const coverUrl = audio.cover || '/icon.webp';
+        
+        let songName, songArtist;
+
+        if ('mediaSession' in navigator) {
+          if (isSongPlaying) {
+            songName = audio.name;
+            songArtist = audio.artist;
+          } else {
+            songName = audio.name;
+            songArtist = audio.artist;
+          }
+          
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: songName,
+            artist: songArtist,
+            album: audio.album,
+            artwork: [
+              { src: coverUrl, sizes: '96x96', type: 'image/jpeg' },
+              { src: coverUrl, sizes: '512x512', type: 'image/jpeg' }
+            ]
+          });
+        } else {
+          document.title = `${audio.name} - ${audio.artist}`;
+        }
+      },
+      
+      setupMediaSessionHandlers: function (aplayer) {
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.setActionHandler('play', () => {
+            aplayer.play();
+          });
+
+          navigator.mediaSession.setActionHandler('pause', () => {
+            aplayer.pause();
+          });
+
+          navigator.mediaSession.setActionHandler('seekbackward', null);
+          navigator.mediaSession.setActionHandler('seekforward', null);
+
+          navigator.mediaSession.setActionHandler('previoustrack', () => {
+            aplayer.skipBack();
+          });
+
+          navigator.mediaSession.setActionHandler('nexttrack', () => {
+            aplayer.skipForward();
+          });
+
+          navigator.mediaSession.setActionHandler('seekto', (details) => {
+            if (details.fastSeek && 'fastSeek' in aplayer.audio) {
+              aplayer.audio.fastSeek(details.seekTime);
+            } else {
+              aplayer.audio.currentTime = details.seekTime;
+            }
+          });
+
+          // 减少更新频率
+          aplayer.on('loadeddata', () => {
+            heo.setMediaMetadata(aplayer, false);
+          });
+
+          aplayer.on('play', () => {
+            navigator.mediaSession.playbackState = 'playing';
+            heo.setMediaMetadata(aplayer, true);
+          });
+
+          aplayer.on('pause', () => {
+            navigator.mediaSession.playbackState = 'paused';
+            heo.setMediaMetadata(aplayer, false);
+          });
+
+          // 使用节流的时间更新
+          let lastTimeUpdate = 0;
+          aplayer.on('timeupdate', () => {
+            const now = Date.now();
+            if (now - lastTimeUpdate > 1000) {
+              lastTimeUpdate = now;
+              heo.setMediaMetadata(aplayer, true);
+            }
+          });
+        }
+      },
+      
+      init: function() {
+        this.getCustomPlayList();
+        this.initScrollEvents();
+      }
+    }
+
+    // 键盘控制 - 添加节流
+    let lastKeyTime = 0;
+    document.addEventListener("keydown", function (event) {
+      const now = Date.now();
+      if (now - lastKeyTime < 100) return;
+      lastKeyTime = now;
+      
+      if (event.code === "Space") {
+        event.preventDefault();
+        if (typeof ap !== 'undefined') ap.toggle();
+      }
+      if (event.keyCode === 39) {
+        event.preventDefault();
+        if (typeof ap !== 'undefined') ap.skipForward();
+      }
+      if (event.keyCode === 37) {
+        event.preventDefault();
+        if (typeof ap !== 'undefined') ap.skipBack();
+      }
+      if (event.keyCode === 38) {
+        if (volume <= 1) {
+          volume += 0.1;
+          if (typeof ap !== 'undefined') ap.volume(volume, true);
+        }
+      }
+      if (event.keyCode === 40) {
+        if (volume >= 0) {
+          volume += -0.1;
+          if (typeof ap !== 'undefined') ap.volume(volume, true);
+        }
+      }
+    });
+
+    // 使用防抖的 resize 监听
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function() {
+        if (typeof ap !== 'undefined') {
+          if (window.innerWidth > 768) {
+            ap.list.show();
+          } else {
+            ap.list.hide();
+          }
+        }
+      }, 250);
+    });
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      heo.init();
+    });
+  </script>
+</MainLayout>

@@ -1,0 +1,859 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { SITE_TITLE } from '../consts';
+import { marked } from 'marked';
+import sanitizeHtml from 'sanitize-html';
+
+// 配置 marked 选项
+marked.setOptions({
+    gfm: true,
+    breaks: true
+});
+
+const title = `碎碎念 | ${SITE_TITLE}`;
+const description = '记录生活中的点滴';
+
+// 从 Telegram API 获取数据
+const API_URL = 'https://tg-api.050815.xyz/';
+
+interface TelegramMessage {
+    text: string;
+    image: string[];
+    time: number;
+    views: string | null;
+}
+
+interface TelegramResponse {
+    nextBefore: number;
+    Region: string;
+    version: string;
+    ChannelMessageData: Record<string, TelegramMessage>;
+}
+
+let essaysData: TelegramMessage[] = [];
+let error: string | null = null;
+
+try {
+    const response = await fetch(API_URL);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data: TelegramResponse = await response.json();
+    
+    // 将对象转换为数组并按时间排序（最新的在前）
+    essaysData = Object.entries(data.ChannelMessageData)
+        .map(([id, message]) => ({ id, ...message }))
+        .sort((a, b) => b.time - a.time);
+} catch (e) {
+    error = e instanceof Error ? e.message : 'Failed to fetch data';
+    console.error('Failed to fetch essays:', e);
+}
+
+// 格式化日期
+function formatDate(timestamp: number): string {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+    });
+}
+
+// 格式化时间
+function formatTime(timestamp: number): string {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+}
+
+// 将 HTML 转换为 Markdown 格式文本
+function htmlToMarkdown(html: string): string {
+    // 移除 Telegram 的 emoji 图片标签，保留 emoji 字符
+    let text = html
+        .replace(/<i class="emoji"[^>]*>.*?<b>([^<]*)<\/b>.*?<\/i>/g, '$1')
+        .replace(/<br\/>/g, '\n')
+        .replace(/<br>/g, '\n')
+        .replace(/<hr\/?>/g, '\n---\n')
+        .replace(/<b>(.*?)<\/b>/g, '**$1**')
+        .replace(/<i>(.*?)<\/i>/g, '*$1*')
+        .replace(/<code>(.*?)<\/code>/g, '`$1`')
+        .replace(/<pre>(.*?)<\/pre>/gs, '```\n$1\n```')
+        .replace(/<a href="([^"]*)"[^>]*>(.*?)<\/a>/g, '[$2]($1)')
+        .replace(/<blockquote>(.*?)<\/blockquote>/gs, '> $1')
+        .replace(/<h1>(.*?)<\/h1>/g, '# $1\n')
+        .replace(/<h2>(.*?)<\/h2>/g, '## $1\n')
+        .replace(/<h3>(.*?)<\/h3>/g, '### $1\n');
+    
+    // 处理无序列表（<ul> 标签包裹的）
+    text = text.replace(/<ul>([\s\S]*?)<\/ul>/g, (match, content) => {
+        return '\n' + content.replace(/<li>(.*?)<\/li>/g, '- $1\n') + '\n';
+    });
+    
+    // 处理有序列表（<ol> 标签包裹的）
+    text = text.replace(/<ol>([\s\S]*?)<\/ol>/g, (match, content) => {
+        let index = 1;
+        return '\n' + content.replace(/<li>(.*?)<\/li>/g, (match, item) => {
+            return `${index++}. ${item}\n`;
+        }) + '\n';
+    });
+    
+    // 将 <br/>---<br/> 或换行符包裹的 --- 转换为分隔线
+    text = text.replace(/\n---\n/g, '\n\n---\n\n');
+    
+    // 移除其他 HTML 标签
+    text = text.replace(/<[^>]+>/g, '');
+    
+    // 解码 HTML 实体
+    text = text
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+    
+    return text.trim();
+}
+
+// 渲染 Markdown 内容
+function renderMarkdown(content: string): string {
+    const markdownText = htmlToMarkdown(content);
+    const rawHtml = marked.parse(markdownText) as string;
+    
+    // 清理 HTML，只允许安全的标签
+    return sanitizeHtml(rawHtml, {
+        allowedTags: [
+            'p', 'br', 'hr', 'strong', 'b', 'em', 'i', 'u', 'strike', 'del',
+            'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+            'ul', 'ol', 'li',
+            'blockquote', 'code', 'pre',
+            'a', 'img',
+            'table', 'thead', 'tbody', 'tr', 'th', 'td'
+        ],
+        allowedAttributes: {
+            'a': ['href', 'title', 'target'],
+            'img': ['src', 'alt', 'title'],
+            'code': ['class'],
+            'pre': ['class'],
+            'hr': []
+        },
+        allowedSchemes: ['http', 'https', 'mailto']
+    });
+}
+
+// 提取纯文本（用于 alt 属性）
+function extractText(html: string): string {
+    const text = htmlToMarkdown(html).replace(/[#*`_~\[\]\(\)]/g, '');
+    return text.substring(0, 50) + (text.length > 50 ? '...' : '');
+}
+---
+
+<MainLayout title={title} description={description}>
+    <!-- Banner Section -->
+    <div class="author-content author-content-item single sharePage" style="background-image: url('https://img.314926.xyz/h')">
+        <div class="card-content">
+            <div class="author-content-item-tips">分享生活中的小确幸</div>
+            <span class="author-content-item-title">碎碎念</span>
+        </div>
+    </div>
+
+    <div class="essays-container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        {error ? (
+            <div class="error-message">
+                <p>加载失败：{error}</p>
+                <button onclick="window.location.reload()">重新加载</button>
+            </div>
+        ) : essaysData.length === 0 ? (
+            <div class="loading-message">
+                <p>加载中...</p>
+            </div>
+        ) : (
+            <div id="essays">
+                <section class="timeline">
+                    <div class="masonry-grid" id="masonryGrid">
+                        {essaysData.map((item, index) => (
+                            <div class="masonry-item" data-index={index}>
+                                <div class="item">
+                                    <!-- Content -->
+                                    <div class="essay-content">
+                                        <div class="datacont markdown-content" set:html={renderMarkdown(item.text)}></div>
+                                        
+                                        <!-- Images - 过滤掉 Telegram emoji 图片 -->
+                                        {item.image && item.image.length > 0 && (
+                                            <div class="essay-content-img">
+                                                {item.image
+                                                    .filter(img => !img.includes('telegram.org/img/emoji'))
+                                                    .map((img) => (
+                                                        <img src={img} alt={extractText(item.text)} loading="lazy" class="lightbox-img" />
+                                                    ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <!-- Bottom Info -->
+                                    <div class="essay-bottom">
+                                        <div class="essay-info">
+                                            <div class="essay-info-time">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+                                                    <line x1="16" x2="16" y1="2" y2="6"/>
+                                                    <line x1="8" x2="8" y1="2" y2="6"/>
+                                                    <line x1="3" x2="21" y1="10" y2="10"/>
+                                                </svg>
+                                                <time datetime={new Date(item.time).toISOString()}>
+                                                    {formatDate(item.time)} {formatTime(item.time)}
+                                                </time>
+                                            </div>
+                                            {item.views && (
+                                                <div class="essay-info-views">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                                                        <circle cx="12" cy="12" r="3"/>
+                                                    </svg>
+                                                    {item.views} 次浏览
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                <!-- Tips -->
+                <div id="essays-tips">
+                    共 {essaysData.length} 条碎碎念
+                </div>
+            </div>
+        )}
+    </div>
+
+    <!-- Lightbox -->
+    <div
+        id="essays-lightbox"
+        class="fixed inset-0 z-[999] hidden items-center justify-center overflow-auto bg-black/70 p-4 md:p-8 dark:bg-black/80"
+        aria-hidden="true"
+    >
+        <button
+            id="essays-lightbox-close"
+            type="button"
+            class="fixed right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/35 text-white transition-colors hover:bg-black/55"
+            aria-label="关闭图片预览"
+            data-lightbox-close
+        >
+            <svg viewBox="0 0 24 24" class="h-5 w-5 fill-current" aria-hidden="true">
+                <path d="M6.7 5.3a1 1 0 0 0-1.4 1.4L10.6 12l-5.3 5.3a1 1 0 1 0 1.4 1.4l5.3-5.3 5.3 5.3a1 1 0 1 0 1.4-1.4L13.4 12l5.3-5.3a1 1 0 0 0-1.4-1.4L12 10.6 6.7 5.3Z" />
+            </svg>
+        </button>
+        <img
+            id="essays-lightbox-target"
+            src=""
+            alt=""
+            class="mx-auto block h-auto max-h-[92dvh] max-w-[92vw] rounded-xl object-contain shadow-lg"
+        />
+    </div>
+
+    <!-- Masonry Layout Script -->
+    <script is:inline>
+        (function() {
+            function waitForImages(grid) {
+                const images = grid.querySelectorAll('img');
+                const promises = [];
+                
+                images.forEach(img => {
+                    if (img.complete) return;
+                    promises.push(new Promise((resolve) => {
+                        img.addEventListener('load', resolve, { once: true });
+                        img.addEventListener('error', resolve, { once: true });
+                    }));
+                });
+                
+                return Promise.all(promises);
+            }
+            
+            function initMasonry() {
+                const grid = document.getElementById('masonryGrid');
+                if (!grid) return;
+                
+                const items = grid.querySelectorAll('.masonry-item');
+                if (items.length === 0) return;
+                
+                const getColumns = () => {
+                    if (window.innerWidth <= 768) return 1;
+                    if (window.innerWidth <= 1200) return 2;
+                    return 3;
+                };
+                
+                let columns = getColumns();
+                const gap = 16;
+                
+                const columnHeights = new Array(columns).fill(0);
+                
+                items.forEach((item, index) => {
+                    const shortestColumn = columnHeights.indexOf(Math.min(...columnHeights));
+                    
+                    const columnWidth = (grid.offsetWidth - (columns - 1) * gap) / columns;
+                    const left = shortestColumn * (columnWidth + gap);
+                    const top = columnHeights[shortestColumn];
+                    
+                    item.style.position = 'absolute';
+                    item.style.left = left + 'px';
+                    item.style.top = top + 'px';
+                    item.style.width = columnWidth + 'px';
+                    
+                    columnHeights[shortestColumn] += item.offsetHeight + gap;
+                });
+                
+                const maxHeight = Math.max(...columnHeights);
+                grid.style.height = maxHeight + 'px';
+            }
+            
+            const init = async () => {
+                const grid = document.getElementById('masonryGrid');
+                if (grid) {
+                    grid.style.position = 'relative';
+                    // 等待所有图片加载完成
+                    await waitForImages(grid);
+                    initMasonry();
+                }
+            };
+            
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+            
+            window.addEventListener('load', init);
+            
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(init, 250);
+            });
+            
+            document.addEventListener('astro:page-load', init);
+            document.addEventListener('astro:after-swap', init);
+        })();
+    </script>
+
+    <!-- Lightbox Script -->
+    <script is:inline>
+        (function() {
+            let lockedScrollY = 0;
+
+            const getLightboxElements = () => {
+                const overlay = document.getElementById('essays-lightbox');
+                const target = document.getElementById('essays-lightbox-target');
+                return { overlay, target };
+            };
+
+            const closeLightbox = () => {
+                const { overlay, target } = getLightboxElements();
+                if (!overlay || !target || overlay.classList.contains('hidden')) return;
+
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex');
+                overlay.setAttribute('aria-hidden', 'true');
+                target.setAttribute('src', '');
+                target.setAttribute('alt', '');
+
+                requestAnimationFrame(() => {
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                    window.scrollTo(0, lockedScrollY);
+                });
+            };
+
+            const openLightbox = (src, altText) => {
+                const { overlay, target } = getLightboxElements();
+                if (!overlay || !target || !src) return;
+
+                lockedScrollY = window.scrollY;
+                const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+                document.body.style.overflow = 'hidden';
+                if (scrollbarWidth > 0) {
+                    document.body.style.paddingRight = scrollbarWidth + 'px';
+                }
+
+                target.setAttribute('src', src);
+                target.setAttribute('alt', altText || '');
+                overlay.classList.remove('hidden');
+                overlay.classList.add('flex');
+                overlay.setAttribute('aria-hidden', 'false');
+            };
+
+            const initLightbox = () => {
+                document.addEventListener('click', (event) => {
+                    const rawTarget = event.target;
+                    if (!(rawTarget instanceof Element)) return;
+
+                    const { overlay } = getLightboxElements();
+                    if (overlay && !overlay.classList.contains('hidden')) {
+                        if (rawTarget === overlay || rawTarget.closest('[data-lightbox-close]')) {
+                            event.preventDefault();
+                            closeLightbox();
+                            return;
+                        }
+                    }
+
+                    if (!(rawTarget instanceof HTMLImageElement)) return;
+                    if (!rawTarget.classList.contains('lightbox-img')) return;
+
+                    const imgSrc = rawTarget.currentSrc || rawTarget.src;
+                    if (!imgSrc) return;
+                    openLightbox(imgSrc, rawTarget.alt || '');
+                });
+
+                document.addEventListener('keydown', (event) => {
+                    if (event.key !== 'Escape') return;
+                    closeLightbox();
+                });
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initLightbox);
+            } else {
+                initLightbox();
+            }
+
+            document.addEventListener('astro:page-load', initLightbox);
+            document.addEventListener('astro:after-swap', initLightbox);
+        })();
+    </script>
+</MainLayout>
+
+<style>
+    /* Banner Section */
+    .author-content {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        width: 100%;
+        gap: 0.5rem;
+    }
+
+    .author-content.author-content-item.single.sharePage {
+        height: 19rem;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: cover;
+        color: white;
+        overflow: hidden;
+        margin-top: 0;
+        margin-bottom: 12px;
+        position: relative;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        animation: slide-in 0.6s 0.1s backwards;
+    }
+
+    :global(.dark) .author-content.author-content-item.single.sharePage {
+        border-color: rgba(255, 255, 255, 0.05);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .author-content.author-content-item.single.sharePage::before {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.3);
+        opacity: 0.3;
+        z-index: 1;
+        top: 0;
+        left: 0;
+    }
+
+    .author-content-item.single {
+        width: 100%;
+    }
+
+    .card-content {
+        position: absolute;
+        width: 100%;
+        z-index: 2;
+        height: 100%;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        padding: 2.5rem 2rem;
+        justify-content: flex-start;
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    @media (max-width: 768px) {
+        .card-content {
+            padding: 1.5rem 1rem;
+        }
+    }
+
+    .author-content-item-tips {
+        opacity: 0.8;
+        font-size: 0.75rem;
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.05em;
+    }
+
+    .author-content-item-title {
+        font-size: 36px;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .author-content-item-title {
+            font-size: 28px;
+        }
+    }
+
+    @keyframes slide-in {
+        0% {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Container */
+    .essays-container {
+        min-height: calc(100vh - 300px);
+    }
+
+    /* Error & Loading */
+    .error-message,
+    .loading-message {
+        text-align: center;
+        padding: 3rem;
+        color: #71717a;
+    }
+
+    .error-message button {
+        margin-top: 1rem;
+        padding: 0.5rem 1.5rem;
+        background: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .error-message button:hover {
+        background: #2563eb;
+    }
+
+    /* Main Container */
+    #essays {
+        margin-top: 0.5rem;
+        width: 100%;
+    }
+
+    /* Timeline */
+    .timeline {
+        width: 100%;
+    }
+
+    /* Masonry Grid */
+    .masonry-grid {
+        position: relative;
+        width: 100%;
+    }
+
+    .masonry-item {
+        break-inside: avoid;
+        margin-bottom: 1rem;
+    }
+
+    /* Item */
+    .item {
+        position: relative;
+        width: 100%;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 1.25rem;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        align-items: flex-start;
+        background: white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        height: fit-content;
+    }
+
+    :global(.dark) .item {
+        border-color: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .item:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        transform: translateY(-2px);
+    }
+
+    :global(.dark) .item:hover {
+        border-color: #60a5fa;
+        box-shadow: 0 4px 12px rgba(96, 165, 250, 0.15);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .author-content.author-content-item.single.sharePage {
+            height: 200px;
+        }
+    }
+
+    /* Content */
+    .essay-content {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .datacont {
+        font-size: 0.95rem;
+        font-weight: 400;
+        color: #27272a;
+        width: 100%;
+        line-height: 1.7;
+        margin-bottom: 0.75rem;
+        word-wrap: break-word;
+    }
+
+    :global(.dark) .datacont {
+        color: #e4e4e7;
+    }
+
+    /* Markdown 内容样式 */
+    .markdown-content :global(p) {
+        margin: 0.5rem 0;
+    }
+
+    .markdown-content :global(p:first-child) {
+        margin-top: 0;
+    }
+
+    .markdown-content :global(p:last-child) {
+        margin-bottom: 0;
+    }
+
+    .markdown-content :global(a) {
+        color: #3b82f6;
+        text-decoration: none;
+    }
+
+    .markdown-content :global(a:hover) {
+        text-decoration: underline;
+    }
+
+    .markdown-content :global(strong),
+    .markdown-content :global(b) {
+        font-weight: 600;
+    }
+
+    .markdown-content :global(em),
+    .markdown-content :global(i) {
+        font-style: italic;
+    }
+
+    .markdown-content :global(code) {
+        background: rgba(0, 0, 0, 0.05);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-family: 'Fira Code', 'Consolas', monospace;
+        font-size: 0.85em;
+    }
+
+    :global(.dark) .markdown-content :global(code) {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .markdown-content :global(pre) {
+        background: rgba(0, 0, 0, 0.05);
+        padding: 1rem;
+        border-radius: 8px;
+        overflow-x: auto;
+        font-family: 'Fira Code', 'Consolas', monospace;
+        font-size: 0.85em;
+        margin: 0.75rem 0;
+    }
+
+    .markdown-content :global(pre code) {
+        background: none;
+        padding: 0;
+        font-size: 1em;
+    }
+
+    :global(.dark) .markdown-content :global(pre) {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .markdown-content :global(ul),
+    .markdown-content :global(ol) {
+        margin: 0.5rem 0;
+        padding-left: 1.5rem;
+        list-style-position: outside;
+    }
+
+    .markdown-content :global(ul) {
+        list-style-type: disc;
+    }
+
+    .markdown-content :global(ol) {
+        list-style-type: decimal;
+    }
+
+    .markdown-content :global(li) {
+        margin: 0.25rem 0;
+        display: list-item;
+    }
+
+    .markdown-content :global(blockquote) {
+        border-left: 3px solid #3b82f6;
+        padding-left: 1rem;
+        margin: 0.75rem 0;
+        color: #71717a;
+    }
+
+    :global(.dark) .markdown-content :global(blockquote) {
+        color: #a1a1aa;
+    }
+
+    .markdown-content :global(h1),
+    .markdown-content :global(h2),
+    .markdown-content :global(h3),
+    .markdown-content :global(h4),
+    .markdown-content :global(h5),
+    .markdown-content :global(h6) {
+        margin: 1rem 0 0.5rem;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+
+    .markdown-content :global(h1) { font-size: 1.5rem; }
+    .markdown-content :global(h2) { font-size: 1.3rem; }
+    .markdown-content :global(h3) { font-size: 1.1rem; }
+    .markdown-content :global(h4) { font-size: 1rem; }
+    .markdown-content :global(h5),
+    .markdown-content :global(h6) { font-size: 0.95rem; }
+
+    .markdown-content :global(hr) {
+        border: none;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+        margin: 1rem 0;
+    }
+
+    :global(.dark) .markdown-content :global(hr) {
+        border-top-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .markdown-content :global(table) {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0.75rem 0;
+    }
+
+    .markdown-content :global(th),
+    .markdown-content :global(td) {
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        padding: 0.5rem;
+        text-align: left;
+    }
+
+    :global(.dark) .markdown-content :global(th),
+    :global(.dark) .markdown-content :global(td) {
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .markdown-content :global(th) {
+        background: rgba(0, 0, 0, 0.05);
+        font-weight: 600;
+    }
+
+    :global(.dark) .markdown-content :global(th) {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Images */
+    .essay-content-img {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 8px;
+        margin: 0.5rem 0;
+        width: 100%;
+    }
+
+    .essay-content-img img {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 8px;
+        cursor: zoom-in;
+        transition: transform 0.3s ease;
+    }
+
+    .essay-content-img img:hover {
+        transform: scale(1.02);
+    }
+
+    /* Bottom Section */
+    .essay-bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        margin-top: 0.75rem;
+        padding-top: 12px;
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    :global(.dark) .essay-bottom {
+        border-top-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .essay-info {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .essay-info-time,
+    .essay-info-views {
+        color: #71717a;
+        font-size: 0.7rem;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    :global(.dark) .essay-info-time,
+    :global(.dark) .essay-info-views {
+        color: #a1a1aa;
+    }
+
+    /* Tips */
+    #essays-tips {
+        font-size: 14px;
+        display: flex;
+        justify-content: center;
+        margin-top: 2rem;
+        color: #71717a;
+    }
+
+    :global(.dark) #essays-tips {
+        color: #a1a1aa;
+    }
+</style>

@@ -1,0 +1,107 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import MusicPlayer from '../components/MusicPlayer.svelte';
+import NewPostNotification from '../components/NewPostNotification.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+
+interface Props {
+	title?: string;
+	description?: string;
+	image?: string;
+	showNotification?: boolean;
+}
+
+const { title, description, image, showNotification = true } = Astro.props;
+const pageTitle = title ? `${title} - ${SITE_TITLE}` : SITE_TITLE;
+---
+
+<!doctype html>
+<html lang="zh-CN" class="scroll-smooth">
+	<head>
+		<BaseHead title={pageTitle} description={description || SITE_DESCRIPTION} image={image} />
+		<slot name="head" />
+	</head>
+	<body class="bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 min-h-screen transition-colors duration-300">
+		{showNotification && <NewPostNotification />}
+		<slot />
+		
+		<!-- MusicPlayer - 放在 body 最后 -->
+		<!-- 使用 transition:persist 确保页面切换时保持播放状态 -->
+		<MusicPlayer client:only="svelte" transition:persist />
+		
+		<slot name="body-end" />
+	</body>
+</html>
+
+<style is:global>
+	/* 全局过渡动画 */
+	.transition-main {
+		transition: opacity 0.3s ease-in-out;
+	}
+
+	/* 页面加载动画 */
+	.onload-animation {
+		animation: fadeInUp 0.6s ease-out forwards;
+	}
+
+	@keyframes fadeInUp {
+		from {
+			opacity: 0;
+			transform: translateY(20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	/* 页面切换动画 */
+	.page-fade-in {
+		animation: pageFadeIn 0.4s ease-out;
+	}
+
+	@keyframes pageFadeIn {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+
+	/* 滚动条样*/
+	::-webkit-scrollbar {
+		width: 8px;
+		height: 8px;
+	}
+
+	::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	::-webkit-scrollbar-thumb {
+		background: rgba(156, 163, 175, 0.5);
+		border-radius: 4px;
+	}
+
+	::-webkit-scrollbar-thumb:hover {
+		background: rgba(156, 163, 175, 0.7);
+	}
+
+	.dark ::-webkit-scrollbar-thumb {
+		background: rgba(75, 85, 99, 0.5);
+	}
+
+	.dark ::-webkit-scrollbar-thumb:hover {
+		background: rgba(75, 85, 99, 0.7);
+	}
+
+	/* 选中文字样式 */
+	::selection {
+		background: rgba(59, 130, 246, 0.3);
+	}
+
+	.dark ::selection {
+		background: rgba(59, 130, 246, 0.4);
+	}
+</style>

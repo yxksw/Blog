@@ -1,8 +1,5 @@
 ---
-import BaseHead from '../../components/BaseHead.astro';
-import Footer from '../../components/Footer.astro';
-import Header from '../../components/Header.astro';
-import MobileDrawer from '../../components/MobileDrawer.astro';
+import MainLayout from '../../layouts/MainLayout.astro';
 import { SITE_TITLE } from '../../consts';
 import { FRIEND_LEVELS, DISCONNECTED_LEVEL } from '../../data/friendLevels';
 import type { FriendLink } from '../../data/friends';
@@ -48,146 +45,210 @@ const title = `友情链接 | ${SITE_TITLE}`;
 const description = '探索更多优秀的内容创作者和技术伙伴';
 ---
 
-<!doctype html>
-<html lang="zh-CN" x-data="{}">
-<head>
-    <BaseHead title={title} description={description} />
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-</head>
-<body class="bg-zinc-50 dark:bg-zinc-900">
-    <Header />
-    <MobileDrawer />
-    
-    <main class="min-h-screen py-10">
-        <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-            <!-- Header -->
-            <div class="text-center mb-12">
-                <h1 class="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-white mb-4">友情链接</h1>
-                <p class="text-lg text-zinc-600 dark:text-zinc-400 mb-6">
-                    探索更多优秀的内容创作者和技术伙伴
-                </p>
-                <a
-                    href="/fc/"
-                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors text-sm font-medium"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"/>
-                        <path d="M12 16v-4"/>
-                        <path d="M12 8h.01"/>
-                    </svg>
-                    查看友链朋友圈
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1">
-                        <path d="M5 12h14"/>
-                        <path d="m12 5 7 7-7 7"/>
-                    </svg>
-                </a>
-            </div>
+<MainLayout title={title} description={description}>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" slot="head"></script>
 
-            <!-- Legend -->
-            <div class="w-full bg-white dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden mb-8">
-                <details class="group">
-                    <summary class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer list-none">
-                        <h3 class="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-400 group-hover:text-blue-500 transition-colors">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-white mb-4">友情链接</h1>
+            <p class="text-lg text-zinc-600 dark:text-zinc-400 mb-6">
+                探索更多优秀的内容创作者和技术伙伴
+            </p>
+            <a
+                href="/fc/"
+                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors text-sm font-medium"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 16v-4"/>
+                    <path d="M12 8h.01"/>
+                </svg>
+                查看友链朋友圈
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1">
+                    <path d="M5 12h14"/>
+                    <path d="m12 5 7 7-7 7"/>
+                </svg>
+            </a>
+        </div>
+
+        <!-- Legend -->
+        <div class="w-full bg-white dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700 overflow-hidden mb-8">
+            <details class="group">
+                <summary class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer list-none">
+                    <h3 class="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-400 group-hover:text-blue-500 transition-colors">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 16v-4"/>
+                            <path d="M12 8h.01"/>
+                        </svg>
+                        友链印记说明
+                    </h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors group-open:rotate-180">
+                        <path d="m6 9 6 6 6-6"/>
+                    </svg>
+                </summary>
+                <div class="p-6 pt-0 border-t border-zinc-100 dark:border-zinc-700">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 pt-4">
+                        {FRIEND_LEVELS.map((level, index) => {
+                            const prevDays = index === 0 ? 0 : FRIEND_LEVELS[index - 1].days;
+                            const isLast = index === FRIEND_LEVELS.length - 1;
+                            const dayRange = isLast ? `${level.days}天+` : `${prevDays}-${level.days}天`;
+                            return (
+                                <div class="flex items-center gap-2 p-2 rounded-lg border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors">
+                                    <div class={`w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-700 ${level.theme}`}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d={level.icon} />
+                                        </svg>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <span class={`text-xs font-bold ${level.theme}`}>
+                                            {level.title}
+                                        </span>
+                                        <span class="text-[10px] text-zinc-500 dark:text-zinc-400">
+                                            {dayRange}
+                                        </span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </details>
+        </div>
+
+        <!-- Active Friends -->
+        <div class="mb-12">
+            <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-6 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-500">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                活跃友链 ({activeFriends.length})
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {activeFriends.map((friend) => {
+                    const days = getDaysAdded(friend.addDate);
+                    const levelInfo = getLevelInfo(days);
+                    const borderClass = levelInfo ? levelInfo.border : 'border-zinc-200 dark:border-zinc-700';
+                    const themeClass = levelInfo ? levelInfo.theme : 'text-zinc-600 dark:text-zinc-400';
+                    
+                    return (
+                        <a
+                            href={friend.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class={`group relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 bg-white dark:bg-zinc-800/50 hover:-translate-y-1 hover:shadow-lg overflow-hidden h-[90px] ${borderClass}`}
+                        >
+                            {/* Avatar */}
+                            <div class="relative w-14 h-14 flex-shrink-0">
+                                <div class={`absolute inset-0 rounded-full border-2 ${borderClass} opacity-20 scale-110`} />
+                                <img
+                                    src={friend.avatar}
+                                    alt={friend.name}
+                                    class="w-14 h-14 rounded-full object-cover relative z-10 transition-transform duration-500 group-hover:rotate-12"
+                                    loading="lazy"
+                                    onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(this.alt)"
+                                />
+                            </div>
+
+                            {/* Content */}
+                            <div class="flex-grow min-w-0 z-10 h-full flex flex-col justify-center">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <h3 class="font-bold text-zinc-900 dark:text-white truncate">
+                                        {friend.name}
+                                    </h3>
+                                    {friend.recommended && (
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="#d3bc8e" stroke="#d3bc8e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="推荐">
+                                            <title>推荐</title>
+                                            <path d="M7 10v12"/>
+                                            <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"/>
+                                        </svg>
+                                    )}
+                                </div>
+                                <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-normal truncate">
+                                    {friend.description}
+                                </p>
+                            </div>
+
+                            {/* Level Stamp */}
+                            {levelInfo && (
+                                <div class="absolute bottom-[-5px] right-[-5px] opacity-25 group-hover:opacity-40 transition-all duration-300 group-hover:scale-110 group-hover:rotate-[-12deg] pointer-events-none">
+                                    <div class={`relative w-24 h-24 flex items-center justify-center ${themeClass}`}>
+                                        <div class="absolute top-5 font-black tracking-widest uppercase text-[10px] opacity-100">
+                                            {levelInfo.title}
+                                        </div>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="opacity-60">
+                                            <path d={levelInfo.icon} />
+                                        </svg>
+                                        <div class="absolute bottom-5 font-mono text-[9px] opacity-100 font-bold">
+                                            {days} DAYS
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </a>
+                    );
+                })}
+            </div>
+        </div>
+
+        <!-- Disconnected Friends -->
+        {disconnectedFriends.length > 0 && (
+            <div class="mb-12">
+                <details class="group/disconnected">
+                    <summary class="flex items-center justify-between mb-6 cursor-pointer list-none">
+                        <h2 class="text-xl font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-400">
                                 <circle cx="12" cy="12" r="10"/>
-                                <path d="M12 16v-4"/>
-                                <path d="M12 8h.01"/>
+                                <line x1="12" x2="12" y1="8" y2="12"/>
+                                <line x1="12" x2="12.01" y1="16" y2="16"/>
                             </svg>
-                            友链印记说明
-                        </h3>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors group-open:rotate-180">
+                            已失联友链 ({disconnectedFriends.length})
+                        </h2>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-400 group-open/disconnected:rotate-180 transition-transform">
                             <path d="m6 9 6 6 6-6"/>
                         </svg>
                     </summary>
-                    <div class="p-6 pt-0 border-t border-zinc-100 dark:border-zinc-700">
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 pt-4">
-                            {FRIEND_LEVELS.map((level, index) => {
-                                const prevDays = index === 0 ? 0 : FRIEND_LEVELS[index - 1].days;
-                                const isLast = index === FRIEND_LEVELS.length - 1;
-                                const dayRange = isLast ? `${level.days}天+` : `${prevDays}-${level.days}天`;
-                                return (
-                                    <div class="flex items-center gap-2 p-2 rounded-lg border border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors">
-                                        <div class={`w-8 h-8 rounded-full flex items-center justify-center bg-zinc-100 dark:bg-zinc-700 ${level.theme}`}>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <path d={level.icon} />
-                                            </svg>
-                                        </div>
-                                        <div class="flex flex-col">
-                                            <span class={`text-xs font-bold ${level.theme}`}>
-                                                {level.title}
-                                            </span>
-                                            <span class="text-[10px] text-zinc-500 dark:text-zinc-400">
-                                                {dayRange}
-                                            </span>
-                                        </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {disconnectedFriends.map((friend) => {
+                            const levelInfo = DISCONNECTED_LEVEL;
+                            
+                            return (
+                                <a
+                                    href={friend.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class={`group relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 bg-white dark:bg-zinc-800/50 hover:-translate-y-1 hover:shadow-lg overflow-hidden h-[90px] grayscale opacity-80 hover:grayscale-0 hover:opacity-100 ${levelInfo.border}`}
+                                >
+                                    {/* Avatar */}
+                                    <div class="relative w-14 h-14 flex-shrink-0">
+                                        <div class={`absolute inset-0 rounded-full border-2 ${levelInfo.border} opacity-20 scale-110`} />
+                                        <img
+                                            src={friend.avatar}
+                                            alt={friend.name}
+                                            class="w-14 h-14 rounded-full object-cover relative z-10 transition-transform duration-500 group-hover:rotate-12"
+                                            loading="lazy"
+                                            onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(this.alt)"
+                                        />
                                     </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </details>
-            </div>
 
-            <!-- Active Friends -->
-            <div class="mb-12">
-                <h2 class="text-xl font-bold text-zinc-900 dark:text-white mb-6 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-500">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                    </svg>
-                    活跃友链 ({activeFriends.length})
-                </h2>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {activeFriends.map((friend) => {
-                        const days = getDaysAdded(friend.addDate);
-                        const levelInfo = getLevelInfo(days);
-                        const borderClass = levelInfo ? levelInfo.border : 'border-zinc-200 dark:border-zinc-700';
-                        const themeClass = levelInfo ? levelInfo.theme : 'text-zinc-600 dark:text-zinc-400';
-                        
-                        return (
-                            <a
-                                href={friend.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class={`group relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 bg-white dark:bg-zinc-800/50 hover:-translate-y-1 hover:shadow-lg overflow-hidden h-[90px] ${borderClass}`}
-                            >
-                                {/* Avatar */}
-                                <div class="relative w-14 h-14 flex-shrink-0">
-                                    <div class={`absolute inset-0 rounded-full border-2 ${borderClass} opacity-20 scale-110`} />
-                                    <img
-                                        src={friend.avatar}
-                                        alt={friend.name}
-                                        class="w-14 h-14 rounded-full object-cover relative z-10 transition-transform duration-500 group-hover:rotate-12"
-                                        loading="lazy"
-                                        onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(this.alt)"
-                                    />
-                                </div>
-
-                                {/* Content */}
-                                <div class="flex-grow min-w-0 z-10 h-full flex flex-col justify-center">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <h3 class="font-bold text-zinc-900 dark:text-white truncate">
+                                    {/* Content */}
+                                    <div class="flex-grow min-w-0 z-10 h-full flex flex-col justify-center">
+                                        <h3 class="font-bold text-zinc-600 dark:text-zinc-400 truncate group-hover:text-zinc-900 dark:group-hover:text-white transition-colors">
                                             {friend.name}
                                         </h3>
-                                        {friend.recommended && (
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="#d3bc8e" stroke="#d3bc8e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="推荐">
-                                                <title>推荐</title>
-                                                <path d="M7 10v12"/>
-                                                <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"/>
-                                            </svg>
-                                        )}
+                                        <p class="text-xs text-zinc-400 dark:text-zinc-500 leading-normal line-clamp-2 group-hover:text-zinc-500 dark:group-hover:text-zinc-400 transition-colors">
+                                            {friend.description}
+                                        </p>
                                     </div>
-                                    <p class="text-xs text-zinc-500 dark:text-zinc-400 leading-normal truncate">
-                                        {friend.description}
-                                    </p>
-                                </div>
 
-                                {/* Level Stamp */}
-                                {levelInfo && (
+                                    {/* Ghost Stamp */}
                                     <div class="absolute bottom-[-5px] right-[-5px] opacity-25 group-hover:opacity-40 transition-all duration-300 group-hover:scale-110 group-hover:rotate-[-12deg] pointer-events-none">
-                                        <div class={`relative w-24 h-24 flex items-center justify-center ${themeClass}`}>
+                                        <div class={`relative w-24 h-24 flex items-center justify-center ${levelInfo.color}`}>
                                             <div class="absolute top-5 font-black tracking-widest uppercase text-[10px] opacity-100">
                                                 {levelInfo.title}
                                             </div>
@@ -195,202 +256,127 @@ const description = '探索更多优秀的内容创作者和技术伙伴';
                                                 <path d={levelInfo.icon} />
                                             </svg>
                                             <div class="absolute bottom-5 font-mono text-[9px] opacity-100 font-bold">
-                                                {days} DAYS
+                                                LOST
                                             </div>
                                         </div>
                                     </div>
-                                )}
-                            </a>
-                        );
-                    })}
+                                </a>
+                            );
+                        })}
+                    </div>
+                </details>
+            </div>
+        )}
+
+        <!-- Apply Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            <!-- 申请友链 -->
+            <div class="rounded-2xl bg-white dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 p-6">
+                <div class="flex items-center gap-2 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500">
+                        <path d="M3 8l7.89 5.26a2 2 0 0 0 2.22 0L21 8M5 19h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2z"/>
+                    </svg>
+                    <h3 class="text-lg font-bold text-zinc-900 dark:text-white">申请友链</h3>
+                </div>
+                <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+                    欢迎技术与生活类博客交换友链
+                </p>
+                <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+                    在Github仓库提交 <a href="https://github.com/yxksw/Friends/issues/new?template=friend-link-request.yml" class="text-blue-500 hover:underline">友链申请</a>
+                </p>
+                <div class="rounded-lg border-2 border-dashed border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-4 text-center">
+                    <p class="text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">
+                        博客名称、描述、地址、头像等信息
+                    </p>
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                        任意格式均可，包含基本信息即可
+                    </p>
                 </div>
             </div>
 
-            <!-- Disconnected Friends -->
-            {disconnectedFriends.length > 0 && (
-                <div class="mb-12">
-                    <details class="group/disconnected">
-                        <summary class="flex items-center justify-between mb-6 cursor-pointer list-none">
-                            <h2 class="text-xl font-bold text-zinc-600 dark:text-zinc-400 flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-400">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <line x1="12" x2="12" y1="8" y2="12"/>
-                                    <line x1="12" x2="12.01" y1="16" y2="16"/>
-                                </svg>
-                                已失联友链 ({disconnectedFriends.length})
-                            </h2>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-zinc-400 group-open/disconnected:rotate-180 transition-transform">
-                                <path d="m6 9 6 6 6-6"/>
-                            </svg>
-                        </summary>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {disconnectedFriends.map((friend) => {
-                                const levelInfo = DISCONNECTED_LEVEL;
-                                
-                                return (
-                                    <a
-                                        href={friend.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        class={`group relative flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 bg-white dark:bg-zinc-800/50 hover:-translate-y-1 hover:shadow-lg overflow-hidden h-[90px] grayscale opacity-80 hover:grayscale-0 hover:opacity-100 ${levelInfo.border}`}
-                                    >
-                                        {/* Avatar */}
-                                        <div class="relative w-14 h-14 flex-shrink-0">
-                                            <div class={`absolute inset-0 rounded-full border-2 ${levelInfo.border} opacity-20 scale-110`} />
-                                            <img
-                                                src={friend.avatar}
-                                                alt={friend.name}
-                                                class="w-14 h-14 rounded-full object-cover relative z-10 transition-transform duration-500 group-hover:rotate-12"
-                                                loading="lazy"
-                                                onerror="this.src='https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(this.alt)"
-                                            />
-                                        </div>
-
-                                        {/* Content */}
-                                        <div class="flex-grow min-w-0 z-10 h-full flex flex-col justify-center">
-                                            <h3 class="font-bold text-zinc-600 dark:text-zinc-400 truncate group-hover:text-zinc-900 dark:group-hover:text-white transition-colors">
-                                                {friend.name}
-                                            </h3>
-                                            <p class="text-xs text-zinc-400 dark:text-zinc-500 leading-normal line-clamp-2 group-hover:text-zinc-500 dark:group-hover:text-zinc-400 transition-colors">
-                                                {friend.description}
-                                            </p>
-                                        </div>
-
-                                        {/* Ghost Stamp */}
-                                        <div class="absolute bottom-[-5px] right-[-5px] opacity-25 group-hover:opacity-40 transition-all duration-300 group-hover:scale-110 group-hover:rotate-[-12deg] pointer-events-none">
-                                            <div class={`relative w-24 h-24 flex items-center justify-center ${levelInfo.color}`}>
-                                                <div class="absolute top-5 font-black tracking-widest uppercase text-[10px] opacity-100">
-                                                    {levelInfo.title}
-                                                </div>
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="opacity-60">
-                                                    <path d={levelInfo.icon} />
-                                                </svg>
-                                                <div class="absolute bottom-5 font-mono text-[9px] opacity-100 font-bold">
-                                                    LOST
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </a>
-                                );
-                            })}
-                        </div>
-                    </details>
+            <!-- 本站信息 -->
+            <div class="rounded-2xl bg-zinc-50 dark:bg-white/5 border border-zinc-100 dark:border-white/5 p-6" x-data="{ copiedField: null, copy(text, fieldId) { navigator.clipboard.writeText(text); this.copiedField = fieldId; setTimeout(() => this.copiedField = null, 2000); }, copyJSON() { const data = { name: 'YxkBlog', url: 'https://www.050815.xyz', description: '每一段旅行，都有终点。', avatar: 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif' }; this.copy(JSON.stringify(data, null, 2), 'json'); } }">
+                <div class="flex items-center gap-2 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500">
+                        <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                    </svg>
+                    <h3 class="text-lg font-bold text-zinc-900 dark:text-white">本站信息</h3>
+                    <button
+                        @click="copyJSON()"
+                        :class="copiedField === 'json' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-zinc-200 dark:bg-white/10 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-white/20'"
+                        class="ml-auto text-xs px-2 py-1 rounded transition-colors"
+                        x-text="copiedField === 'json' ? '已复制' : 'JSON'"
+                    >
+                        JSON
+                    </button>
                 </div>
-            )}
-
-            <!-- Apply Section -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-                <!-- 申请友链 -->
-                <div class="rounded-2xl bg-white dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 p-6">
-                    <div class="flex items-center gap-2 mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500">
-                            <path d="M3 8l7.89 5.26a2 2 0 0 0 2.22 0L21 8M5 19h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2z"/>
-                        </svg>
-                        <h3 class="text-lg font-bold text-zinc-900 dark:text-white">申请友链</h3>
-                    </div>
-                    <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
-                        欢迎技术与生活类博客交换友链
-                    </p>
-                    <p class="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
-                        在Github仓库提交 <a href="https://github.com/yxksw/Friends/issues/new?template=friend-link-request.yml" class="text-blue-500 hover:underline">友链申请</a>
-                    </p>
-                    <div class="rounded-lg border-2 border-dashed border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-4 text-center">
-                        <p class="text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">
-                            博客名称、描述、地址、头像等信息
-                        </p>
-                        <p class="text-xs text-zinc-500 dark:text-zinc-400">
-                            任意格式均可，包含基本信息即可
-                        </p>
-                    </div>
-                </div>
-
-                <!-- 本站信息 -->
-                <div class="rounded-2xl bg-zinc-50 dark:bg-white/5 border border-zinc-100 dark:border-white/5 p-6" x-data="{ copiedField: null, copy(text, fieldId) { navigator.clipboard.writeText(text); this.copiedField = fieldId; setTimeout(() => this.copiedField = null, 2000); }, copyJSON() { const data = { name: 'YxkBlog', url: 'https://www.050815.xyz', description: '每一段旅行，都有终点。', avatar: 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif' }; this.copy(JSON.stringify(data, null, 2), 'json'); } }">
-                    <div class="flex items-center gap-2 mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500">
-                            <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
-                        </svg>
-                        <h3 class="text-lg font-bold text-zinc-900 dark:text-white">本站信息</h3>
-                        <button
-                            @click="copyJSON()"
-                            :class="copiedField === 'json' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' : 'bg-zinc-200 dark:bg-white/10 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-white/20'"
-                            class="ml-auto text-xs px-2 py-1 rounded transition-colors"
-                            x-text="copiedField === 'json' ? '已复制' : 'JSON'"
+                <div class="space-y-1">
+                    <!-- 名称 -->
+                    <div class="group flex items-center hover:bg-zinc-100 dark:hover:bg-white/5 rounded px-2 py-1 -mx-2 transition-colors cursor-pointer" @click="copy('YxkBlog', 'name')">
+                        <span class="text-zinc-500 dark:text-zinc-400 w-16 text-sm">名称</span>
+                        <span class="text-zinc-900 dark:text-white font-medium text-sm flex-1 truncate">YxkBlog</span>
+                        <span
+                            :class="copiedField === 'name' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 opacity-100' : 'text-zinc-400 hover:text-blue-500 opacity-0 group-hover:opacity-100'"
+                            class="ml-2 p-1 rounded transition-all text-xs"
                         >
-                            JSON
-                        </button>
+                            <template x-if="copiedField === 'name'">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                            </template>
+                            <template x-if="copiedField !== 'name'">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                            </template>
+                        </span>
                     </div>
-                    <div class="space-y-1">
-                        <!-- 名称 -->
-                        <div class="group flex items-center hover:bg-zinc-100 dark:hover:bg-white/5 rounded px-2 py-1 -mx-2 transition-colors cursor-pointer" @click="copy('YxkBlog', 'name')">
-                            <span class="text-zinc-500 dark:text-zinc-400 w-16 text-sm">名称</span>
-                            <span class="text-zinc-900 dark:text-white font-medium text-sm flex-1 truncate">YxkBlog</span>
-                            <span
-                                :class="copiedField === 'name' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 opacity-100' : 'text-zinc-400 hover:text-blue-500 opacity-0 group-hover:opacity-100'"
-                                class="ml-2 p-1 rounded transition-all text-xs"
-                            >
-                                <template x-if="copiedField === 'name'">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                                </template>
-                                <template x-if="copiedField !== 'name'">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                                </template>
-                            </span>
-                        </div>
-                        <!-- 地址 -->
-                        <div class="group flex items-center hover:bg-zinc-100 dark:hover:bg-white/5 rounded px-2 py-1 -mx-2 transition-colors cursor-pointer" @click="copy('https://www.050815.xyz', 'url')">
-                            <span class="text-zinc-500 dark:text-zinc-400 w-16 text-sm">地址</span>
-                            <span class="text-zinc-900 dark:text-white font-medium text-sm flex-1 truncate">https://www.050815.xyz</span>
-                            <span
-                                :class="copiedField === 'url' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 opacity-100' : 'text-zinc-400 hover:text-blue-500 opacity-0 group-hover:opacity-100'"
-                                class="ml-2 p-1 rounded transition-all text-xs"
-                            >
-                                <template x-if="copiedField === 'url'">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                                </template>
-                                <template x-if="copiedField !== 'url'">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                                </template>
-                            </span>
-                        </div>
-                        <!-- 描述 -->
-                        <div class="group flex items-center hover:bg-zinc-100 dark:hover:bg-white/5 rounded px-2 py-1 -mx-2 transition-colors cursor-pointer" @click="copy('每一段旅行，都有终点。', 'description')">
-                            <span class="text-zinc-500 dark:text-zinc-400 w-16 text-sm">描述</span>
-                            <span class="text-zinc-900 dark:text-white font-medium text-sm flex-1 truncate">每一段旅行，都有终点。</span>
-                            <span
-                                :class="copiedField === 'description' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 opacity-100' : 'text-zinc-400 hover:text-blue-500 opacity-0 group-hover:opacity-100'"
-                                class="ml-2 p-1 rounded transition-all text-xs"
-                            >
-                                <template x-if="copiedField === 'description'">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                                </template>
-                                <template x-if="copiedField !== 'description'">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                                </template>
-                            </span>
-                        </div>
-                        <!-- 头像 -->
-                        <div class="group flex items-center hover:bg-zinc-100 dark:hover:bg-white/5 rounded px-2 py-1 -mx-2 transition-colors cursor-pointer" @click="copy('https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif', 'avatar')">
-                            <span class="text-zinc-500 dark:text-zinc-400 w-16 text-sm">头像</span>
-                            <span class="text-zinc-900 dark:text-white font-medium text-sm flex-1 truncate">https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif</span>
-                            <span
-                                :class="copiedField === 'avatar' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 opacity-100' : 'text-zinc-400 hover:text-blue-500 opacity-0 group-hover:opacity-100'"
-                                class="ml-2 p-1 rounded transition-all text-xs"
-                            >
-                                <template x-if="copiedField === 'avatar'">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                                </template>
-                                <template x-if="copiedField !== 'avatar'">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                                </template>
-                            </span>
-                        </div>
+                    <!-- 地址 -->
+                    <div class="group flex items-center hover:bg-zinc-100 dark:hover:bg-white/5 rounded px-2 py-1 -mx-2 transition-colors cursor-pointer" @click="copy('https://www.050815.xyz', 'url')">
+                        <span class="text-zinc-500 dark:text-zinc-400 w-16 text-sm">地址</span>
+                        <span class="text-zinc-900 dark:text-white font-medium text-sm flex-1 truncate">https://www.050815.xyz</span>
+                        <span
+                            :class="copiedField === 'url' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 opacity-100' : 'text-zinc-400 hover:text-blue-500 opacity-0 group-hover:opacity-100'"
+                            class="ml-2 p-1 rounded transition-all text-xs"
+                        >
+                            <template x-if="copiedField === 'url'">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                            </template>
+                            <template x-if="copiedField !== 'url'">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                            </template>
+                        </span>
+                    </div>
+                    <!-- 描述 -->
+                    <div class="group flex items-center hover:bg-zinc-100 dark:hover:bg-white/5 rounded px-2 py-1 -mx-2 transition-colors cursor-pointer" @click="copy('每一段旅行，都有终点。', 'description')">
+                        <span class="text-zinc-500 dark:text-zinc-400 w-16 text-sm">描述</span>
+                        <span class="text-zinc-900 dark:text-white font-medium text-sm flex-1 truncate">每一段旅行，都有终点。</span>
+                        <span
+                            :class="copiedField === 'description' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 opacity-100' : 'text-zinc-400 hover:text-blue-500 opacity-0 group-hover:opacity-100'"
+                            class="ml-2 p-1 rounded transition-all text-xs"
+                        >
+                            <template x-if="copiedField === 'description'">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                            </template>
+                            <template x-if="copiedField !== 'description'">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                            </template>
+                        </span>
+                    </div>
+                    <!-- 头像 -->
+                    <div class="group flex items-center hover:bg-zinc-100 dark:hover:bg-white/5 rounded px-2 py-1 -mx-2 transition-colors cursor-pointer" @click="copy('https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif', 'avatar')">
+                        <span class="text-zinc-500 dark:text-zinc-400 w-16 text-sm">头像</span>
+                        <span class="text-zinc-900 dark:text-white font-medium text-sm flex-1 truncate">https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif</span>
+                        <span
+                            :class="copiedField === 'avatar' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 opacity-100' : 'text-zinc-400 hover:text-blue-500 opacity-0 group-hover:opacity-100'"
+                            class="ml-2 p-1 rounded transition-all text-xs"
+                        >
+                            <template x-if="copiedField === 'avatar'">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                            </template>
+                            <template x-if="copiedField !== 'avatar'">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                            </template>
+                        </span>
                     </div>
                 </div>
             </div>
         </div>
-    </main>
-
-    <Footer />
-</body>
-</html>
+    </div>
+</MainLayout>

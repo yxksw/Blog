@@ -106,13 +106,23 @@
       if (pagefind) return pagefind;
       
       try {
-        // Dynamically import pagefind
-        const module = await import(/* @vite-ignore */ '/pagefind/pagefind.js');
+        // Check if pagefind exists (only available after build)
+        const response = await fetch('/pagefind/pagefind.js', { method: 'HEAD' });
+        if (!response.ok) {
+          console.warn('Pagefind not available (this is normal in development mode)');
+          return null;
+        }
+        
+        // Dynamically import pagefind using variable to avoid Vite static analysis
+        const pagefindPath = '/pagefind/pagefind.js';
+        const module = await import(/* @vite-ignore */ pagefindPath);
         pagefind = module;
-        await pagefind.init();
+        if (pagefind.init) {
+          await pagefind.init();
+        }
         return pagefind;
       } catch (error) {
-        console.error('Failed to load Pagefind:', error);
+        console.warn('Pagefind not available (this is normal in development mode):', error);
         return null;
       }
     }

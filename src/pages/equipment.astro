@@ -1,8 +1,5 @@
 ---
-import BaseHead from '../components/BaseHead.astro';
-import Footer from '../components/Footer.astro';
-import Header from '../components/Header.astro';
-import MobileDrawer from '../components/MobileDrawer.astro';
+import MainLayout from '../layouts/MainLayout.astro';
 import { SITE_TITLE } from '../consts';
 
 const title = `我的装备 | ${SITE_TITLE}`;
@@ -23,13 +20,8 @@ const categories = equipmentData.categories || [];
 const items = equipmentData.items || [];
 ---
 
-<!doctype html>
-<html lang="zh-CN">
-<head>
-    <BaseHead title={title} description={description} />
-    <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>
+<MainLayout title={title} description={description}>
+    <style slot="head">
         /* 装备页面样式 */
         #icat-equipment {
             padding-bottom: 12px;
@@ -386,92 +378,87 @@ const items = equipmentData.items || [];
             --c-bg: rgba(31, 41, 55, 0.5);
         }
     </style>
-</head>
-<body class="bg-zinc-50 dark:bg-zinc-900">
-    <Header />
-    <MobileDrawer />
 
-    <main class="min-h-screen py-10">
-        <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-            <!-- 页面标题 -->
-            <div class="text-center mb-8">
-                <h1 class="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-white mb-4">我的装备</h1>
-                <p class="text-lg text-zinc-600 dark:text-zinc-400">
-                    我的数码装备和外设展示
-                </p>
-            </div>
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" slot="head"></script>
 
-            <div id="icat-equipment" x-data="equipmentApp()" x-init="init()">
-                <div class="equipment-category">
-                    <!-- 分类标签 -->
-                    <div class="categories-tabs">
-                        <div class="tabs-container">
-                            <template x-for="category in categories" :key="category.key">
-                                <div
-                                    class="category-tab"
-                                    :class="{ active: activeCategory === category.key }"
-                                    @click="setCategory(category.key)"
-                                    :style="`--tab-color: ${category.color}`"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" x-html="getCategoryIcon(category.icon)"></svg>
-                                    <span x-text="category.label"></span>
-                                    <span x-text="getCategoryCount(category.key)"></span>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <!-- 页面标题 -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-zinc-900 dark:text-white mb-4">我的装备</h1>
+            <p class="text-lg text-zinc-600 dark:text-zinc-400">
+                我的数码装备和外设展示
+            </p>
+        </div>
 
-                    <!-- 装备列表 -->
-                    <div class="equipment-list">
-                        <template x-for="item in filteredItems" :key="item.name">
-                            <div class="equipment-card">
-                                <div class="equipment-image">
-                                    <img :src="item.image" :alt="item.name" loading="lazy" />
-                                </div>
-                                <div class="equipment-content">
-                                    <div class="equipment-header">
-                                        <h3 class="card-name" x-text="item.name"></h3>
-                                        <div class="card-category" :style="`--category-color: ${getCategoryColor(item.category)}`" x-text="item.category"></div>
-                                    </div>
-                                    <div class="equipment-opinion" x-text="item.desc"></div>
-                                    <div class="card-specs">
-                                        <template x-for="([key, value]) in Object.entries(item.info || {})" :key="key">
-                                            <div class="spec-item">
-                                                <div class="spec-label" x-text="key"></div>
-                                                <div class="spec-value" x-text="value"></div>
-                                            </div>
-                                        </template>
-                                    </div>
-                                    <div class="card-tags">
-                                        <template x-for="tag in (item.tags || [])" :key="tag">
-                                            <span class="tag" x-text="tag"></span>
-                                        </template>
-                                    </div>
-                                    <div class="card-footer">
-                                        <div class="purchase-info">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
-                                            <span x-text="item.date"></span>
-                                        </div>
-                                        <div class="price-info" x-text="'￥' + item.money"></div>
-                                    </div>
-                                    <div class="equipment-actions">
-                                        <a class="equipment-link" :href="item.src" target="_blank" rel="noopener noreferrer">
-                                            查看详情
-                                        </a>
-                                        <button class="comment-btn" type="button" @click="goComment(item.desc)" aria-label="快速评论">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                                        </button>
-                                    </div>
-                                </div>
+        <div id="icat-equipment" x-data="equipmentApp()" x-init="init()">
+            <div class="equipment-category">
+                <!-- 分类标签 -->
+                <div class="categories-tabs">
+                    <div class="tabs-container">
+                        <template x-for="category in categories" :key="category.key">
+                            <div
+                                class="category-tab"
+                                :class="{ active: activeCategory === category.key }"
+                                @click="setCategory(category.key)"
+                                :style="`--tab-color: ${category.color}`"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" x-html="getCategoryIcon(category.icon)"></svg>
+                                <span x-text="category.label"></span>
+                                <span x-text="getCategoryCount(category.key)"></span>
                             </div>
                         </template>
                     </div>
                 </div>
+
+                <!-- 装备列表 -->
+                <div class="equipment-list">
+                    <template x-for="item in filteredItems" :key="item.name">
+                        <div class="equipment-card">
+                            <div class="equipment-image">
+                                <img :src="item.image" :alt="item.name" loading="lazy" />
+                            </div>
+                            <div class="equipment-content">
+                                <div class="equipment-header">
+                                    <h3 class="card-name" x-text="item.name"></h3>
+                                    <div class="card-category" :style="`--category-color: ${getCategoryColor(item.category)}`" x-text="item.category"></div>
+                                </div>
+                                <div class="equipment-opinion" x-text="item.desc"></div>
+                                <div class="card-specs">
+                                    <template x-for="([key, value]) in Object.entries(item.info || {})" :key="key">
+                                        <div class="spec-item">
+                                            <div class="spec-label" x-text="key"></div>
+                                            <div class="spec-value" x-text="value"></div>
+                                        </div>
+                                    </template>
+                                </div>
+                                <div class="card-tags">
+                                    <template x-for="tag in (item.tags || [])" :key="tag">
+                                        <span class="tag" x-text="tag"></span>
+                                    </template>
+                                </div>
+                                <div class="card-footer">
+                                    <div class="purchase-info">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                                        <span x-text="item.date"></span>
+                                    </div>
+                                    <div class="price-info" x-text="'￥' + item.money"></div>
+                                </div>
+                                <div class="equipment-actions">
+                                    <a class="equipment-link" :href="item.src" target="_blank" rel="noopener noreferrer">
+                                        查看详情
+                                    </a>
+                                    <button class="comment-btn" type="button" @click="goComment(item.desc)" aria-label="快速评论">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
             </div>
         </div>
-    </main>
-
-    <Footer />
+    </div>
 
     <script is:inline>
         function equipmentApp() {
@@ -530,5 +517,4 @@ const items = equipmentData.items || [];
 
     <!-- 装备数据 -->
     <script id="equipment-data" type="application/json" set:html={JSON.stringify(equipmentData)}></script>
-</body>
-</html>
+</MainLayout>

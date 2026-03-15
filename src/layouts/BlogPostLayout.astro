@@ -1,0 +1,151 @@
+---
+import MainLayout from './MainLayout.astro';
+import Comment from '../components/Comment.astro';
+import License from '../components/License.astro';
+import PostUpdateNotice from '../components/PostUpdateNotice.astro';
+import PostDiffInArticle from '../components/PostDiffInArticle.astro';
+import PostFeedback from '../components/PostFeedback.astro';
+import AISummary from '../components/AISummary.astro';
+import TocSidebar from '../components/TocSidebar.astro';
+import TocDrawer from '../components/TocDrawer.astro';
+import PostContentHighlighter from '../components/PostContentHighlighter.astro';
+import type { CollectionEntry } from 'astro:content';
+
+type Props = CollectionEntry<'blog'>['data'] & {
+	slug: string;
+	headings?: { depth: number; slug: string; text: string }[];
+};
+
+const {
+	title,
+	description,
+	pubDate,
+	updatedDate,
+	heroImage,
+	slug,
+	headings = [],
+} = Astro.props;
+---
+
+<MainLayout title={title} description={description} image={heroImage}>
+	<PostContentHighlighter />
+
+	<div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-10">
+		<article class="prose prose-zinc dark:prose-invert max-w-none">
+			<!-- 文章头部 -->
+			<header class="mb-8 not-prose">
+				{heroImage && (
+					<img
+						width={1020}
+						height={510}
+						src={heroImage}
+						alt=""
+						class="w-full h-64 object-cover rounded-2xl mb-6 shadow-lg"
+					/>
+				)}
+				<h1 class="text-3xl md:text-4xl font-bold text-zinc-900 dark:text-zinc-100 mb-4">
+					{title}
+				</h1>
+				<div class="flex flex-wrap items-center gap-4 text-sm text-zinc-500 dark:text-zinc-400">
+					<time datetime={pubDate.toISOString()}>
+						{pubDate.toLocaleDateString('zh-CN', {
+							year: 'numeric',
+							month: 'long',
+							day: 'numeric',
+						})}
+					</time>
+					{updatedDate && (
+						<span class="text-zinc-400">
+							(更新 {updatedDate.toLocaleDateString('zh-CN', {
+								year: 'numeric',
+								month: 'long',
+								day: 'numeric',
+							})})
+						</span>
+					)}
+				</div>
+			</header>
+
+			<!-- AI 摘要 -->
+			<AISummary slug={slug} />
+
+			<!-- 更新通知 -->
+			<PostUpdateNotice slug={slug} />
+
+			<!-- 文章差异提示 -->
+			<PostDiffInArticle slug={slug} />
+
+			<!-- 文章内容 -->
+			<div class="article-content">
+				<slot />
+			</div>
+
+			<!-- 文章反馈 -->
+			<PostFeedback slug={slug} />
+
+			<!-- 许可-->
+			<License
+				title={title}
+				pubDate={pubDate}
+				slug={slug}
+			/>
+		</article>
+
+		<!-- 评论-->
+		<Comment slug={slug} />
+	</div>
+
+	<!-- 目录侧边-->
+	<TocSidebar headings={headings} />
+
+	<!-- 移动端目录抽-->
+	<TocDrawer headings={headings} />
+</MainLayout>
+
+<style is:global>
+	/* 文章内容样式优化 */
+	.article-content {
+		line-height: 1.8;
+	}
+
+	.article-content h2 {
+		margin-top: 2.5rem;
+		margin-bottom: 1rem;
+		padding-bottom: 0.5rem;
+		border-bottom: 1px solid rgba(156, 163, 175, 0.3);
+	}
+
+	.dark .article-content h2 {
+		border-bottom-color: rgba(75, 85, 99, 0.3);
+	}
+
+	.article-content h3 {
+		margin-top: 2rem;
+		margin-bottom: 0.75rem;
+	}
+
+	.article-content p {
+		margin-bottom: 1.25rem;
+	}
+
+	.article-content img {
+		border-radius: 0.75rem;
+		box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+	}
+
+	.article-content pre {
+		border-radius: 0.75rem;
+		padding: 1.25rem;
+	}
+
+	.article-content blockquote {
+		border-left: 4px solid #3b82f6;
+		padding-left: 1rem;
+		font-style: italic;
+		color: rgba(63, 63, 70, 0.8);
+	}
+
+	.dark .article-content blockquote {
+		color: rgba(212, 212, 216, 0.8);
+	}
+</style>

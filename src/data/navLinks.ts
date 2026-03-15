@@ -15,12 +15,20 @@ export const getNavLinks = (base: string): NavLink[] => [
 			{ href: `${base}important/`, label: '推荐文章' },
 		]
 	},
-	{ href: `${base}board/`, label: '说说' },
+	{
+		href: `${base}essays/`,
+		label: '即刻',
+		children: [
+			{ href: `${base}essays/`, label: '说说' },
+			{ href: `${base}daily/`, label: '日常' },
+		],
+	},
 	{
 		href: `${base}bangumi/`,
 		label: '更多页面',
 		children: [
 			{ href: `${base}bangumi/`, label: '追番' },
+			{ href: `${base}music/`, label: '音乐' },
 			{ href: `${base}equipment/`, label: '装备' },
 			{ href: `${base}sponsors/`, label: '赞助' },
             { href: `${base}timetable/`, label: '课表' },

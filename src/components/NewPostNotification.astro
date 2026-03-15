@@ -99,91 +99,41 @@
     const sp = new URLSearchParams(window.location.search);
     if (sp.get('__diff_debug_cleanup') === '1') {
         try {
-            indexedDB.deleteDatabase('blog-rss-store');
-        } catch {
-        }
-        try {
+            const DB_NAME = 'new-posts-db';
+            indexedDB.deleteDatabase(DB_NAME);
+            localStorage.removeItem('new-posts-notification-state');
+            localStorage.removeItem('new-posts-cache');
+            localStorage.removeItem('new-posts-init-time');
             const url = new URL(window.location.href);
             url.searchParams.delete('__diff_debug_cleanup');
-            history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
-        } catch {
-        }
-        return;
+            window.history.replaceState({}, '', url.toString());
+        } catch {}
     }
     if (sp.get('__diff_debug') === '1') return;
-    
-    const DB_NAME = 'blog-rss-store-v2';
-    const DB_VERSION = 1;
-    const STORE_OLD = 'posts';
-    const STORE_NEW = 'posts_new';
-    const LOCAL_STORAGE_KEY = 'blog-posts-cache';
-    const NOTIFICATION_STATE_KEY = 'blog-notification-state';
-    const INIT_TIME_KEY = 'blog-notification-init-time';
-    const LIST_ID = 'new-post-list';
-    
-    // Compute a context-aware ID for the current site/path
-    const BASE_PATH = (import.meta.env.BASE_URL ?? '/');
-    const SCOPE_ID = BASE_PATH.replace(/^\/+|\/+$/g, '') || 'root';
 
-    // IndexedDB Helpers
+    const DB_NAME = 'new-posts-db';
+    const DB_VERSION = 1;
+    const STORE_OLD = 'posts-old';
+    const STORE_NEW = 'posts-new';
+    const LOCAL_STORAGE_KEY = 'new-posts-cache';
+    const NOTIFICATION_STATE_KEY = 'new-posts-notification-state';
+    const INIT_TIME_KEY = 'new-posts-init-time';
+
     function openDB() {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(DB_NAME, DB_VERSION);
             request.onerror = () => reject(request.error);
-            request.onsuccess = () => {
-                const db = request.result;
-                // Check if object stores exist, if not, recreate them
-                const hasOldStore = db.objectStoreNames.contains(STORE_OLD);
-                const hasNewStore = db.objectStoreNames.contains(STORE_NEW);
-                if (!hasOldStore || !hasNewStore) {
-                    // Close and reopen with upgrade
-                    db.close();
-                    const newVersion = DB_VERSION + 1;
-                    const upgradeRequest = indexedDB.open(DB_NAME, newVersion);
-                    upgradeRequest.onerror = () => reject(upgradeRequest.error);
-                    upgradeRequest.onsuccess = () => resolve(upgradeRequest.result);
-                    upgradeRequest.onupgradeneeded = (event) => {
-                        const target = event.target as IDBOpenDBRequest;
-                        const upgradeDb = target.result;
-                        const ensureStore = (name: string) => {
-                            if (!upgradeDb.objectStoreNames.contains(name)) {
-                                upgradeDb.createObjectStore(name, { keyPath: 'id' });
-                            }
-                        };
-                        ensureStore(STORE_OLD);
-                        ensureStore(STORE_NEW);
-                    };
-                } else {
-                    resolve(db);
+            request.onsuccess = () => resolve(request.result);
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(STORE_OLD)) {
+                    db.createObjectStore(STORE_OLD, { keyPath: 'id' });
+                }
+                if (!db.objectStoreNames.contains(STORE_NEW)) {
+                    db.createObjectStore(STORE_NEW, { keyPath: 'id' });
                 }
             };
-            request.onupgradeneeded = (event) => {
-                const target = event.target as IDBOpenDBRequest;
-                const db = target.result;
-                const ensureStore = (name: string) => {
-                    if (!db.objectStoreNames.contains(name)) {
-                        db.createObjectStore(name, { keyPath: 'id' });
-                    }
-                };
-                ensureStore(STORE_OLD);
-                ensureStore(STORE_NEW);
-            };
         });
-    }
-
-    function normalizeGuid(guid, link) {
-        const value = (guid || link || '').trim();
-        if (!value) return '';
-        try {
-            const url = new URL(value, window.location.origin);
-            return `${url.pathname}${url.search}${url.hash}`;
-        } catch {
-            return value;
-        }
-    }
-
-    function generateId(guid) {
-        return `${SCOPE_ID}:${guid}`;
     }
 
     function getStoredPosts(db, storeName) {
@@ -191,18 +141,8 @@
             const transaction = db.transaction([storeName], 'readonly');
             const store = transaction.objectStore(storeName);
             const request = store.getAll();
-            request.onsuccess = () => resolve(request.result);
+            request.onsuccess = () => resolve(request.result || []);
             request.onerror = () => reject(request.error);
-        });
-    }
-
-    function clearStore(db, storeName) {
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction([storeName], 'readwrite');
-            const store = transaction.objectStore(storeName);
-            store.clear();
-            transaction.oncomplete = () => resolve();
-            transaction.onerror = () => reject(transaction.error);
         });
     }
 
@@ -210,23 +150,61 @@
         return new Promise((resolve, reject) => {
             const transaction = db.transaction([storeName], 'readwrite');
             const store = transaction.objectStore(storeName);
-            
-            posts.forEach(post => {
-                const itemToSave = { ...post, id: generateId(post.guid) };
-                store.put(itemToSave);
-            });
-            
-            transaction.oncomplete = () => resolve();
-            transaction.onerror = () => reject(transaction.error);
+            const clearRequest = store.clear();
+            clearRequest.onsuccess = () => {
+                let completed = 0;
+                if (posts.length === 0) {
+                    resolve();
+                    return;
+                }
+                posts.forEach(post => {
+                    const addRequest = store.add({ ...post, id: generateId(post.guid) });
+                    addRequest.onsuccess = () => {
+                        completed++;
+                        if (completed === posts.length) resolve();
+                    };
+                    addRequest.onerror = () => reject(addRequest.error);
+                });
+            };
+            clearRequest.onerror = () => reject(clearRequest.error);
         });
     }
 
-    // Helper to get current RSS items
+    function clearStore(db, storeName) {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([storeName], 'readwrite');
+            const store = transaction.objectStore(storeName);
+            const request = store.clear();
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    function generateId(guid) {
+        let hash = 0;
+        const str = String(guid || '');
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return 'id_' + Math.abs(hash).toString(36);
+    }
+
+    function normalizeGuid(guid, link) {
+        const g = String(guid || link || '').trim();
+        try {
+            const url = new URL(g);
+            return url.pathname + url.search;
+        } catch {
+            return g;
+        }
+    }
+
     async function fetchRSS() {
         try {
-            // 尝试多个可能的 RSS 路径
             const possiblePaths = [
-                basePath ? `${basePath}/rss.xml` : '/rss.xml',
+                withBasePath('/rss.xml'),
                 '/rss.xml',
                 './rss.xml',
                 'rss.xml'
@@ -237,25 +215,21 @@
             
             for (const rssPath of possiblePaths) {
                 try {
-                    console.log('[NewPostNotification] Trying RSS path:', rssPath);
                     response = await fetch(rssPath, { cache: 'no-store' });
                     if (response.ok) {
                         successfulPath = rssPath;
-                        console.log('[NewPostNotification] RSS fetch successful from:', rssPath);
                         break;
                     }
                 } catch (e) {
-                    console.log('[NewPostNotification] Failed to fetch from:', rssPath, e.message);
+                    // 静默处理 fetch 错误
                 }
             }
             
             if (!response || !response.ok) {
-                console.error('[NewPostNotification] RSS fetch failed for all paths');
                 return [];
             }
             
             const text = await response.text();
-            console.log('[NewPostNotification] RSS fetched from', successfulPath, 'length:', text.length);
             const parser = new DOMParser();
             const xml = parser.parseFromString(text, 'text/xml');
             
@@ -277,13 +251,11 @@
                 const pubDate = new Date(item.querySelector('pubDate')?.textContent || '').getTime();
                 let description = item.querySelector('description')?.textContent || '';
                 
-                // Try to get content from multiple possible sources
                 let contentEncoded = item.getElementsByTagNameNS('http://purl.org/rss/1.0/modules/content/', 'encoded')[0]?.textContent;
                 let content = contentEncoded || 
                                 item.getElementsByTagName('content:encoded')[0]?.textContent || 
                                 item.querySelector('content')?.textContent || '';
 
-                // Replace production origin with current origin
                 if (prodOrigin && prodOrigin !== currentOrigin) {
                     link = link.replaceAll(prodOrigin, currentOrigin);
                     if (rawGuid.includes(prodOrigin)) {
@@ -305,12 +277,10 @@
                 };
             });
         } catch (e) {
-            console.error('Failed to fetch RSS:', e);
             return [];
         }
     }
 
-    // Helper to compute raw diff
     function computeDiff(oldText, newText) {
         if (!oldText || !newText) return null;
 
@@ -327,261 +297,147 @@
             const doc = parser.parseFromString(`<div>${raw}</div>`, "text/html");
             const root = doc.body.firstElementChild;
             if (!root) return raw;
-
-            const lines = [];
-            for (const el of Array.from(root.children)) {
-                const htmlLine = String(el.outerHTML || "")
-                    .replace(/\r\n/g, "\n")
-                    .replace(/\r/g, "\n")
-                    .replace(/\n+/g, " ")
-                    .replace(/[ \t]+/g, " ")
-                    .trim();
-                if (!htmlLine) continue;
-                lines.push(htmlLine);
-            }
-
-            return lines.join("\n");
+            const clone = root.cloneNode(true);
+            clone.querySelectorAll("script, style, iframe, object, embed").forEach((el) => el.remove());
+            const text = clone.textContent || "";
+            return text.replace(/\s+/g, " ").trim();
         };
 
-        const cleanOld = normalizeForDiffHtml(oldText);
-        const cleanNew = normalizeForDiffHtml(newText);
+        const normalizedOld = normalizeForDiffHtml(oldText);
+        const normalizedNew = normalizeForDiffHtml(newText);
 
-        if (!cleanOld || !cleanNew) return null;
+        if (!normalizedOld || !normalizedNew || normalizedOld === normalizedNew) {
+            return null;
+        }
 
-        const diffs = Diff.diffLines(cleanOld, cleanNew);
-        const hasChanges = diffs.some(part => part.added || part.removed);
-        if (!hasChanges) return null;
-
-        return diffs;
+        const diffResult = Diff.diffWordsWithSpace(normalizedOld, normalizedNew);
+        const hasChanges = diffResult.some(part => part.added || part.removed);
+        return hasChanges ? diffResult : null;
     }
 
-    // Helper to show notification
-    function showNotification(newPosts, timestamp, isFresh, initTime) {
-        const minimizedBtn = document.getElementById('notification-minimized');
+    function renderDiffToHtml(diffArray) {
+        if (!Array.isArray(diffArray) || diffArray.length === 0) {
+            return '<span class="text-zinc-500 italic">无内容变更</span>';
+        }
+        return diffArray.map(part => {
+            const text = part.value
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\n/g, '<br>');
+            if (part.added) {
+                return `<ins class="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 no-underline px-1 rounded">${text}</ins>`;
+            }
+            if (part.removed) {
+                return `<del class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 no-underline px-1 rounded line-through opacity-70">${text}</del>`;
+            }
+            return `<span>${text}</span>`;
+        }).join('');
+    }
+
+    function showNotification(items, timestamp, hasNew, initTime) {
         const panel = document.getElementById('notification-panel');
-        const list = document.getElementById(LIST_ID);
         const dot = document.getElementById('notification-dot');
+        const list = document.getElementById('new-post-list');
         const minimizeBtn = document.getElementById('minimize-notification');
         const clearBtn = document.getElementById('clear-notification');
-        
-        if (!minimizedBtn || !panel || !list) return;
-        
-        requestAnimationFrame(() => {
-            panel.classList.remove('translate-y-20', 'opacity-0');
-            dot?.classList.remove('translate-y-20', 'opacity-0');
-        });
 
-        const initTimeStr = new Date(initTime).toLocaleString();
-        const checkTimeStr = new Date(timestamp).toLocaleString();
+        if (!panel || !list) return;
 
-        // Logic for "No updates"
-        if (newPosts.length === 0) {
-             list.innerHTML = `<div class="text-center text-zinc-500 dark:text-zinc-400 py-4">
-                <p class="text-sm font-medium mb-2">暂无文章更新</p>
-                <div class="text-xs opacity-70 bg-zinc-200 dark:bg-zinc-700 rounded px-2 py-1 inline-block">
-                    ${initTimeStr} - ${checkTimeStr}
-                </div>
-             </div>`;
-             dot?.classList.add('scale-0');
-             
-             setupEventListeners();
-             return;
-        }
-        
-        // Show timestamp header
-        let html = `
-            <div class="text-xs text-zinc-500 dark:text-zinc-400 mb-2 px-1 flex flex-col gap-0.5">
-                <div class="font-medium">发现更新</div>
-                <div class="opacity-70 text-[10px]">${initTimeStr} - ${checkTimeStr}</div>
-            </div>`;
-        
-        newPosts.forEach(post => {
-            const isUpdated = post.isUpdated;
-            const badge = isUpdated 
-                ? '<span class="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded ml-2">更新</span>'
-                : '<span class="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded ml-2">新文章</span>';
-            
-            // Convert absolute URL to relative path
-            let postLink = post.link;
-            try {
-                const url = new URL(post.link);
-                postLink = url.pathname;
-            } catch {
-                // Keep original if not a valid URL
-            }
+        const isFirstVisit = Date.now() - initTime < 5000;
+        const shouldAutoOpen = hasNew && !isFirstVisit;
 
-            let postHref = postLink;
-            if (isUpdated && post.diff) {
-                try {
-                    const url = new URL(postLink, window.location.origin);
-                    url.searchParams.set('diff', '1');
-                    url.hash = 'post-diff';
-                    postHref = `${url.pathname}${url.search}${url.hash}`;
-                } catch {
-                    const base = postLink.split('#')[0];
-                    postHref = base.includes('?') ? `${base}&diff=1#post-diff` : `${base}?diff=1#post-diff`;
-                }
-            }
-            postHref = withBasePath(postHref);
-
-            html += `
-            <div>
-                <div class="flex items-center justify-between p-2 rounded-lg hover:bg-blue-500/5 transition-colors">
-                    <a href="${postHref}" class="font-medium truncate pr-2 hover:text-blue-500 transition-colors text-zinc-900 dark:text-white block flex-1">
-                        ${post.title}
-                    </a>
-                    <div class="flex items-center shrink-0">
-                        ${badge}
-                    </div>
-                </div>
-            </div>`;
-        });
-
-        list.innerHTML = html;
-        
-        // Show red dot if there are any posts with changes
-        if (newPosts.length > 0) {
-             dot?.classList.remove('scale-0');
-             // Auto-open panel only on first detection (isFresh)
-             if (isFresh) {
-                 setTimeout(() => {
-                     openPanel();
-                 }, 1500);
-             }
+        if (items.length === 0) {
+            list.innerHTML = '<div class="text-zinc-500 dark:text-zinc-400 text-center py-8">暂无新文章</div>';
         } else {
-             dot?.classList.add('scale-0');
-        }
+            list.innerHTML = items.map(item => {
+                const diffHtml = item.diff ? renderDiffToHtml(item.diff) : '';
+                const updatedBadge = item.isUpdated 
+                    ? '<span class="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full ml-2">更新</span>' 
+                    : '<span class="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full ml-2">新文章</span>';
+                
+                return `
+                <div class="post-item group p-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer border-l-2 ${item.isUpdated ? 'border-amber-400' : 'border-green-400'} bg-zinc-50/50 dark:bg-zinc-800/50" data-link="${item.link}">
+                    <div class="font-medium text-zinc-900 dark:text-white mb-1 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors flex items-center flex-wrap gap-1">
+                        ${item.title}
+                        ${updatedBadge}
+                    </div>
+                    ${diffHtml ? `<div class="text-xs text-zinc-600 dark:text-zinc-400 mt-2 leading-relaxed max-h-32 overflow-y-auto">${diffHtml}</div>` : ''}
+                </div>
+                `;
+            }).join('');
 
-        setupEventListeners();
-
-        function updatePanelTargetSize() {
-            const rootFontSize = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-            const maxPanelWidthPx = Math.min(20 * rootFontSize, window.innerWidth - 32);
-            const minPanelWidthPx = Math.min(16 * rootFontSize, window.innerWidth - 32);
-
-            let longestTitle = 0;
-            for (const post of newPosts) {
-                if (!post?.title) continue;
-                longestTitle = Math.max(longestTitle, String(post.title).length);
-            }
-
-            const estimatedWidthRem = 14 + Math.min(longestTitle, 30) * 0.2;
-            const estimatedWidthPx = estimatedWidthRem * rootFontSize;
-            const openWidthPx = Math.max(minPanelWidthPx, Math.min(maxPanelWidthPx, estimatedWidthPx));
-            panel.style.setProperty('--np-open-width', `${Math.round(openWidthPx)}px`);
-
-            const sizer = document.createElement('div');
-            sizer.style.position = 'fixed';
-            sizer.style.left = '-10000px';
-            sizer.style.top = '0';
-            sizer.style.width = `${Math.round(openWidthPx)}px`;
-            sizer.style.maxHeight = 'none';
-            sizer.style.overflow = 'visible';
-            sizer.style.pointerEvents = 'none';
-            sizer.style.visibility = 'hidden';
-
-            const content = document.getElementById('notification-content');
-            if (!content) return;
-            const clone = content.cloneNode(true);
-            if (clone instanceof HTMLElement) {
-                clone.style.position = 'static';
-                clone.style.inset = 'auto';
-                clone.style.opacity = '1';
-                clone.style.pointerEvents = 'auto';
-                clone.style.transform = 'none';
-                clone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-                const listEl = clone.querySelector('#new-post-list');
-                if (listEl instanceof HTMLElement) {
-                    listEl.style.maxHeight = 'none';
-                    listEl.style.overflow = 'visible';
-                }
-            }
-
-            sizer.appendChild(clone);
-            document.body.appendChild(sizer);
-            const measuredHeightPx = (clone instanceof HTMLElement ? clone.scrollHeight : sizer.scrollHeight) + 4;
-            sizer.remove();
-
-            const maxPanelHeightPx = Math.min(window.innerHeight * 0.7, 34 * rootFontSize);
-            const minPanelHeightPx = 10 * rootFontSize;
-            const openHeightPx = Math.max(minPanelHeightPx, Math.min(maxPanelHeightPx, measuredHeightPx));
-            panel.style.setProperty('--np-open-height', `${Math.round(openHeightPx)}px`);
-        }
-
-        function openPanel() {
-            updatePanelTargetSize();
-            panel.classList.add('is-open');
-            const prevTimer = panel.getAttribute('data-open-timer');
-            if (prevTimer) {
-                clearTimeout(Number(prevTimer));
-            }
-            const timer = window.setTimeout(() => {
-                panel.classList.add('is-open-content');
-                panel.removeAttribute('data-open-timer');
-            }, 360);
-            panel.setAttribute('data-open-timer', String(timer));
-        }
-
-        function closePanel() {
-            const prevTimer = panel.getAttribute('data-open-timer');
-            if (prevTimer) {
-                clearTimeout(Number(prevTimer));
-                panel.removeAttribute('data-open-timer');
-            }
-            panel.classList.remove('is-open-content');
-            panel.classList.remove('is-open');
-        }
-
-        function setupEventListeners() {
-            minimizedBtn.onclick = () => {
-                if (!panel.classList.contains('is-open')) {
-                    openPanel();
-                } else {
-                    closePanel();
-                }
-            };
-    
-            minimizeBtn.onclick = (e) => {
-                e.stopPropagation();
-                closePanel();
-            };
-
-            if (clearBtn) {
-                clearBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    localStorage.removeItem(NOTIFICATION_STATE_KEY);
-                    
-                    const now = Date.now();
-                    localStorage.setItem(INIT_TIME_KEY, now.toString());
-                    
-                    showNotification([], now, false, now);
-                };
-            }
-    
-            if (!list.hasAttribute('data-listening')) {
-                list.setAttribute('data-listening', 'true');
-            }
-
-            if (!panel.hasAttribute('data-resize-listening')) {
-                window.addEventListener('resize', () => {
-                    if (!panel.classList.contains('is-open')) return;
-                    updatePanelTargetSize();
+            list.querySelectorAll('.post-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    const link = el.getAttribute('data-link');
+                    if (link) window.location.href = link;
                 });
-                panel.setAttribute('data-resize-listening', 'true');
-            }
+            });
+        }
+
+        if (shouldAutoOpen) {
+            panel.classList.add('is-open');
+            setTimeout(() => panel.classList.add('is-open-content'), 360);
+            dot.classList.add('opacity-0', 'scale-0');
+        } else if (hasNew) {
+            dot.classList.remove('opacity-0', 'scale-0', 'translate-y-20');
+        }
+
+        panel.classList.remove('translate-y-20', 'opacity-0');
+
+        const minimizedBtn = document.getElementById('notification-minimized');
+        if (minimizedBtn) {
+            minimizedBtn.onclick = () => {
+                const isOpen = panel.classList.contains('is-open');
+                if (isOpen) {
+                    panel.classList.remove('is-open-content');
+                    setTimeout(() => panel.classList.remove('is-open'), 200);
+                } else {
+                    panel.classList.add('is-open');
+                    setTimeout(() => panel.classList.add('is-open-content'), 360);
+                    dot.classList.add('opacity-0', 'scale-0');
+                }
+            };
+        }
+
+        if (minimizeBtn) {
+            minimizeBtn.onclick = () => {
+                panel.classList.remove('is-open-content');
+                setTimeout(() => panel.classList.remove('is-open'), 200);
+            };
+        }
+
+        if (clearBtn) {
+            clearBtn.onclick = async () => {
+                try {
+                    const db = await openDB();
+                    const currentPosts = await getStoredPosts(db, STORE_NEW);
+                    await clearStore(db, STORE_OLD);
+                    await savePosts(db, STORE_OLD, currentPosts);
+                    await clearStore(db, STORE_NEW);
+                    localStorage.removeItem(NOTIFICATION_STATE_KEY);
+                    showNotification([], Date.now(), false, initTime);
+                } catch {}
+            };
+        }
+
+        if (!panel.getAttribute('data-resize-listening')) {
+            const resizeHandler = () => {
+                const isMobile = window.innerWidth < 640;
+                panel.style.setProperty('--np-open-width', isMobile ? 'calc(100vw - 2rem)' : 'min(20rem, calc(100vw - 2rem))');
+                panel.style.setProperty('--np-open-height', isMobile ? 'min(70vh, 28rem)' : 'min(70vh, 34rem)');
+            };
+            resizeHandler();
+            window.addEventListener('resize', resizeHandler);
+            panel.setAttribute('data-resize-listening', 'true');
         }
      }
 
-    // Main logic
     try {
-        console.log('[NewPostNotification] Starting...');
-        
-        // Developer Mode Check
         const urlParams = new URLSearchParams(window.location.search);
         const isDevMode = urlParams.has('debug-notification');
 
         if (isDevMode) {
-            console.log('[Notification] Developer mode active');
             const mockDiff = [
                 { value: "This is some unchanged text context.\n", added: undefined, removed: undefined },
                 { value: "This line was removed.\n", added: undefined, removed: true },
@@ -604,18 +460,14 @@
         }
 
         const currentPosts = await fetchRSS();
-        console.log('[NewPostNotification] RSS posts count:', currentPosts.length);
         if (currentPosts.length === 0) {
-            console.log('[NewPostNotification] No RSS posts found, showing empty notification');
             showNotification([], Date.now(), false, Date.now());
             return;
         }
 
         const db = await openDB();
-        console.log('[NewPostNotification] IndexedDB opened');
         const storedPostsOld = await getStoredPosts(db, STORE_OLD);
         const storedPostsNew = await getStoredPosts(db, STORE_NEW);
-        console.log('[NewPostNotification] Stored posts:', storedPostsOld.length, 'old,', storedPostsNew.length, 'new');
         let storedPosts = storedPostsOld;
         if (storedPostsNew.length > 0) {
             storedPosts = storedPostsNew;
@@ -623,7 +475,6 @@
             await savePosts(db, STORE_OLD, storedPostsNew);
         }
 
-        // Helper to get or set init time
         let initTimestamp = localStorage.getItem(INIT_TIME_KEY);
         if (!initTimestamp) {
             initTimestamp = Date.now().toString();
@@ -631,10 +482,8 @@
         }
         const initTime = parseInt(initTimestamp);
 
-        // Migration from localStorage (Old cache)
         const localCache = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (storedPostsOld.length === 0 && localCache) {
-            console.log('[Notification] Migrating from localStorage...');
             await clearStore(db, STORE_OLD);
             await savePosts(db, STORE_OLD, currentPosts);
             await clearStore(db, STORE_NEW);
@@ -644,7 +493,6 @@
         }
 
         if (storedPostsOld.length === 0) {
-            // First visit
             await clearStore(db, STORE_OLD);
             await savePosts(db, STORE_OLD, currentPosts);
             await clearStore(db, STORE_NEW);
@@ -653,8 +501,7 @@
         } else {
             await clearStore(db, STORE_NEW);
             await savePosts(db, STORE_NEW, currentPosts);
-            // Compare
-            // 统一使用 generateId(guid) 作为 key
+            
             const storedMap = new Map(
                 storedPosts.map(p => [generateId(p.guid), p])
             );
@@ -664,40 +511,35 @@
             currentPosts.forEach(post => {
                 const stored = storedMap.get(generateId(post.guid));
                 if (!stored) {
-                    // New post
                     detectedChanges.push({ ...post, isUpdated: false });
                 } else {
-                    // Check for ANY change (Title, Description, Content)
                     const titleChanged = post.title !== stored.title;
                     const descriptionChanged = post.description !== stored.description;
                     const contentChanged = post.content !== stored.content;
                     
                     if (titleChanged || descriptionChanged || contentChanged) {
-                        const result = {};
+                        let result = null;
                         let hasChanges = false;
                         
-                        if (contentChanged) {
-                             const d = computeDiff(stored.content, post.content);
-                             if (d) {
-                                 result.content = d;
-                                 hasChanges = true;
-                             }
+                        if (contentChanged && post.content && stored.content) {
+                            const contentDiff = computeDiff(stored.content, post.content);
+                            if (contentDiff) {
+                                result = contentDiff;
+                                hasChanges = true;
+                            }
                         }
                         
-                        if (descriptionChanged) {
-                             const d = Diff.diffLines(stored.description, post.description);
-                             if (d && d.some(p => p.added || p.removed)) {
-                                 result.description = d;
-                                 hasChanges = true;
-                             }
+                        if (!hasChanges && descriptionChanged && post.description && stored.description) {
+                            const descDiff = computeDiff(stored.description, post.description);
+                            if (descDiff) {
+                                result = descDiff;
+                                hasChanges = true;
+                            }
                         }
                         
-                        if (titleChanged) {
-                             const d = Diff.diffLines(stored.title, post.title);
-                             if (d && d.some(p => p.added || p.removed)) {
-                                 result.title = d;
-                                 hasChanges = true;
-                             }
+                        if (!hasChanges && titleChanged) {
+                            result = [{ value: post.title, added: true }, { value: stored.title, removed: true }];
+                            hasChanges = true;
                         }
                         
                         if (hasChanges) {
@@ -725,12 +567,10 @@
             });
 
             if (detectedChanges.length > 0) {
-                // Intercept: If all posts in the feed are detected as new (likely due to ID change or cache issue), suppress notification
                 const isAllNew = detectedChanges.length === currentPosts.length && detectedChanges.every(p => !p.isUpdated);
                 const isAllUpdated = detectedChanges.length === currentPosts.length && detectedChanges.every(p => p.isUpdated);
 
                 if (isAllNew || isAllUpdated) {
-                    console.log('[Notification] Intercepted "all new/updated" posts scenario. Suppressing notification.');
                     await clearStore(db, STORE_OLD);
                     await savePosts(db, STORE_OLD, currentPosts);
                     await clearStore(db, STORE_NEW);
@@ -739,7 +579,6 @@
                     return;
                 }
 
-                // CASE 1: New updates detected
                 const timestamp = Date.now();
                 const state = {
                     timestamp: timestamp,
@@ -747,17 +586,14 @@
                 };
                 localStorage.setItem(NOTIFICATION_STATE_KEY, JSON.stringify(state));
                 
-                // Show with Red Dot + Auto Open
                 showNotification(detectedChanges, timestamp, true, initTime);
             } else {
-                // CASE 2: No new updates
                 const persistedStateStr = localStorage.getItem(NOTIFICATION_STATE_KEY);
                 if (persistedStateStr) {
                     try {
                         const state = JSON.parse(persistedStateStr);
                         showNotification(state.items, state.timestamp, false, initTime);
                     } catch (e) {
-                        console.error('Failed to parse notification state', e);
                         showNotification([], Date.now(), false, initTime);
                     }
                 } else {
@@ -766,7 +602,7 @@
             }
         }
     } catch (e) {
-        console.error('New post check failed:', e);
+        // 静默处理错误
     }
 })();
 </script>
