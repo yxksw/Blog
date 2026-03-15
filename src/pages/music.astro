@@ -191,7 +191,7 @@ const description = '用音乐感染人心';
         if (isScrolling) {
           return;
         }
-        
+
         const lrcContent = document.querySelector('.aplayer-lrc');
         const currentLyric = document.querySelector('.aplayer-lrc-current');
 
@@ -199,13 +199,13 @@ const description = '用音乐感染人心';
           let startScrollTop = lrcContent.scrollTop;
           let targetScrollTop = currentLyric.offsetTop - (window.innerHeight - 150) * 0.3;
           let distance = targetScrollTop - startScrollTop;
-          
+
           // 如果距离很小，直接设置，不使用动画
           if (Math.abs(distance) < 5) {
             lrcContent.scrollTop = targetScrollTop;
             return;
           }
-          
+
           let duration = 400;
           let startTime = null;
 
@@ -218,13 +218,13 @@ const description = '用音乐感染人心';
               animationFrameId = null;
               return;
             }
-            
+
             if (startTime === null) startTime = currentTime;
             let timeElapsed = currentTime - startTime;
             let progress = Math.min(timeElapsed / duration, 1);
             let easeProgress = window.innerWidth < 768 ? progress : easeOutQuad(progress);
             lrcContent.scrollTop = startScrollTop + (distance * easeProgress);
-            
+
             if (timeElapsed < duration) {
               animationFrameId = requestAnimationFrame(animateScroll);
             } else {
@@ -235,8 +235,15 @@ const description = '用音乐感染人心';
           if (animationFrameId !== null) {
             cancelAnimationFrame(animationFrameId);
           }
-          
+
           animationFrameId = requestAnimationFrame(animateScroll);
+        }
+      },
+
+      scrollLyricToTop: function () {
+        const lrcContent = document.querySelector('.aplayer-lrc');
+        if (lrcContent) {
+          lrcContent.scrollTop = 0;
         }
       },
 
