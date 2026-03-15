@@ -1,0 +1,15 @@
+[submodule "AstraBay"]
+	path = AstraBay
+	url = https://github.com/yxksw/AstraBay.git
+[submodule "Blogs_worker"]
+	path = Blogs_worker
+	url = https://github.com/yxksw/Blogs_worker.git
+[submodule "fuwari"]
+	path = fuwari
+	url = https://github.com/yxksw/fuwari.git
+[submodule "HeoMusic"]
+	path = HeoMusic
+	url = https://github.com/yxksw/HeoMusic.git
+[submodule "Mizuki"]
+	path = Mizuki
+	url = https://github.com/yxksw/Mizuki.git
