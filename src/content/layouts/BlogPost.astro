@@ -627,6 +627,7 @@ const charsLabel = chars.toLocaleString('en-US');
 
 		const resetPageScrollLocks = () => {
 			// Defensive unlock protects against interrupted lightbox flows during route changes.
+			if (!document.body) return;
 			document.documentElement.classList.remove('overflow-hidden');
 			const topOffset = Number.parseInt(document.body.style.top || '0', 10);
 			const shouldRestoreBody = document.body.style.position === 'fixed';

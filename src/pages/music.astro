@@ -428,9 +428,28 @@ const description = '用音乐感染人心';
       }, 250);
     });
 
-    // 初始化
-    document.addEventListener('DOMContentLoaded', function() {
+    // 初始化函数
+    function initMusicPage() {
       heo.init();
+    }
+
+    // 页面首次加载
+    document.addEventListener('DOMContentLoaded', initMusicPage);
+
+    // Astro 页面切换后重新初始化
+    document.addEventListener('astro:page-load', initMusicPage);
+
+    // 清理函数 - 页面卸载时清理资源
+    document.addEventListener('astro:before-swap', function() {
+      if (typeof ap !== 'undefined' && ap) {
+        ap.pause();
+      }
+      if (scrollTimer !== null) {
+        clearTimeout(scrollTimer);
+      }
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+      }
     });
   </script>
 </MainLayout>

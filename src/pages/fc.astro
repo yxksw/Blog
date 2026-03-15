@@ -134,7 +134,12 @@ const description = '追踪友链博客的最新动态，发现更多精彩内�
         </div>
 
         <!-- Friend Circle Lite Container -->
-        <div id="friend-circle-lite-root"></div>
+        <div id="friend-circle-lite-root">
+            <!-- 加载中提示 -->
+            <div id="fc-loading" style="text-align:center;padding:40px;color:#999;">
+                加载中...
+            </div>
+        </div>
 
         <!-- Back to Links -->
         <div class="mt-12 text-center">
@@ -202,26 +207,36 @@ const description = '追踪友链博客的最新动态，发现更多精彩内�
                     return; // 不在当前页面，不初始化
                 }
 
-                // 清空容器（防止重复渲染）
-                root.innerHTML = '';
-
-                loadScript().then(function() {
-                    if (typeof initialize_fc_lite === 'function') {
-                        initialize_fc_lite();
-                    }
-                }).catch(function() {
-                    if (root) {
-                        root.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">加载失败，请刷新页面重试</div>';
-                    }
-                });
+                // 延迟初始化，确保 DOM 完全就绪
+                setTimeout(function() {
+                    loadScript().then(function() {
+                        if (typeof initialize_fc_lite === 'function') {
+                            try {
+                                initialize_fc_lite();
+                            } catch (e) {
+                                console.error('[FriendCircle] Initialization error:', e);
+                                if (root) {
+                                    root.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">加载失败，请刷新页面重试</div>';
+                                }
+                            }
+                        }
+                    }).catch(function() {
+                        if (root) {
+                            root.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">加载失败，请刷新页面重试</div>';
+                        }
+                    });
+                }, 100);
             }
 
             // 立即执行（首次加载）
-            initFriendCircle();
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initFriendCircle);
+            } else {
+                initFriendCircle();
+            }
 
             // 监听 Astro View Transitions 事件
             document.addEventListener('astro:page-load', initFriendCircle);
-            document.addEventListener('astro:after-swap', initFriendCircle);
         })();
     </script>
 </MainLayout>

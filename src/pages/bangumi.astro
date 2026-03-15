@@ -221,9 +221,9 @@ const banguimCard = [
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
-        .dark .bgm-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.1);
+        html.dark .bgm-card {
+            background: rgba(31, 41, 55, 0.8);
+            border-color: rgba(75, 85, 99, 0.5);
         }
 
         .bgm-image-wrapper {
@@ -277,7 +277,7 @@ const banguimCard = [
             margin: 0;
         }
 
-        .dark .font-color {
+        html.dark .font-color {
             color: #f3f4f6;
         }
 
@@ -408,12 +408,12 @@ const banguimCard = [
             background: rgba(0, 0, 0, 0.1);
         }
 
-        .dark .view-button {
+        html.dark .view-button {
             background: rgba(255, 255, 255, 0.1);
             color: #f3f4f6;
         }
 
-        .dark .view-button:hover {
+        html.dark .view-button:hover {
             background: rgba(255, 255, 255, 0.15);
         }
 
@@ -466,12 +466,12 @@ const banguimCard = [
             --ld-bg: #f3f4f6;
         }
 
-        .dark {
+        html.dark {
             --c-primary: #60a5fa;
             --c-text: #f3f4f6;
             --c-text-2: #9ca3af;
-            --c-border: rgba(255, 255, 255, 0.1);
-            --ld-bg-card: rgba(255, 255, 255, 0.05);
+            --c-border: rgba(75, 85, 99, 0.5);
+            --ld-bg-card: rgba(31, 41, 55, 0.8);
             --ld-bg: rgba(31, 41, 55, 0.8);
         }
     </style>
@@ -627,11 +627,6 @@ const banguimCard = [
 
                 init() {
                     this.fetchData();
-                    
-                    // 监听 Astro 页面加载事件（处理 View Transitions）
-                    document.addEventListener('astro:page-load', () => {
-                        this.fetchData();
-                    });
                 },
 
                 setContentType(type) {
@@ -760,13 +755,26 @@ const banguimCard = [
         }
     </script>
 
-    <!-- 确保 bangumiApp 在 Alpine.js 初始化前定义 -->
-    <script is:inline slot="head">
-        // 在 DOMContentLoaded 时确保 bangumiApp 已定义
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                // Bangumi 组件已就绪
-            });
+    <!-- 页面加载和切换处理 -->
+    <script is:inline>
+        // 初始化 Bangumi 页面
+        function initBangumiPage() {
+            // Alpine.js 会自动处理 x-init，这里不需要额外操作
+            // 但我们需要确保在页面切换时数据被正确加载
+            const container = document.querySelector('.banguim-container');
+            if (container && container._x_dataStack) {
+                // 如果 Alpine.js 已经初始化，强制重新获取数据
+                const app = container._x_dataStack[0];
+                if (app && typeof app.fetchData === 'function') {
+                    app.fetchData();
+                }
+            }
         }
+
+        // 页面首次加载
+        document.addEventListener('DOMContentLoaded', initBangumiPage);
+
+        // Astro 页面切换后重新初始化
+        document.addEventListener('astro:page-load', initBangumiPage);
     </script>
 </MainLayout>
