@@ -9,82 +9,118 @@
 
 <script is:inline>
     (function() {
-        // 只在桌面端显示
-        if (window.innerWidth < 768) return;
+        // 标记是否已初始化
+        window._live2dInitialized = window._live2dInitialized || false;
 
-        const cdnPath = 'https://cdn.jsdelivr.net/gh/dogxii/live2d-widget-v3@main/';
-        
-        const config = {
-            // 资源路径
-            path: {
-                homePath: '/',
-                modelPath: cdnPath + 'Resources/',
-                cssPath: cdnPath + 'waifu.css',
-                tipsJsonPath: cdnPath + 'waifu-tips.json',
-                tipsJsPath: cdnPath + 'waifu-tips.js',
-                live2dCorePath: cdnPath + 'Core/live2dcubismcore.js',
-                live2dSdkPath: cdnPath + 'live2d-sdk.js',
-            },
-            // 工具栏
-            tools: [
-                'hitokoto',      // 一言
-                'asteroids',     // 小行星
-                'express',       // 快递查询
-                'switch-model',  // 切换模型
-                'switch-texture', // 切换材质
-                'photo',         // 截图
-                'info',          // 信息
-                'quit',          // 关闭
-            ],
-            // 模型拖拽
-            drag: {
-                enable: true,
-                direction: ['x', 'y'],
-            },
-            // 模型切换(order: 顺序切换，random: 随机切换)
-            switchType: 'order',
-        };
+        function initLive2D() {
+            // 只在桌面端显示
+            if (window.innerWidth < 768) return;
 
-        // 异步加载资源
-        function loadExternalResource(url, type) {
-            return new Promise((resolve, reject) => {
-                let tag;
-                if (type === 'css') {
-                    tag = document.createElement('link');
-                    tag.rel = 'stylesheet';
-                    tag.href = url;
-                } else if (type === 'js') {
-                    tag = document.createElement('script');
-                    tag.src = url;
+            // 如果已经初始化，检查看板娘是否存在，如果不存在则重新初始化
+            if (window._live2dInitialized && document.getElementById('waifu')) {
+                return;
+            }
+
+            // 如果已存在看板娘元素，先移除
+            const existingWaifu = document.getElementById('waifu');
+            if (existingWaifu) {
+                existingWaifu.remove();
+            }
+
+            const cdnPath = 'https://cdn.jsdelivr.net/gh/dogxii/live2d-widget-v3@main/';
+            
+            const config = {
+                // 资源路径
+                path: {
+                    homePath: '/',
+                    modelPath: cdnPath + 'Resources/',
+                    cssPath: cdnPath + 'waifu.css',
+                    tipsJsonPath: cdnPath + 'waifu-tips.json',
+                    tipsJsPath: cdnPath + 'waifu-tips.js',
+                    live2dCorePath: cdnPath + 'Core/live2dcubismcore.js',
+                    live2dSdkPath: cdnPath + 'live2d-sdk.js',
+                },
+                // 工具栏
+                tools: [
+                    'hitokoto',      // 一言
+                    'asteroids',     // 小行星
+                    'express',       // 快递查询
+                    'switch-model',  // 切换模型
+                    'switch-texture', // 切换材质
+                    'photo',         // 截图
+                    'info',          // 信息
+                    'quit',          // 关闭
+                ],
+                // 模型拖拽
+                drag: {
+                    enable: true,
+                    direction: ['x', 'y'],
+                },
+                // 模型切换(order: 顺序切换，random: 随机切换)
+                switchType: 'order',
+            };
+
+            // 异步加载资源
+            function loadExternalResource(url, type) {
+                return new Promise((resolve, reject) => {
+                    // 检查资源是否已加载
+                    const existing = type === 'css' 
+                        ? document.querySelector(`link[href="${url}"]`)
+                        : document.querySelector(`script[src="${url}"]`);
+                    if (existing) {
+                        resolve(url);
+                        return;
+                    }
+
+                    let tag;
+                    if (type === 'css') {
+                        tag = document.createElement('link');
+                        tag.rel = 'stylesheet';
+                        tag.href = url;
+                    } else if (type === 'js') {
+                        tag = document.createElement('script');
+                        tag.src = url;
+                    }
+                    if (tag) {
+                        tag.onload = () => resolve(url);
+                        tag.onerror = () => reject(url);
+                        document.head.appendChild(tag);
+                    }
+                });
+            }
+
+            // 加载资源并初始化
+            Promise.all([
+                loadExternalResource(config.path.cssPath, 'css'),
+                loadExternalResource(config.path.live2dCorePath, 'js'),
+                loadExternalResource(config.path.live2dSdkPath, 'js'),
+                loadExternalResource(config.path.tipsJsPath, 'js'),
+            ]).then(() => {
+                if (typeof initWidget === 'function') {
+                    initWidget({
+                        waifuPath: config.path.tipsJsonPath,
+                        cdnPath: config.path.modelPath,
+                        tools: config.tools,
+                        dragEnable: config.drag.enable,
+                        dragDirection: config.drag.direction,
+                        switchType: config.switchType,
+                    });
+                    window._live2dInitialized = true;
                 }
-                if (tag) {
-                    tag.onload = () => resolve(url);
-                    tag.onerror = () => reject(url);
-                    document.head.appendChild(tag);
-                }
+            }).catch(err => {
+                console.error('[Live2D] 加载失败:', err);
             });
         }
 
-        // 加载资源并初始化
-        Promise.all([
-            loadExternalResource(config.path.cssPath, 'css'),
-            loadExternalResource(config.path.live2dCorePath, 'js'),
-            loadExternalResource(config.path.live2dSdkPath, 'js'),
-            loadExternalResource(config.path.tipsJsPath, 'js'),
-        ]).then(() => {
-            if (typeof initWidget === 'function') {
-                initWidget({
-                    waifuPath: config.path.tipsJsonPath,
-                    cdnPath: config.path.modelPath,
-                    tools: config.tools,
-                    dragEnable: config.drag.enable,
-                    dragDirection: config.drag.direction,
-                    switchType: config.switchType,
-                });
-            }
-        }).catch(err => {
-            console.error('[Live2D] 加载失败:', err);
-        });
+        // 立即执行（首次加载）
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initLive2D);
+        } else {
+            initLive2D();
+        }
+
+        // 监听 Astro 页面切换事件
+        document.addEventListener('astro:page-load', initLive2D);
     })();
 </script>
 
