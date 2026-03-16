@@ -150,6 +150,12 @@ export default defineConfig({
   adapter: cloudflare(),
   image: {
     service: passthroughImageService(),
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**",
+      },
+    ],
   },
   integrations: [mdx(), sitemap(), svelte()],
   markdown: {
