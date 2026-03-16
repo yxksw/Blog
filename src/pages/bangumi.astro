@@ -488,7 +488,7 @@ const banguimCard = [
             </p>
         </div>
 
-        <div class="banguim-container" x-data="bangumiApp()" x-init="init()">
+        <div class="banguim-container" x-data="bangumiApp()" x-init="$nextTick(() => init())">
             <!-- 内容类型导航 -->
             <div class="banguim-nav">
                 <template x-for="(label, key) in subjectMap" :key="key">
@@ -757,24 +757,39 @@ const banguimCard = [
 
     <!-- 页面加载和切换处理 -->
     <script is:inline>
-        // 初始化 Bangumi 页面
-        function initBangumiPage() {
-            // Alpine.js 会自动处理 x-init，这里不需要额外操作
-            // 但我们需要确保在页面切换时数据被正确加载
-            const container = document.querySelector('.banguim-container');
-            if (container && container._x_dataStack) {
-                // 如果 Alpine.js 已经初始化，强制重新获取数据
-                const app = container._x_dataStack[0];
-                if (app && typeof app.fetchData === 'function') {
-                    app.fetchData();
-                }
+        (function() {
+            function forceReinitBangumi() {
+                const container = document.querySelector('.banguim-container');
+                if (!container) return;
+                
+                // 多次尝试初始化
+                let attempts = 0;
+                const tryInit = () => {
+                    attempts++;
+                    if (container._x_dataStack && container._x_dataStack[0]) {
+                        const app = container._x_dataStack[0];
+                        if (app && typeof app.fetchData === 'function') {
+                            app.fetchData();
+                            return;
+                        }
+                    }
+                    if (attempts < 10) {
+                        setTimeout(tryInit, 100);
+                    }
+                };
+                tryInit();
             }
-        }
 
-        // 页面首次加载
-        document.addEventListener('DOMContentLoaded', initBangumiPage);
+            // 页面首次加载
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', forceReinitBangumi);
+            } else {
+                forceReinitBangumi();
+            }
 
-        // Astro 页面切换后重新初始化
-        document.addEventListener('astro:page-load', initBangumiPage);
+            // Astro 页面切换后重新初始化
+            document.addEventListener('astro:page-load', forceReinitBangumi);
+            document.addEventListener('astro:after-swap', forceReinitBangumi);
+        })();
     </script>
 </MainLayout>

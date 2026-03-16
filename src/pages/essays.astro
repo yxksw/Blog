@@ -16,7 +16,25 @@ const description = '记录生活中的点滴';
 // 从 Telegram API 获取数据
 const API_URL = 'https://tg-api.050815.xyz/';
 
+// 配置选项（参考 gtalk-frontend）
+const CONFIG = {
+    // 图片代理配置
+    proxy: {
+        enabled: true,
+        proxyUrl: 'https://tg-api.050815.xyz',
+    },
+    // 表情反应系统配置
+    emaction: {
+        enabled: true,
+        endpoint: 'https://api-emaction.050815.xyz',
+        theme: 'system',
+        availableArrayString: '👍,thumbs-up;❤️,heart;😄,smile;🎉,party;🚀,rocket;,joy;😮,wow;😢,sad;😡,angry;🤔,think;👏,clap;🔥,fire;💯,hundred;✨,sparkle;💪,strong;🙏,pray;☕,coffee;🍺,beer',
+        threeDimensional: false,
+    }
+};
+
 interface TelegramMessage {
+    id: string;
     text: string;
     image: string[];
     time: number;
@@ -27,7 +45,7 @@ interface TelegramResponse {
     nextBefore: number;
     Region: string;
     version: string;
-    ChannelMessageData: Record<string, TelegramMessage>;
+    ChannelMessageData: Record<string, Omit<TelegramMessage, 'id'>>;
 }
 
 let essaysData: TelegramMessage[] = [];
@@ -40,10 +58,32 @@ try {
     }
     const data: TelegramResponse = await response.json();
     
-    // 将对象转换为数组并按时间排序（最新的在前）
+    // 处理数据：将对象转换为数组并按时间排序（最新的在前）
     essaysData = Object.entries(data.ChannelMessageData)
-        .map(([id, message]) => ({ id, ...message }))
-        .sort((a, b) => b.time - a.time);
+        .map(([id, message]) => ({ 
+            id, 
+            ...message 
+        }))
+        .sort((a, b) => b.time - a.time)
+        .map(item => ({
+            ...item,
+            // 处理文本：移除 SFCN 标签
+            text: item.text.replace(/<a[^>]*?(#SFCN|href="[^"]*SFCN[^"]*")[^>]*>.*?<\/a>/gi, ''),
+            // 处理图片：应用代理并过滤 emoji 图片
+            image: item.image
+                .filter(img => !img.includes('telegram.org/img/emoji'))
+                .map(img => {
+                    // 应用图片代理 - 支持多种 Telegram CDN 域名格式
+                    if (CONFIG.proxy.enabled) {
+                        // 匹配 cdn*.cdn-telegram.org 和 cdn*.telesco.pe 格式
+                        return img.replace(
+                            /(https:\/\/cdn\d*\.(?:cdn-telegram\.org|telesco\.pe)\/file\/[^"]+)/g,
+                            `${CONFIG.proxy.proxyUrl}/?proxy=$1`
+                        );
+                    }
+                    return img;
+                })
+        }));
 } catch (e) {
     error = e instanceof Error ? e.message : 'Failed to fetch data';
     console.error('Failed to fetch essays:', e);
@@ -144,7 +184,7 @@ function renderMarkdown(content: string): string {
 
 // 提取纯文本（用于 alt 属性）
 function extractText(html: string): string {
-    const text = htmlToMarkdown(html).replace(/[#*`_~\[\]\(\)]/g, '');
+    const text = htmlToMarkdown(html).replace(/[#*_`~\[\]\(\)]/g, '');
     return text.substring(0, 50) + (text.length > 50 ? '...' : '');
 }
 ---
@@ -173,23 +213,26 @@ function extractText(html: string): string {
                 <section class="timeline">
                     <div class="masonry-grid" id="masonryGrid">
                         {essaysData.map((item, index) => (
-                            <div class="masonry-item" data-index={index}>
+                            <div class="masonry-item" data-index={index} data-id={item.id}>
                                 <div class="item">
                                     <!-- Content -->
                                     <div class="essay-content">
                                         <div class="datacont markdown-content" set:html={renderMarkdown(item.text)}></div>
                                         
-                                        <!-- Images - 过滤掉 Telegram emoji 图片 -->
+                                        <!-- Images -->
                                         {item.image && item.image.length > 0 && (
                                             <div class="essay-content-img">
-                                                {item.image
-                                                    .filter(img => !img.includes('telegram.org/img/emoji'))
-                                                    .map((img) => (
-                                                        <img src={img} alt={extractText(item.text)} loading="lazy" class="lightbox-img" />
-                                                    ))}
+                                                {item.image.map((img) => (
+                                                    <img src={img} alt={extractText(item.text)} loading="lazy" class="lightbox-img" />
+                                                ))}
                                             </div>
                                         )}
                                     </div>
+
+                                    <!-- Emaction 表情反应 -->
+                                    {CONFIG.emaction.enabled && (
+                                        <div class="emaction-container" data-message-id={item.id}></div>
+                                    )}
 
                                     <!-- Bottom Info -->
                                     <div class="essay-bottom">
@@ -215,6 +258,11 @@ function extractText(html: string): string {
                                                 </div>
                                             )}
                                         </div>
+                                        <button class="essay-comment-btn" aria-label="评论" onclick="document.getElementById('giscus-comments')?.scrollIntoView({ behavior: 'smooth', block: 'start' })">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                            </svg>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -225,6 +273,32 @@ function extractText(html: string): string {
                 <!-- Tips -->
                 <div id="essays-tips">
                     共 {essaysData.length} 条碎碎念
+                </div>
+
+                <!-- Giscus 评论区 -->
+                <div id="giscus-comments" class="giscus-container">
+                    <div class="giscus-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        <span>评论</span>
+                    </div>
+                    <script src="https://giscus.app/client.js"
+                        data-repo="yxksw/Blog"
+                        data-repo-id="R_kgDORizo3Q"
+                        data-category="评论"
+                        data-category-id="DIC_kwDORizo3c4C4OYE"
+                        data-mapping="pathname"
+                        data-strict="1"
+                        data-reactions-enabled="1"
+                        data-emit-metadata="0"
+                        data-input-position="top"
+                        data-theme="preferred_color_scheme"
+                        data-lang="zh-CN"
+                        data-loading="lazy"
+                        crossorigin="anonymous"
+                        async>
+                    </script>
                 </div>
             </div>
         )}
@@ -258,21 +332,6 @@ function extractText(html: string): string {
     <!-- Masonry Layout Script -->
     <script is:inline>
         (function() {
-            function waitForImages(grid) {
-                const images = grid.querySelectorAll('img');
-                const promises = [];
-                
-                images.forEach(img => {
-                    if (img.complete) return;
-                    promises.push(new Promise((resolve) => {
-                        img.addEventListener('load', resolve, { once: true });
-                        img.addEventListener('error', resolve, { once: true });
-                    }));
-                });
-                
-                return Promise.all(promises);
-            }
-            
             function initMasonry() {
                 const grid = document.getElementById('masonryGrid');
                 if (!grid) return;
@@ -310,23 +369,31 @@ function extractText(html: string): string {
                 grid.style.height = maxHeight + 'px';
             }
             
-            const init = async () => {
+            const init = () => {
                 const grid = document.getElementById('masonryGrid');
                 if (grid) {
                     grid.style.position = 'relative';
-                    // 等待所有图片加载完成
-                    await waitForImages(grid);
+                    // 立即初始化布局，不等待图片加载
                     initMasonry();
                 }
             };
             
+            // 立即初始化
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', init);
             } else {
                 init();
             }
             
+            // 图片加载完成后重新调整布局
             window.addEventListener('load', init);
+            
+            // 监听图片加载事件，单张图片加载完成后重新布局
+            document.addEventListener('load', function(e) {
+                if (e.target.tagName === 'IMG' && e.target.closest('#masonryGrid')) {
+                    initMasonry();
+                }
+            }, true);
             
             let resizeTimer;
             window.addEventListener('resize', () => {
@@ -423,6 +490,223 @@ function extractText(html: string): string {
             document.addEventListener('astro:after-swap', initLightbox);
         })();
     </script>
+
+    <!-- Emaction 表情反应系统 -->
+    {CONFIG.emaction.enabled && (
+        <script is:inline define:vars={{ config: CONFIG.emaction }}>
+            (function() {
+                const DEFAULT_EMOJIS = "👍,thumbs-up;😄,smile-face;🎉,party-popper;😕,confused-face;❤️,red-heart;🚀,rocket;👀,eyes;👎,thumbs-down;";
+                
+                class EmactionExpress {
+                    constructor(container, messageId) {
+                        this.container = container;
+                        this.messageId = messageId;
+                        this.reactTargetId = 'tgtalk-evaluate-id-' + messageId;
+                        this.showAvailable = false;
+                        this.availableReactions = [];
+                        this.endpoint = config.endpoint;
+                        this.theme = config.theme;
+                        this.threeDimensional = config.threeDimensional;
+                        this.availableArrayString = config.availableArrayString || DEFAULT_EMOJIS;
+                        
+                        this.init();
+                    }
+                    
+                    async init() {
+                        await this.initReactions();
+                        this.render();
+                    }
+                    
+                    parseAvailableReactions() {
+                        const arrString = this.availableArrayString || DEFAULT_EMOJIS;
+                        return arrString
+                            .split(";")
+                            .map((val) => {
+                                const [emoji, reactionName] = val.split(",");
+                                if (!emoji || !reactionName) return null;
+                                return { emoji, reaction_name: reactionName, count: 0, meReacted: false };
+                            })
+                            .filter((val) => val);
+                    }
+                    
+                    async initReactions() {
+                        this.availableReactions = this.parseAvailableReactions();
+                        
+                        try {
+                            // 获取已有反应数量
+                            const response = await fetch(
+                                `${this.endpoint}/reactions?${new URLSearchParams({ targetId: this.reactTargetId })}`
+                            );
+                            const data = await response.json();
+                            
+                            if (data.data && Array.isArray(data.data.reactionsGot)) {
+                                data.data.reactionsGot.forEach((reaction) => {
+                                    this.availableReactions.forEach((availableReaction) => {
+                                        if (reaction.reaction_name === availableReaction.reaction_name) {
+                                            availableReaction.count = reaction.count;
+                                        }
+                                    });
+                                });
+                            }
+                            
+                            // 读取 localStorage 获取用户已点击的反应
+                            const storageKey = `meReactedReactions_${this.reactTargetId}`;
+                            const meReactedReactions = JSON.parse(localStorage.getItem(storageKey) || "[]");
+                            meReactedReactions.forEach((reaction_name) => {
+                                this.availableReactions.forEach((availableReaction) => {
+                                    if (reaction_name === availableReaction.reaction_name) {
+                                        availableReaction.meReacted = true;
+                                    }
+                                });
+                            });
+                        } catch (err) {
+                            console.error('Failed to fetch reactions:', err);
+                        }
+                    }
+                    
+                    async react(reactionName) {
+                        const reaction = this.availableReactions.find((ele) => ele.reaction_name === reactionName);
+                        if (!reaction) return;
+                        
+                        const cancel = reaction.meReacted;
+                        const count = Math.max(0, reaction.count + (cancel ? -1 : 1));
+                        reaction.count = count;
+                        reaction.meReacted = !cancel;
+                        this.showAvailable = false;
+                        
+                        // 更新 localStorage
+                        const storageKey = `meReactedReactions_${this.reactTargetId}`;
+                        const meReactedReactionsSet = new Set(JSON.parse(localStorage.getItem(storageKey) || "[]"));
+                        if (cancel) {
+                            meReactedReactionsSet.delete(reactionName);
+                        } else {
+                            meReactedReactionsSet.add(reactionName);
+                        }
+                        localStorage.setItem(storageKey, JSON.stringify(Array.from(meReactedReactionsSet)));
+                        
+                        // 发送请求
+                        try {
+                            await fetch(
+                                `${this.endpoint}/reaction?${new URLSearchParams({
+                                    targetId: this.reactTargetId,
+                                    reaction_name: reactionName,
+                                    diff: cancel ? -1 : 1,
+                                })}`,
+                                { method: "PATCH" }
+                            );
+                        } catch (err) {
+                            console.error('Failed to update reaction:', err);
+                        }
+                        
+                        this.render();
+                    }
+                    
+                    getSystemTheme() {
+                        return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+                    }
+                    
+                    isDarkTheme() {
+                        return this.theme === "dark" || (this.theme === "system" && this.getSystemTheme() === "dark");
+                    }
+                    
+                    render() {
+                        const isDark = this.isDarkTheme();
+                        const containerClass = isDark ? "emaction-container-dark" : "emaction-container-light";
+                        const fontFamily = this.threeDimensional ? '"Emoji Font", system-ui' : 'system-ui';
+                        
+                        const reactedReactions = this.availableReactions.filter(r => r.count > 0);
+                        
+                        this.container.innerHTML = `
+                            <div class="emaction-express ${containerClass}" style="font-family: ${fontFamily}; display: flex; flex-wrap: wrap; gap: 0.375rem; align-items: center;">
+                                <div style="position: relative; user-select: none;">
+                                    <div class="emaction-add-btn" style="display: flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem; border-radius: 50%; cursor: pointer; border: 1px solid ${isDark ? '#30363d' : '#d0d7de'}; background: ${isDark ? '#21262d' : '#f6f8fa'};">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14" style="fill: ${isDark ? '#7d8590' : '#656d76'};">
+                                            <path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm3.82 1.636a.75.75 0 0 1 1.038.175l.007.009c.103.118.22.222.35.31.264.178.683.37 1.285.37.602 0 1.02-.192 1.285-.371.13-.088.247-.192.35-.31l.007-.008a.75.75 0 0 1 1.222.87l-.022-.015c.02.013.021.015.021.015v.001l-.001.002-.002.003-.005.007-.014.019a2.066 2.066 0 0 1-.184.213c-.16.166-.338.316-.53.445-.63.418-1.37.638-2.127.629-.946 0-1.652-.308-2.126-.63a3.331 3.331 0 0 1-.715-.657l-.014-.02-.005-.006-.002-.003v-.002h-.001l.613-.432-.614.43a.75.75 0 0 1 .183-1.044ZM12 7a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM5 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm5.25 2.25.592.416a97.71 97.71 0 0 0-.592-.416Z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="emaction-popup" style="display: none; position: absolute; bottom: 100%; left: 0; margin-bottom: 0.5rem; padding: 0.5rem; background: ${isDark ? '#161b22' : '#fff'}; border: 1px solid ${isDark ? '#30363d' : '#d0d7de'}; border-radius: 0.5rem; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 100; min-width: 200px; max-width: 90vw;">
+                                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.25rem;">
+                                            ${this.availableReactions.map((r) => `
+                                                <span class="emaction-emoji ${r.meReacted ? 'reacted' : ''}" data-reaction="${r.reaction_name}" style="cursor: pointer; padding: 0.5rem; border-radius: 0.375rem; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; ${r.meReacted ? `background: ${isDark ? '#388bfd1a' : '#ddf4ff'};` : ''}">${r.emoji}</span>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 0.375rem; flex-wrap: wrap;">
+                                    ${reactedReactions.map(r => `
+                                        <div class="emaction-reaction ${r.meReacted ? 'reacted' : 'not-reacted'}" data-reaction="${r.reaction_name}" style="display: flex; align-items: center; gap: 0.25rem; padding: 0.125rem 0.5rem; border-radius: 1rem; font-size: 0.75rem; cursor: pointer; border: 1px solid ${r.meReacted ? (isDark ? '#1f6feb' : '#0969da') : (isDark ? '#30363d' : '#d0d7de')}; background: ${r.meReacted ? (isDark ? '#388bfd1a' : '#ddf4ff') : (isDark ? 'transparent' : '#fff')}; color: ${r.meReacted ? (isDark ? '#2f81f7' : '#0969da') : (isDark ? '#7d8590' : '#656d76')};">
+                                            <span>${r.emoji}</span>
+                                            <span>${r.count}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                        
+                        this.attachEvents();
+                    }
+                    
+                    attachEvents() {
+                        const addBtn = this.container.querySelector('.emaction-add-btn');
+                        const popup = this.container.querySelector('.emaction-popup');
+                        
+                        if (addBtn && popup) {
+                            addBtn.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                this.showAvailable = !this.showAvailable;
+                                popup.style.display = this.showAvailable ? 'block' : 'none';
+                            });
+                            
+                            popup.querySelectorAll('.emaction-emoji').forEach(emoji => {
+                                emoji.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    const reactionName = emoji.dataset.reaction;
+                                    this.react(reactionName);
+                                });
+                            });
+                        }
+                        
+                        this.container.querySelectorAll('.emaction-reaction').forEach(reaction => {
+                            reaction.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                const reactionName = reaction.dataset.reaction;
+                                this.react(reactionName);
+                            });
+                        });
+                        
+                        // 点击外部关闭 popup
+                        const closePopup = (e) => {
+                            if (!this.container.contains(e.target)) {
+                                this.showAvailable = false;
+                                if (popup) popup.style.display = 'none';
+                            }
+                        };
+                        document.removeEventListener('click', closePopup);
+                        document.addEventListener('click', closePopup);
+                    }
+                }
+                
+                const initEmaction = () => {
+                    const containers = document.querySelectorAll('.emaction-container');
+                    containers.forEach(container => {
+                        const messageId = container.dataset.messageId;
+                        if (!messageId || container.dataset.emactionInitialized) return;
+                        
+                        new EmactionExpress(container, messageId);
+                        container.dataset.emactionInitialized = 'true';
+                    });
+                };
+                
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', initEmaction);
+                } else {
+                    initEmaction();
+                }
+                
+                document.addEventListener('astro:page-load', initEmaction);
+            })();
+        </script>
+    )}
 </MainLayout>
 
 <style>
@@ -808,6 +1092,48 @@ function extractText(html: string): string {
         transform: scale(1.02);
     }
 
+    /* Emaction 表情反应容器 */
+    .emaction-container {
+        width: 100%;
+        margin: 0.75rem 0;
+        padding-top: 0.5rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    :global(.dark) .emaction-container {
+        border-top-color: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Emaction 表情选择器响应式适配 */
+    @media (max-width: 640px) {
+        .emaction-popup {
+            left: auto !important;
+            right: 0 !important;
+            min-width: 180px !important;
+            max-width: 85vw !important;
+        }
+        .emaction-popup > div {
+            grid-template-columns: repeat(5, 1fr) !important;
+        }
+        .emaction-emoji {
+            padding: 0.4rem !important;
+            font-size: 1.1rem !important;
+        }
+    }
+
+    @media (min-width: 641px) {
+        .emaction-popup {
+            min-width: 220px !important;
+        }
+        .emaction-popup > div {
+            grid-template-columns: repeat(5, 1fr) !important;
+        }
+        .emaction-emoji {
+            padding: 0.5rem !important;
+            font-size: 1.25rem !important;
+        }
+    }
+
     /* Bottom Section */
     .essay-bottom {
         display: flex;
@@ -844,6 +1170,34 @@ function extractText(html: string): string {
         color: #a1a1aa;
     }
 
+    /* 评论按钮 */
+    .essay-comment-btn {
+        background: transparent;
+        border: none;
+        color: #71717a;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .essay-comment-btn:hover {
+        color: #3b82f6;
+        background: rgba(59, 130, 246, 0.1);
+    }
+
+    :global(.dark) .essay-comment-btn {
+        color: #a1a1aa;
+    }
+
+    :global(.dark) .essay-comment-btn:hover {
+        color: #60a5fa;
+        background: rgba(96, 165, 250, 0.1);
+    }
+
     /* Tips */
     #essays-tips {
         font-size: 14px;
@@ -855,5 +1209,51 @@ function extractText(html: string): string {
 
     :global(.dark) #essays-tips {
         color: #a1a1aa;
+    }
+
+    /* Giscus 评论区样式 */
+    .giscus-container {
+        margin-top: 3rem;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    :global(.dark) .giscus-container {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .giscus-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #27272a;
+    }
+
+    :global(.dark) .giscus-header {
+        border-bottom-color: rgba(255, 255, 255, 0.08);
+        color: #e4e4e7;
+    }
+
+    .giscus-header svg {
+        color: #3b82f6;
+    }
+
+    :global(.dark) .giscus-header svg {
+        color: #60a5fa;
+    }
+
+    /* Giscus iframe 样式适配 */
+    :global(.giscus-frame) {
+        width: 100% !important;
+        min-height: 200px;
     }
 </style>

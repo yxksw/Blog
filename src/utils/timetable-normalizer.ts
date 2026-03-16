@@ -39,7 +39,8 @@ function parseDateFromYmd(ymd: string): Date | null {
 		return null;
 	}
 	const [year, month, day] = parts;
-	return new Date(year, month - 1, day);
+	// 使用 UTC 时间避免时区问题，确保日期计算一致
+	return new Date(Date.UTC(year, month - 1, day));
 }
 
 export function resolveCurrentWeek(
@@ -53,7 +54,10 @@ export function resolveCurrentWeek(
 	}
 
 	const msPerDay = 24 * 60 * 60 * 1000;
-	const diffDays = Math.floor((now.getTime() - startDate.getTime()) / msPerDay);
+	// 使用 UTC 时间戳计算，避免时区影响
+	const nowUtc = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+	const startUtc = Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate());
+	const diffDays = Math.floor((nowUtc - startUtc) / msPerDay);
 	const week = Math.floor(diffDays / 7) + 1;
 
 	if (week < 1) {

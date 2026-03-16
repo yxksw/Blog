@@ -391,7 +391,7 @@ const items = equipmentData.items || [];
             </p>
         </div>
 
-        <div id="icat-equipment" x-data="equipmentApp()" x-init="init()">
+        <div id="icat-equipment" x-data="equipmentApp()" x-init="$nextTick(() => init())">
             <div class="equipment-category">
                 <!-- 分类标签 -->
                 <div class="categories-tabs">
@@ -461,6 +461,9 @@ const items = equipmentData.items || [];
     </div>
 
     <script is:inline>
+        // 全局装备数据
+        window.equipmentDataGlobal = { categories: [], items: [] };
+        
         function equipmentApp() {
             return {
                 activeCategory: '',
@@ -468,15 +471,16 @@ const items = equipmentData.items || [];
                 items: [],
 
                 init() {
-                    // 从页面注入的数据初始化
-                    const data = JSON.parse(document.getElementById('equipment-data').textContent);
-                    this.categories = data.categories || [];
-                    this.items = data.items || [];
+                    // 使用全局数据初始化
+                    this.categories = window.equipmentDataGlobal.categories || [];
+                    this.items = window.equipmentDataGlobal.items || [];
 
                     // 设置默认分类
                     if (this.categories.length > 0 && !this.activeCategory) {
                         this.activeCategory = this.categories[0].key;
                     }
+                    
+                    console.log('Equipment initialized:', this.categories.length, 'categories,', this.items.length, 'items');
                 },
 
                 setCategory(key) {
@@ -517,4 +521,70 @@ const items = equipmentData.items || [];
 
     <!-- 装备数据 -->
     <script id="equipment-data" type="application/json" set:html={JSON.stringify(equipmentData)}></script>
+
+    <!-- 页面加载和切换处理 -->
+    <script is:inline>
+        (function() {
+            // 立即加载数据到全局变量
+            const dataEl = document.getElementById('equipment-data');
+            if (dataEl) {
+                try {
+                    const data = JSON.parse(dataEl.textContent);
+                    window.equipmentDataGlobal = {
+                        categories: data.categories || [],
+                        items: data.items || []
+                    };
+                } catch (e) {
+                    window.equipmentDataGlobal = { categories: [], items: [] };
+                }
+            }
+            
+            function forceReinitEquipment() {
+                const container = document.getElementById('icat-equipment');
+                if (!container) return;
+                
+                // 强制重新加载数据
+                const dataEl = document.getElementById('equipment-data');
+                if (dataEl) {
+                    try {
+                        const data = JSON.parse(dataEl.textContent);
+                        window.equipmentDataGlobal = {
+                            categories: data.categories || [],
+                            items: data.items || []
+                        };
+                    } catch (e) {
+                        window.equipmentDataGlobal = { categories: [], items: [] };
+                    }
+                }
+                
+                // 多次尝试初始化
+                let attempts = 0;
+                const tryInit = () => {
+                    attempts++;
+                    if (container._x_dataStack && container._x_dataStack[0]) {
+                        const app = container._x_dataStack[0];
+                        if (app && typeof app.init === 'function') {
+                            app.init();
+                            return;
+                        }
+                    }
+                    if (attempts < 10) {
+                        setTimeout(tryInit, 100);
+                    }
+                };
+                tryInit();
+            }
+
+            // 页面首次加载
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', forceReinitEquipment);
+            } else {
+                forceReinitEquipment();
+            }
+
+            // Astro 页面切换后重新初始化
+            document.addEventListener('astro:page-load', forceReinitEquipment);
+            document.addEventListener('astro:after-swap', forceReinitEquipment);
+        })();
+    </script>
 </MainLayout>
