@@ -22,8 +22,10 @@ const pageTitle = title ? `${title} - ${SITE_TITLE}` : SITE_TITLE;
 		<slot name="head" />
 	</head>
 	<body class="bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 min-h-screen transition-colors duration-300">
-		{showNotification && <NewPostNotification />}
 		<slot />
+		
+		<!-- NewPostNotification - 使用 transition:persist 确保页面切换时保持状态 -->
+		{showNotification && <NewPostNotification transition:persist />}
 		
 		<!-- MusicPlayer - 放在 body 最后 -->
 		<!-- 使用 transition:persist 确保页面切换时保持播放状态 -->
