@@ -21,8 +21,8 @@
     #notification-panel.is-open {
         width: var(--np-open-width, min(20rem, calc(100vw - 2rem)));
         height: var(--np-open-height, auto);
-        min-height: 12rem;
-        max-height: min(50vh, 24rem);
+        min-height: auto;
+        max-height: min(40vh, 18rem);
         border-radius: 1rem;
     }
     #notification-minimized {
@@ -80,6 +80,23 @@
 <script>
     import * as Diff from 'diff';
 
+    interface Post {
+        title: string;
+        link: string;
+        guid: string;
+        pubDate: number;
+        description: string;
+        content: string;
+        isUpdated?: boolean;
+        diff?: Diff.Change[] | null;
+        diffType?: string;
+    }
+
+    interface NotificationState {
+        timestamp: number;
+        items: Post[];
+    }
+
     (async function() {
     const __diffLogEnabled = (() => {
         try {
@@ -91,7 +108,7 @@
     })();
     const BASE_URL = import.meta.env.BASE_URL || '/';
     const basePath = String(BASE_URL).endsWith('/') ? String(BASE_URL).slice(0, -1) : String(BASE_URL);
-    const withBasePath = (pathname) => {
+    const withBasePath = (pathname: string): string => {
         const p = String(pathname || '');
         if (!basePath || basePath === '/' || !p.startsWith('/')) return p;
         if (p === basePath || p.startsWith(`${basePath}/`)) return p;
@@ -121,13 +138,14 @@
     const NOTIFICATION_STATE_KEY = 'new-posts-notification-state';
     const INIT_TIME_KEY = 'new-posts-init-time';
 
-    function openDB() {
+    function openDB(): Promise<IDBDatabase> {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(DB_NAME, DB_VERSION);
             request.onerror = () => reject(request.error);
-            request.onsuccess = () => resolve(request.result);
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
+            request.onsuccess = () => resolve(request.result as IDBDatabase);
+            request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
+                const target = event.target as IDBOpenDBRequest;
+                const db = target.result;
                 if (!db.objectStoreNames.contains(STORE_OLD)) {
                     db.createObjectStore(STORE_OLD, { keyPath: 'id' });
                 }
@@ -138,17 +156,17 @@
         });
     }
 
-    function getStoredPosts(db, storeName) {
+    function getStoredPosts(db: IDBDatabase, storeName: string): Promise<Post[]> {
         return new Promise((resolve, reject) => {
             const transaction = db.transaction([storeName], 'readonly');
             const store = transaction.objectStore(storeName);
             const request = store.getAll();
-            request.onsuccess = () => resolve(request.result || []);
+            request.onsuccess = () => resolve((request.result as Post[]) || []);
             request.onerror = () => reject(request.error);
         });
     }
 
-    function savePosts(db, storeName, posts) {
+    function savePosts(db: IDBDatabase, storeName: string, posts: Post[]): Promise<void> {
         return new Promise((resolve, reject) => {
             const transaction = db.transaction([storeName], 'readwrite');
             const store = transaction.objectStore(storeName);
@@ -172,7 +190,7 @@
         });
     }
 
-    function clearStore(db, storeName) {
+    function clearStore(db: IDBDatabase, storeName: string): Promise<void> {
         return new Promise((resolve, reject) => {
             const transaction = db.transaction([storeName], 'readwrite');
             const store = transaction.objectStore(storeName);
@@ -182,7 +200,7 @@
         });
     }
 
-    function generateId(guid) {
+    function generateId(guid: string): string {
         let hash = 0;
         const str = String(guid || '');
         for (let i = 0; i < str.length; i++) {
@@ -193,7 +211,7 @@
         return 'id_' + Math.abs(hash).toString(36);
     }
 
-    function normalizeGuid(guid, link) {
+    function normalizeGuid(guid: string, link: string): string {
         const g = String(guid || link || '').trim();
         try {
             const url = new URL(g);
@@ -203,7 +221,7 @@
         }
     }
 
-    async function fetchRSS() {
+    async function fetchRSS(): Promise<Post[]> {
         try {
             const possiblePaths = [
                 withBasePath('/rss.xml'),
@@ -212,14 +230,12 @@
                 'rss.xml'
             ];
             
-            let response = null;
-            let successfulPath = '';
+            let response: Response | null = null;
             
             for (const rssPath of possiblePaths) {
                 try {
                     response = await fetch(rssPath, { cache: 'no-store' });
                     if (response.ok) {
-                        successfulPath = rssPath;
                         break;
                     }
                 } catch (e) {
@@ -246,14 +262,14 @@
             
             const items = Array.from(xml.querySelectorAll('item'));
             
-            return items.map(item => {
+            return items.map((item: Element): Post => {
                 const title = item.querySelector('title')?.textContent || '';
                 let link = (item.querySelector('link')?.textContent || '').trim();
                 let rawGuid = (item.querySelector('guid')?.textContent || '').trim();
                 const pubDate = new Date(item.querySelector('pubDate')?.textContent || '').getTime();
                 let description = item.querySelector('description')?.textContent || '';
                 
-                let contentEncoded = item.getElementsByTagNameNS('http://purl.org/rss/1.0/modules/content/', 'encoded')[0]?.textContent;
+                const contentEncoded = item.getElementsByTagNameNS('http://purl.org/rss/1.0/modules/content/', 'encoded')[0]?.textContent;
                 let content = contentEncoded || 
                                 item.getElementsByTagName('content:encoded')[0]?.textContent || 
                                 item.querySelector('content')?.textContent || '';
@@ -283,23 +299,23 @@
         }
     }
 
-    function computeDiff(oldText, newText) {
+    function computeDiff(oldText: string, newText: string): Diff.Change[] | null {
         if (!oldText || !newText) return null;
 
-        const normalizeRaw = (text) => {
+        const normalizeRaw = (text: string): string => {
             const s = String(text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
             const lines = s.split("\n").map((line) => line.replace(/[ \t]+$/g, ""));
             return lines.join("\n").trim();
         };
 
-        const normalizeForDiffHtml = (html) => {
+        const normalizeForDiffHtml = (html: string): string => {
             const raw = normalizeRaw(html);
             if (!raw) return "";
             const parser = new DOMParser();
             const doc = parser.parseFromString(`<div>${raw}</div>`, "text/html");
             const root = doc.body.firstElementChild;
             if (!root) return raw;
-            const clone = root.cloneNode(true);
+            const clone = root.cloneNode(true) as Element;
             clone.querySelectorAll("script, style, iframe, object, embed").forEach((el) => el.remove());
             const text = clone.textContent || "";
             return text.replace(/\s+/g, " ").trim();
@@ -313,15 +329,15 @@
         }
 
         const diffResult = Diff.diffWordsWithSpace(normalizedOld, normalizedNew);
-        const hasChanges = diffResult.some(part => part.added || part.removed);
+        const hasChanges = diffResult.some((part: Diff.Change) => part.added || part.removed);
         return hasChanges ? diffResult : null;
     }
 
-    function renderDiffToHtml(diffArray) {
+    function renderDiffToHtml(diffArray: Diff.Change[]): string {
         if (!Array.isArray(diffArray) || diffArray.length === 0) {
             return '<span class="text-zinc-500 italic">无内容变更</span>';
         }
-        return diffArray.map(part => {
+        return diffArray.map((part: Diff.Change) => {
             const text = part.value
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
@@ -337,7 +353,7 @@
         }).join('');
     }
 
-    function showNotification(items, timestamp, hasNew, initTime) {
+    function showNotification(items: Post[], timestamp: number, hasNew: boolean, initTime: number): void {
         const panel = document.getElementById('notification-panel');
         const dot = document.getElementById('notification-dot');
         const list = document.getElementById('new-post-list');
@@ -380,9 +396,9 @@
         if (shouldAutoOpen) {
             panel.classList.add('is-open');
             setTimeout(() => panel.classList.add('is-open-content'), 360);
-            dot.classList.add('opacity-0', 'scale-0');
+            dot?.classList.add('opacity-0', 'scale-0');
         } else if (hasNew) {
-            dot.classList.remove('opacity-0', 'scale-0', 'translate-y-20');
+            dot?.classList.remove('opacity-0', 'scale-0', 'translate-y-20');
         }
 
         panel.classList.remove('translate-y-20', 'opacity-0');
@@ -397,7 +413,7 @@
                 } else {
                     panel.classList.add('is-open');
                     setTimeout(() => panel.classList.add('is-open-content'), 360);
-                    dot.classList.add('opacity-0', 'scale-0');
+                    dot?.classList.add('opacity-0', 'scale-0');
                 }
             };
         }
@@ -427,7 +443,7 @@
             const resizeHandler = () => {
                 const isMobile = window.innerWidth < 640;
                 panel.style.setProperty('--np-open-width', isMobile ? 'calc(100vw - 2rem)' : 'min(20rem, calc(100vw - 2rem))');
-                panel.style.setProperty('--np-open-height', isMobile ? 'min(70vh, 28rem)' : 'min(70vh, 34rem)');
+                panel.style.setProperty('--np-open-height', isMobile ? 'min(50vh, 16rem)' : 'min(45vh, 20rem)');
             };
             resizeHandler();
             window.addEventListener('resize', resizeHandler);
@@ -441,20 +457,23 @@
 
         if (isDevMode) {
             const mockDiff = [
-                { value: "This is some unchanged text context.\n", added: undefined, removed: undefined },
-                { value: "This line was removed.\n", added: undefined, removed: true },
-                { value: "This line is new.\n", added: true, removed: undefined },
-                { value: "More unchanged text.\n", added: undefined, removed: undefined }
-            ];
+                { value: "This is some unchanged text context.\n", added: false, removed: false, count: 1 },
+                { value: "This line was removed.\n", added: false, removed: true, count: 1 },
+                { value: "This line is new.\n", added: true, removed: false, count: 1 },
+                { value: "More unchanged text.\n", added: false, removed: false, count: 1 }
+            ] as Diff.Change[];
             
-            const mockPosts = [
-                { title: 'Test New Post 1', link: '#', guid: 'test-1', isUpdated: false },
+            const mockPosts: Post[] = [
+                { title: 'Test New Post 1', link: '#', guid: 'test-1', isUpdated: false, pubDate: Date.now(), description: '', content: '' },
                 { 
                     title: 'Test Updated Post', 
                     link: '#', 
                     guid: 'test-2', 
                     isUpdated: true,
-                    diff: mockDiff
+                    diff: mockDiff,
+                    pubDate: Date.now(), 
+                    description: '', 
+                    content: ''
                 },
             ];
             showNotification(mockPosts, Date.now(), true, Date.now());
@@ -509,7 +528,7 @@
                 storedPosts.map(p => [generateId(p.guid), p])
             );
             
-            const detectedChanges = [];
+            const detectedChanges: Post[] = [];
 
             currentPosts.forEach(post => {
                 const stored = storedMap.get(generateId(post.guid));
@@ -541,7 +560,10 @@
                         }
                         
                         if (!hasChanges && titleChanged) {
-                            result = [{ value: post.title, added: true }, { value: stored.title, removed: true }];
+                            result = [
+                                { value: post.title, added: true, removed: false, count: 1 },
+                                { value: stored.title, added: false, removed: true, count: 1 }
+                            ];
                             hasChanges = true;
                         }
                         
