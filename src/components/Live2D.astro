@@ -1,0 +1,140 @@
+---
+// Live2D 看板娘组件
+// 基于 https://blog.dogxi.me/diy-website-live2d/
+---
+
+<div id="live2d-container" class="live2d-container">
+    <canvas id="live2d-canvas" class="live2d-canvas"></canvas>
+</div>
+
+<script is:inline>
+    (function() {
+        // 只在桌面端显示
+        if (window.innerWidth < 768) return;
+
+        const cdnPath = 'https://cdn.jsdelivr.net/gh/dogxii/live2d-widget-v3@main/';
+        
+        const config = {
+            // 资源路径
+            path: {
+                homePath: '/',
+                modelPath: cdnPath + 'Resources/',
+                cssPath: cdnPath + 'waifu.css',
+                tipsJsonPath: cdnPath + 'waifu-tips.json',
+                tipsJsPath: cdnPath + 'waifu-tips.js',
+                live2dCorePath: cdnPath + 'Core/live2dcubismcore.js',
+                live2dSdkPath: cdnPath + 'live2d-sdk.js',
+            },
+            // 工具栏
+            tools: [
+                'hitokoto',      // 一言
+                'asteroids',     // 小行星
+                'express',       // 快递查询
+                'switch-model',  // 切换模型
+                'switch-texture', // 切换材质
+                'photo',         // 截图
+                'info',          // 信息
+                'quit',          // 关闭
+            ],
+            // 模型拖拽
+            drag: {
+                enable: true,
+                direction: ['x', 'y'],
+            },
+            // 模型切换(order: 顺序切换，random: 随机切换)
+            switchType: 'order',
+        };
+
+        // 异步加载资源
+        function loadExternalResource(url, type) {
+            return new Promise((resolve, reject) => {
+                let tag;
+                if (type === 'css') {
+                    tag = document.createElement('link');
+                    tag.rel = 'stylesheet';
+                    tag.href = url;
+                } else if (type === 'js') {
+                    tag = document.createElement('script');
+                    tag.src = url;
+                }
+                if (tag) {
+                    tag.onload = () => resolve(url);
+                    tag.onerror = () => reject(url);
+                    document.head.appendChild(tag);
+                }
+            });
+        }
+
+        // 加载资源并初始化
+        Promise.all([
+            loadExternalResource(config.path.cssPath, 'css'),
+            loadExternalResource(config.path.live2dCorePath, 'js'),
+            loadExternalResource(config.path.live2dSdkPath, 'js'),
+            loadExternalResource(config.path.tipsJsPath, 'js'),
+        ]).then(() => {
+            if (typeof initWidget === 'function') {
+                initWidget({
+                    waifuPath: config.path.tipsJsonPath,
+                    cdnPath: config.path.modelPath,
+                    tools: config.tools,
+                    dragEnable: config.drag.enable,
+                    dragDirection: config.drag.direction,
+                    switchType: config.switchType,
+                });
+            }
+        }).catch(err => {
+            console.error('[Live2D] 加载失败:', err);
+        });
+    })();
+</script>
+
+<style>
+    /* Live2D 看板娘固定在左下角 */
+    :global(#waifu) {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: auto !important;
+        z-index: 9999 !important;
+    }
+
+    /* 工具栏也跟随到左侧 */
+    :global(#waifu-tool) {
+        left: 0 !important;
+        right: auto !important;
+    }
+
+    /* 适配深色模式 - 覆盖默认样式 */
+    :global(html.dark #waifu) {
+        filter: brightness(0.9);
+    }
+
+    /* 工具栏深色模式适配 */
+    :global(html.dark #waifu-tool) {
+        background: rgba(30, 30, 30, 0.8) !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    :global(html.dark #waifu-tool .fa) {
+        color: #e0e0e0 !important;
+    }
+
+    :global(html.dark #waifu-tool .fa:hover) {
+        color: #fff !important;
+    }
+
+    /* 对话框深色模式适配 */
+    :global(html.dark #waifu-tips) {
+        background: rgba(30, 30, 30, 0.9) !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+        color: #e0e0e0 !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    /* 移动端隐藏 */
+    @media (max-width: 768px) {
+        :global(#waifu) {
+            display: none !important;
+        }
+    }
+</style>

@@ -16,7 +16,7 @@ const STORAGE_KEY_CURRENT_SONG = 'music-player-current-song';
 // 播放状态
 let isPlaying = false;
 let isExpanded = false;
-let isHidden = false;
+let isHidden = true;
 let showPlaylist = false;
 let currentTime = 0;
 let duration = 0;
