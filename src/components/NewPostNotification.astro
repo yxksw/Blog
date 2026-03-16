@@ -20,7 +20,9 @@
     }
     #notification-panel.is-open {
         width: var(--np-open-width, min(20rem, calc(100vw - 2rem)));
-        height: var(--np-open-height, min(70vh, 34rem));
+        height: var(--np-open-height, auto);
+        min-height: 12rem;
+        max-height: min(50vh, 24rem);
         border-radius: 1rem;
     }
     #notification-minimized {
@@ -54,18 +56,18 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
         </button>
 
-        <div id="notification-content" class="flex flex-col p-5">
-            <div class="flex items-center justify-between mb-3">
+        <div id="notification-content" class="flex flex-col p-4">
+            <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2 text-blue-500 dark:text-blue-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg>
-                    <h3 class="font-bold text-zinc-900 dark:text-white">发现新文章</h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg>
+                    <h3 class="font-bold text-zinc-900 dark:text-white text-sm">发现新文章</h3>
                 </div>
                 <div class="flex items-center gap-1">
                     <button id="clear-notification" class="text-zinc-500 dark:text-zinc-400 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-500/10" title="清空通知">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
                     </button>
                     <button id="minimize-notification" class="text-zinc-500 dark:text-zinc-400 hover:text-blue-500 transition-colors p-1 rounded-md hover:bg-blue-500/10" title="隐藏">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>
                     </button>
                 </div>
             </div>
@@ -352,17 +354,17 @@
         } else {
             list.innerHTML = items.map(item => {
                 const diffHtml = item.diff ? renderDiffToHtml(item.diff) : '';
-                const updatedBadge = item.isUpdated 
-                    ? '<span class="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full ml-2">更新</span>' 
-                    : '<span class="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full ml-2">新文章</span>';
-                
+                const updatedBadge = item.isUpdated
+                    ? '<span class="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full ml-1">更新</span>'
+                    : '<span class="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded-full ml-1">新文章</span>';
+
                 return `
-                <div class="post-item group p-3 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer border-l-2 ${item.isUpdated ? 'border-amber-400' : 'border-green-400'} bg-zinc-50/50 dark:bg-zinc-800/50" data-link="${item.link}">
-                    <div class="font-medium text-zinc-900 dark:text-white mb-1 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors flex items-center flex-wrap gap-1">
+                <div class="post-item group p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer border-l-2 ${item.isUpdated ? 'border-amber-400' : 'border-green-400'} bg-zinc-50/50 dark:bg-zinc-800/50" data-link="${item.link}">
+                    <div class="font-medium text-zinc-900 dark:text-white text-sm group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors flex items-center flex-wrap gap-1">
                         ${item.title}
                         ${updatedBadge}
                     </div>
-                    ${diffHtml ? `<div class="text-xs text-zinc-600 dark:text-zinc-400 mt-2 leading-relaxed max-h-32 overflow-y-auto">${diffHtml}</div>` : ''}
+                    ${diffHtml ? `<div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed max-h-24 overflow-y-auto">${diffHtml}</div>` : ''}
                 </div>
                 `;
             }).join('');
@@ -497,7 +499,8 @@
             await savePosts(db, STORE_OLD, currentPosts);
             await clearStore(db, STORE_NEW);
             localStorage.removeItem(NOTIFICATION_STATE_KEY);
-            showNotification([], Date.now(), false, initTime);
+            // 首次访问也显示通知图标，让用户知道有这个功能
+            showNotification([], Date.now(), true, initTime);
         } else {
             await clearStore(db, STORE_NEW);
             await savePosts(db, STORE_NEW, currentPosts);

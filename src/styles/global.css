@@ -19,11 +19,61 @@
 		scrollbar-gutter: stable;
 		scrollbar-width: thin;
 		scrollbar-color: rgba(120, 120, 120, 0.28) transparent;
+		cursor: url('/cur/Arrow.cur'), auto;
 	}
 
 	body {
 		@apply text-zinc-800 font-sans antialiased transition-colors duration-200 dark:text-zinc-200;
 		background: transparent !important;
+		cursor: url('/cur/Arrow.cur'), auto;
+	}
+
+	a, button, [role="button"], input[type="submit"], input[type="button"] {
+		cursor: url('/cur/Link.ani'), pointer;
+	}
+
+	input, textarea, select, [onclick] {
+		cursor: url('/cur/Text Select.cur'), text;
+	}
+
+	*:active, *:hover:active {
+		cursor: url('/cur/Alternate.cur'), default;
+	}
+
+	[disabled], .disabled, [aria-disabled="true"] {
+		cursor: url('/cur/Unavailable.cur'), not-allowed;
+	}
+
+	.loading, .busy, [data-loading="true"] {
+		cursor: url('/cur/Busy.ani'), wait;
+	}
+
+	.help, [title]:hover {
+		cursor: url('/cur/Help.cur'), help;
+	}
+
+	.resize-horizontal {
+		cursor: url('/cur/East_West.cur'), ew-resize;
+	}
+
+	.resize-vertical {
+		cursor: url('/cur/North_South.cur'), ns-resize;
+	}
+
+	.resize-diagonal-1 {
+		cursor: url('/cur/North_East-South_West.cur'), nesw-resize;
+	}
+
+	.resize-diagonal-2 {
+		cursor: url('/cur/North_West-South_East.cur'), nwse-resize;
+	}
+
+	.move {
+		cursor: url('/cur/Move.cur'), move;
+	}
+
+	.crosshair {
+		cursor: url('/cur/Crosshair.cur'), crosshair;
 	}
 
 	a {

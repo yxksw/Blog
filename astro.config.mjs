@@ -12,6 +12,7 @@ import { defineConfig, passthroughImageService } from "astro/config";
 import tailwindcss from "@tailwindcss/vite";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import cloudflare from "@astrojs/cloudflare";
 
 /*
  * Minimal GitHub-style alert parser for markdown blockquotes.
@@ -145,7 +146,8 @@ export default defineConfig({
   site: runtimeSite,
   base: runtimeBase,
   trailingSlash: "always",
-  output: "static",
+  output: "server",
+  adapter: cloudflare(),
   image: {
     service: passthroughImageService(),
   },
