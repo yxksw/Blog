@@ -1,5 +1,4 @@
 ---
-import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import MainLayout from '../../layouts/MainLayout.astro';
 import Comment from '../../components/Comment.astro';
@@ -165,10 +164,10 @@ const charsLabel = chars.toLocaleString('en-US');
 										<img src={withBase(heroImage)} alt={title} class="h-full w-full object-cover" loading="lazy" />
 									</div>
 								) : (
-									<div class="mb-8 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-										<Image width={1200} height={620} src={heroImage} alt="" class="h-auto w-full" />
-									</div>
-								))
+								<div class="mb-8 overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+									<img src={heroImage.src} alt={title} class="h-auto w-full" loading="lazy" />
+								</div>
+							))
 						}
 
 						<!-- 文章更新时效性提示 -->
