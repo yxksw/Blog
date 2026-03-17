@@ -1,0 +1,171 @@
+---
+// 外链安全跳转组件
+// 参考 hexo-safego 设计
+---
+
+<script is:inline>
+    (function() {
+        // 配置项
+        const SAFEGO_CONFIG = {
+            // 是否启用
+            enabled: true,
+            // 是否使用 Base64 编码
+            enableBase64: true,
+            // 中转页面路径
+            redirectPage: '/go/',
+            // URL 参数名
+            urlParamName: 'u',
+            // 白名单域名（包含这些字符串的链接会被跳过）
+            whitelist: [
+                window.location.hostname,  // 当前域名
+                'localhost',
+                '127.0.0.1',
+                'www.050815.xyz',
+                'blog.261770.xyz',
+            ],
+            // 忽略的链接属性
+            ignoreAttrs: ['data-fancybox', 'data-no-safego'],
+            // 选择器范围（空字符串表示整个文档）
+            scope: 'body',
+        };
+
+        // 检查是否为外部链接
+        function isExternalLink(url) {
+            try {
+                const link = new URL(url, window.location.href);
+                
+                // 检查是否在白名单中
+                for (const domain of SAFEGO_CONFIG.whitelist) {
+                    if (link.hostname.includes(domain)) {
+                        return false;
+                    }
+                }
+                
+                // 检查是否为外部域名
+                return link.hostname !== window.location.hostname;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // 检查链接是否应该被忽略
+        function shouldIgnoreLink(element) {
+            // 检查是否有忽略属性
+            for (const attr of SAFEGO_CONFIG.ignoreAttrs) {
+                if (element.hasAttribute(attr)) {
+                    return true;
+                }
+            }
+            
+            // 检查是否有 data-no-safego 类
+            if (element.classList.contains('no-safego')) {
+                return true;
+            }
+            
+            return false;
+        }
+
+        // 编码 URL
+        function encodeUrl(url) {
+            if (SAFEGO_CONFIG.enableBase64) {
+                return btoa(url);
+            }
+            return encodeURIComponent(url);
+        }
+
+        // 处理链接
+        function processLinks() {
+            if (!SAFEGO_CONFIG.enabled) return;
+
+            const scope = SAFEGO_CONFIG.scope || 'body';
+            const container = document.querySelector(scope) || document.body;
+            
+            // 获取所有链接
+            const links = container.querySelectorAll('a[href]');
+            
+            links.forEach(link => {
+                const href = link.getAttribute('href');
+                
+                // 跳过空链接、锚点链接、javascript: 链接
+                if (!href || href.startsWith('#') || href.startsWith('javascript:')) {
+                    return;
+                }
+                
+                // 检查是否应该忽略
+                if (shouldIgnoreLink(link)) {
+                    return;
+                }
+                
+                // 检查是否为外部链接
+                if (isExternalLink(href)) {
+                    // 编码目标 URL
+                    const encodedUrl = encodeUrl(href);
+                    
+                    // 保存当前页面 URL 到 sessionStorage，用于返回
+                    const currentPage = window.location.href;
+                    
+                    // 构建跳转链接，添加 from 参数
+                    const redirectUrl = `${SAFEGO_CONFIG.redirectPage}?${SAFEGO_CONFIG.urlParamName}=${encodedUrl}&from=${encodeURIComponent(currentPage)}`;
+                    
+                    // 替换链接
+                    link.setAttribute('href', redirectUrl);
+                    
+                    // 添加外部链接标识
+                    link.setAttribute('data-external', 'true');
+                    
+                    // 确保在新窗口打开
+                    if (!link.hasAttribute('target')) {
+                        link.setAttribute('target', '_blank');
+                    }
+                    
+                    // 添加 rel 属性
+                    if (!link.hasAttribute('rel')) {
+                        link.setAttribute('rel', 'noopener noreferrer nofollow');
+                    }
+                }
+            });
+        }
+
+        // 初始化函数
+        function initSafeGo() {
+            // 延迟执行，确保 DOM 完全加载
+            setTimeout(processLinks, 100);
+        }
+
+        // 页面加载完成后初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initSafeGo);
+        } else {
+            initSafeGo();
+        }
+
+        // 监听 Astro 页面切换事件
+        document.addEventListener('astro:page-load', initSafeGo);
+        document.addEventListener('astro:after-swap', initSafeGo);
+
+        // 监听动态内容变化（可选）
+        const observer = new MutationObserver((mutations) => {
+            let shouldProcess = false;
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === 1 && node.matches && node.matches('a[href]')) {
+                            shouldProcess = true;
+                        }
+                    });
+                }
+            });
+            if (shouldProcess) {
+                processLinks();
+            }
+        });
+
+        // 在页面加载完成后开始观察
+        document.addEventListener('DOMContentLoaded', () => {
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        });
+    })();
+</script>

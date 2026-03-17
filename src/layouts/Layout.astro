@@ -2,6 +2,7 @@
 import BaseHead from '../components/BaseHead.astro';
 import MusicPlayer from '../components/MusicPlayer.svelte';
 import NewPostNotification from '../components/NewPostNotification.astro';
+import SafeGo from '../components/SafeGo.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 
 interface Props {
@@ -30,6 +31,9 @@ const pageTitle = title ? `${title} - ${SITE_TITLE}` : SITE_TITLE;
 		<!-- MusicPlayer - 放在 body 最后 -->
 		<!-- 使用 transition:persist 确保页面切换时保持播放状态 -->
 		<MusicPlayer client:only="svelte" transition:persist />
+		
+		<!-- SafeGo 外链安全跳转 -->
+		<SafeGo />
 		
 		<slot name="body-end" />
 	</body>

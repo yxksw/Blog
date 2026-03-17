@@ -1,0 +1,11 @@
+{
+    "mode": "external",
+    "cover": "https://bing.kemeow.top/picture/2026-03-16.webp",
+    "photos": [
+        {
+            "src": "https://bing.kemeow.top/picture/2026-03-15.webp",
+            "title": "照片标题",
+            "description": "照片描述"
+        }
+    ]
+}
