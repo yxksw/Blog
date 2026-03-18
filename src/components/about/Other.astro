@@ -33,10 +33,10 @@ const { tj, oneself } = Astro.props;
           <div class="author-content-item-tips">网站统计</div>
           <span class="author-content-item-title">访问数据</span>
           <div id="statistic">
-            <div><span>今日人数</span><span>--</span></div>
-            <div><span>今日访问</span><span>--</span></div>
-            <div><span>昨日人数</span><span>--</span></div>
-            <div><span>昨日访问</span><span>--</span></div>
+            <div><span>今日人数</span><span id="stat-today-uv">--</span></div>
+            <div><span>今日访问</span><span id="stat-today-pv">--</span></div>
+            <div><span>昨日人数</span><span id="stat-yesterday-uv">--</span></div>
+            <div><span>昨日访问</span><span id="stat-yesterday-pv">--</span></div>
           </div>
           <div class="post-tips">{tj.desc}</div>
           {tj.button && (
@@ -52,6 +52,37 @@ const { tj, oneself } = Astro.props;
             </div>
           )}
         </div>
+        {tj.url && (
+          <script is:inline define:vars={{ apiUrl: tj.url }}>
+            (function() {
+              const url = apiUrl;
+              
+              function fetchStats() {
+                fetch(url)
+                  .then(res => res.json())
+                  .then(data => {
+                    const todayUv = document.getElementById('stat-today-uv');
+                    const todayPv = document.getElementById('stat-today-pv');
+                    const yesterdayUv = document.getElementById('stat-yesterday-uv');
+                    const yesterdayPv = document.getElementById('stat-yesterday-pv');
+                    
+                    if (todayUv) todayUv.textContent = data.today_uv ?? '--';
+                    if (todayPv) todayPv.textContent = data.today_pv ?? '--';
+                    if (yesterdayUv) yesterdayUv.textContent = data.yesterday_uv ?? '--';
+                    if (yesterdayPv) yesterdayPv.textContent = data.yesterday_pv ?? '--';
+                  })
+                  .catch(() => {});
+              }
+              
+              // Fetch on load
+              if (document.readyState === 'complete') {
+                fetchStats();
+              } else {
+                window.addEventListener('load', fetchStats);
+              }
+            })();
+          </script>
+        )}
       </div>
     )}
 
@@ -220,17 +251,18 @@ const { tj, oneself } = Astro.props;
     display: flex;
     min-height: 100px;
     max-height: 400px;
-    justify-content: space-between;
+    justify-content: space-around;
     align-items: center;
-    flex-wrap: wrap;
     height: 40%;
     flex: 1;
+    padding: 1rem 2rem;
   }
 
   .author-content-item.selfInfo div {
     display: flex;
     flex-direction: column;
-    margin: 0.5rem 2rem 0.5rem 0;
+    align-items: flex-start;
+    flex: 1;
   }
 
   .selfInfo-title {

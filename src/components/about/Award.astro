@@ -1,10 +1,10 @@
 ---
-interface RewardItem {
+interface Sponsor {
   name: string;
-  money: number;
-  color: string;
-  icon?: string;
-  time: number;
+  avatar?: string;
+  website?: string;
+  date: string;
+  amount: string;
 }
 
 interface Props {
@@ -21,65 +21,77 @@ interface Props {
       color: string;
     }[];
   };
-  rewardList: RewardItem[];
+  sponsorsUrl: string;
 }
 
-const { data, rewardList } = Astro.props;
+const { data, sponsorsUrl } = Astro.props;
 
-const sortedRewards = [...rewardList].sort((a, b) => b.time - a.time);
-const sum = rewardList.reduce((acc, r) => acc + r.money, 0);
-const displayRewards = sortedRewards.slice(0, data.limit);
-const hasMore = sortedRewards.length > data.limit;
+// 从远程加载赞助数据
+async function loadSponsors(url: string): Promise<Sponsor[]> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error('Failed to load sponsors data');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to load sponsors:', error);
+    return [];
+  }
+}
+
+const sponsors: Sponsor[] = await loadSponsors(sponsorsUrl);
+const displaySponsors = sponsors.slice(0, data.limit);
+const hasMore = sponsors.length > data.limit;
 ---
 
 {data.enable && (
   <div class="author-content">
     <div class="author-content-item single reward">
       <div class="author-content-item-tips">感谢支持</div>
-      <span class="author-content-item-title">{data.title}</span>
+      <span class="author-content-item-title" style="color: #ef4444;">{data.title}</span>
       <div class="author-content-item-description">
         {data.description}
       </div>
       
-      {rewardList.length > 0 && (
-        <div class="reward-list-all">
-          {displayRewards.map((reward) => (
-            <div class="reward-list-item">
-              <div class="reward-list-item-name">{reward.name}</div>
-              <div class="reward-list-bottom-group">
-                <div class="reward-list-item-money" style={`background-color: ${reward.color}`}>
-                  {reward.icon && (
-                    <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+      {sponsors.length > 0 && (
+        <div class="sponsors-grid">
+          {displaySponsors.map((sponsor) => (
+            <div class="sponsor-card">
+              <div class="sponsor-avatar">
+                {sponsor.avatar ? (
+                  <img src={sponsor.avatar} alt={`${sponsor.name}的头像`} loading="lazy" />
+                ) : (
+                  <div class="sponsor-avatar-placeholder">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
                     </svg>
-                  )}
-                  ¥ {reward.money}
-                </div>
-                <time class="reward-list-item-time" datetime={new Date(reward.time).toISOString()}>
-                  {new Date(reward.time).toLocaleDateString('zh-CN')}
-                </time>
+                  </div>
+                )}
               </div>
+              <div class="sponsor-info">
+                <div class="sponsor-name">{sponsor.name}</div>
+                <div class="sponsor-date">{sponsor.date}</div>
+              </div>
+              <div class="sponsor-amount">{sponsor.amount}</div>
             </div>
           ))}
           
           {hasMore && (
-            <a class="reward-list-item reward-list-item-more" href={data.more}>
-              <div class="reward-list-item-name">查看更多</div>
-              <div class="reward-list-bottom-group">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"/>
-                  <polyline points="12 16 16 12 12 8"/>
-                  <line x1="8" y1="12" x2="16" y2="12"/>
-                </svg>
+            <a class="sponsor-card sponsor-card-more" href={data.more}>
+              <div class="sponsor-info">
+                <div class="sponsor-name">查看更多</div>
               </div>
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 16 16 12 12 8"/>
+                <line x1="8" y1="12" x2="16" y2="12"/>
+              </svg>
             </a>
           )}
         </div>
       )}
-      
-      <div class="reward-list-tips">
-        <p>{data.tips.replace('{sum}', sum.toFixed(2))}</p>
-      </div>
       
       <!-- 打赏按钮 -->
       <div class="post-reward">
@@ -123,27 +135,131 @@ const hasMore = sortedRewards.length > data.limit;
     overflow: visible;
   }
 
-  .author-content-item.reward .author-content-item-title {
-    color: #ef4444;
-  }
-
   .author-content-item-description {
     font-size: 16px;
     margin-top: 0.5rem;
-    color: var(--about-text-secondary, #666);
+    color: var(--efu-secondtext, #666);
   }
 
-  .dark .author-content-item-description {
-    color: var(--about-text-secondary-dark, #aaa);
+  html.dark .author-content-item-description {
+    color: #aaa;
   }
 
-  .reward-list-all {
+  /* 赞助列表网格 */
+  .sponsors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .sponsors-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* 赞助卡片 */
+  .sponsor-card {
     display: flex;
-    flex-wrap: wrap;
-    flex-direction: row;
-    margin: 1rem -0.125rem 0.5rem;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--efu-card-border, #e5e7eb);
+    background: var(--efu-card-bg, #ffffff);
+    transition: all 0.2s ease;
   }
 
+  .sponsor-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  html.dark .sponsor-card {
+    background: rgba(55, 65, 81, 0.5);
+    border-color: rgba(75, 85, 99, 0.5);
+  }
+
+  /* 头像 */
+  .sponsor-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .sponsor-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .sponsor-avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    background: var(--efu-background, #e5e7eb);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  html.dark .sponsor-avatar-placeholder {
+    background: rgba(75, 85, 99, 0.5);
+  }
+
+  /* 信息 */
+  .sponsor-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .sponsor-name {
+    font-weight: 600;
+    color: var(--efu-fontcolor, #1f2937);
+    font-size: 0.9375rem;
+  }
+
+  html.dark .sponsor-name {
+    color: #f3f4f6;
+  }
+
+  .sponsor-date {
+    font-size: 0.75rem;
+    color: var(--efu-secondtext, #6b7280);
+  }
+
+  html.dark .sponsor-date {
+    color: #9ca3af;
+  }
+
+  /* 金额 */
+  .sponsor-amount {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #3b82f6;
+    flex-shrink: 0;
+  }
+
+  /* 查看更多卡片 */
+  .sponsor-card-more {
+    background: #8b5cf6;
+    color: white;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .sponsor-card-more:hover {
+    background: #7c3aed;
+    color: white;
+  }
+
+  .sponsor-card-more .sponsor-name {
+    color: white;
+  }
+
+  /* 打赏按钮 */
   .post-reward {
     position: absolute;
     right: 2rem;
@@ -172,112 +288,6 @@ const hasMore = sortedRewards.length > data.limit;
     box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
   }
 
-  .reward-list-item {
-    padding: 1rem;
-    border-radius: 12px;
-    border: 1px solid var(--about-border-color, rgba(0, 0, 0, 0.1));
-    width: calc((100% / 6) - 0.25rem);
-    margin: 0 0.125rem 0.5rem 0.125rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    background: var(--about-card-bg, rgba(255, 255, 255, 0.9));
-    transition: all 0.3s ease;
-  }
-
-  .dark .reward-list-item {
-    background: var(--about-card-bg-dark, rgba(30, 30, 30, 0.9));
-    border-color: var(--about-border-color-dark, rgba(255, 255, 255, 0.1));
-  }
-
-  .reward-list-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-
-  .reward-list-item-name {
-    font-size: 1rem;
-    font-weight: 700;
-    line-height: 1;
-    margin-bottom: 0.25rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: var(--about-text-primary, #1a1a1a);
-  }
-
-  .dark .reward-list-item-name {
-    color: var(--about-text-primary-dark, #f5f5f5);
-  }
-
-  .reward-list-bottom-group {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 0.5rem;
-  }
-
-  .reward-list-item-money {
-    padding: 4px 8px;
-    color: white;
-    font-size: 12px;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    margin-right: 2px;
-    white-space: nowrap;
-    font-weight: 600;
-  }
-
-  .reward-list-item-money .icon {
-    margin-right: 4px;
-  }
-
-  .reward-list-item-time {
-    font-size: 12px;
-    color: var(--about-text-secondary, #666);
-    white-space: nowrap;
-  }
-
-  .dark .reward-list-item-time {
-    color: var(--about-text-secondary-dark, #aaa);
-  }
-
-  .reward-list-item.reward-list-item-more {
-    display: flex;
-    flex-direction: column;
-    font-size: 18px;
-    line-height: 1;
-    font-weight: 700;
-    background: #8b5cf6;
-    color: white;
-    cursor: pointer;
-    text-decoration: none;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .reward-list-item.reward-list-item-more:hover {
-    background: #7c3aed;
-    color: white;
-  }
-
-  .reward-list-tips {
-    margin-top: 1rem;
-  }
-
-  .reward-list-tips p {
-    font-size: 12px;
-    color: var(--about-text-secondary, #666);
-  }
-
-  .dark .reward-list-tips p {
-    color: var(--about-text-secondary-dark, #aaa);
-  }
-
   /* 弹窗样式 */
   .hidden {
     display: none !important;
@@ -298,23 +308,7 @@ const hasMore = sortedRewards.length > data.limit;
     }
   }
 
-  @media (max-width: 1200px) {
-    .reward-list-item {
-      width: calc((100% / 4) - 0.25rem);
-    }
-  }
-
-  @media (max-width: 900px) {
-    .reward-list-item {
-      width: calc((100% / 2) - 0.25rem);
-    }
-  }
-
   @media (max-width: 768px) {
-    .reward-list-item {
-      width: calc((100% / 2) - 0.25rem);
-    }
-
     .post-reward {
       position: static;
       margin-top: 1rem;

@@ -88,17 +88,17 @@ const { data } = Astro.props;
 
   .create-site-post p {
     margin: 1rem 0;
-    color: var(--about-text-secondary, #666);
+    color: var(--efu-secondtext, #666);
     line-height: 1.6;
   }
 
-  .dark .create-site-post p {
-    color: var(--about-text-secondary-dark, #aaa);
+  [data-theme="dark"] .create-site-post p {
+    color: var(--efu-secondtext, #aaa);
   }
 
   .tenyear-timeline {
     width: 100%;
-    background-color: var(--about-bg-secondary, rgba(0, 0, 0, 0.1));
+    background-color: var(--efu-background, rgba(0, 0, 0, 0.1));
     position: relative;
     overflow: hidden;
     margin: 1.5rem 0 1rem;
@@ -109,13 +109,14 @@ const { data } = Astro.props;
   .progress {
     width: 0;
     height: 100%;
-    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    background-color: var(--efu-main, #3b82f6);
     position: absolute;
     border-radius: 0.5rem;
-    animation: progressAnimation 2s ease forwards;
+    animation-delay: -0.1s;
+    animation: renamedProgressAnimation 2s linear forwards;
   }
 
-  @keyframes progressAnimation {
+  @keyframes renamedProgressAnimation {
     0% {
       width: 0;
     }
@@ -125,22 +126,19 @@ const { data } = Astro.props;
   }
 
   .past-time {
+    animation: renamedPastTimeAnimation 3s linear forwards;
     width: 2px;
     height: 20px;
-    background: #fff;
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%) scaleX(0);
     transform-origin: left;
-    animation: pastTimeAnimation 2s ease forwards;
   }
 
-  @keyframes pastTimeAnimation {
+  @keyframes renamedPastTimeAnimation {
     0% {
-      transform: translateY(-50%) scaleX(0);
+      transform: scaleX(0);
     }
     100% {
-      transform: translateY(-50%) scaleX(var(--past-time-percentage, 0));
+      transform: scaleX(var(--past-time-percentage, 0));
     }
   }
 
@@ -148,14 +146,12 @@ const { data } = Astro.props;
     position: absolute;
     left: 0;
     font-size: 14px;
-    color: #fff;
+    color: var(--efu-card-bg, #fff);
     font-weight: bold;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 10px;
     white-space: nowrap;
     transition: left 0.5s linear;
     visibility: hidden;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   }
 
   .time-labels {
@@ -166,10 +162,34 @@ const { data } = Astro.props;
 
   .time-labels > div {
     font-size: 14px;
-    color: var(--about-text-secondary, #666);
+    color: var(--efu-fontcolor, #666);
   }
 
-  .dark .time-labels > div {
-    color: var(--about-text-secondary-dark, #aaa);
+  [data-theme="dark"] .time-labels > div {
+    color: var(--efu-fontcolor, #aaa);
+  }
+
+  @media (max-width: 768px) {
+    .create-site-post {
+      padding: 1.5rem;
+    }
+
+    .create-site-post p {
+      font-size: 14px;
+    }
+
+    .tenyear-timeline {
+      height: 2rem;
+      margin: 1rem 0 0.5rem;
+    }
+
+    .percentage-label {
+      font-size: 12px;
+      top: 6px;
+    }
+
+    .time-labels > div {
+      font-size: 12px;
+    }
   }
 </style>

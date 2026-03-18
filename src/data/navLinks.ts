@@ -34,6 +34,7 @@ export const getNavLinks = (base: string): NavLink[] => [
             { href: `${base}timetable/`, label: '课表' },
             { href: `${base}cover/`, label: '封面' },
             { href: `${base}files/`, label: '文件' },
+            { href: `${base}albums/`, label: '画廊' },
 		],
 	},
 	{
@@ -44,5 +45,5 @@ export const getNavLinks = (base: string): NavLink[] => [
 			{ href: `${base}fc/`, label: '友链朋友圈' },
 		],
 	},
-	{ href: `${base}about/`, label: '关于' },
+	{ href: `${base}me/`, label: '关于' },
 ];

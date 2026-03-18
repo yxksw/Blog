@@ -1,0 +1,249 @@
+---
+interface CareerItem {
+  label: string;
+  icon: string;
+  color: string;
+  start: string;
+  end?: string;
+}
+
+interface Props {
+  items?: CareerItem[];
+}
+
+const { items } = Astro.props;
+
+const defaultItems: CareerItem[] = [
+  {
+    label: 'EDU',
+    icon: 'graduation-cap',
+    color: '#0ea5e9',
+    start: '2023',
+    end: '至今'
+  }
+];
+
+const timelineItems = items || defaultItems;
+
+// 计算总时间跨度
+const startYear = 2023;
+const currentYear = new Date().getFullYear();
+const totalYears = currentYear - startYear + 1;
+---
+
+<div class="career-timeline">
+  <div class="timeline-track">
+    {timelineItems.map((item, index) => (
+      <div class="timeline-item" style={`--item-color: ${item.color}; --item-width: 100%;`}>
+        <div class="item-header">
+          <span class="item-icon">
+            {item.icon === 'graduation-cap' && (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+              </svg>
+            )}
+          </span>
+          <span class="item-label">{item.label}</span>
+        </div>
+        <div class="item-bar-wrapper">
+          <div class="item-bar"></div>
+        </div>
+      </div>
+    ))}
+  </div>
+  
+  <div class="timeline-labels">
+    <span class="year-label">{startYear}</span>
+    <span class="year-label end">至今</span>
+  </div>
+</div>
+
+<style>
+  .career-timeline {
+    width: 100%;
+    padding: 1.5rem;
+    background: var(--efu-card-bg, #ffffff);
+    border-radius: 1rem;
+    border: 1px solid var(--efu-card-border, #e5e7eb);
+  }
+
+  html.dark .career-timeline {
+    background: var(--efu-card-bg, #1b1c20);
+    border-color: var(--efu-card-border, #3d3d3f);
+  }
+
+  .timeline-track {
+    position: relative;
+    padding: 2rem 0 1rem;
+  }
+
+  .timeline-track::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--efu-background, #e5e7eb);
+    border-radius: 2px;
+    transform: translateY(-50%);
+  }
+
+  html.dark .timeline-track::before {
+    background: var(--efu-background, #2c2d30);
+  }
+
+  .timeline-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .item-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--item-color);
+  }
+
+  .item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .item-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .item-bar-wrapper {
+    position: relative;
+    height: 24px;
+    display: flex;
+    align-items: center;
+  }
+
+  .item-bar {
+    width: var(--item-width);
+    height: 100%;
+    background: var(--item-color);
+    border-radius: 12px;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .item-bar::before,
+  .item-bar::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 40px;
+    background: var(--efu-card-border, #d1d5db);
+  }
+
+  .item-bar::before {
+    left: 0;
+  }
+
+  .item-bar::after {
+    right: 0;
+  }
+
+  html.dark .item-bar::before,
+  html.dark .item-bar::after {
+    background: var(--efu-card-border, #4b5563);
+  }
+
+  .timeline-labels {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .year-label {
+    font-size: 0.875rem;
+    color: var(--efu-secondtext, #6b7280);
+    font-weight: 500;
+  }
+
+  html.dark .year-label {
+    color: var(--efu-secondtext, #9ca3af);
+  }
+
+  .year-label.end {
+    color: var(--efu-fontcolor, #374151);
+    font-weight: 600;
+  }
+
+  html.dark .year-label.end {
+    color: var(--efu-fontcolor, #f3f4f6);
+  }
+
+  /* 动画 */
+  .item-bar {
+    animation: expandBar 1s ease-out forwards;
+    transform-origin: left;
+    transform: scaleX(0);
+  }
+
+  @keyframes expandBar {
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  .item-header {
+    animation: fadeIn 0.5s ease-out 0.3s both;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .career-timeline {
+      padding: 1rem;
+    }
+
+    .timeline-track {
+      padding: 1.5rem 0 0.5rem;
+    }
+
+    .item-bar {
+      height: 20px;
+      border-radius: 10px;
+    }
+
+    .item-bar::before,
+    .item-bar::after {
+      height: 30px;
+    }
+
+    .year-label {
+      font-size: 0.75rem;
+    }
+
+    .item-label {
+      font-size: 0.875rem;
+    }
+
+    .item-icon svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+</style>

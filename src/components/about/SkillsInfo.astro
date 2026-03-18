@@ -1,4 +1,6 @@
 ---
+import CareerTimeline from './CareerTimeline.astro';
+
 interface SkillTag {
   title: string;
   color: string;
@@ -113,7 +115,9 @@ if (skills?.tags) {
               </div>
             ))}
           </div>
-          <img class="author-content-img" src={careers.image} alt={careers.title} />
+          <div class="careers-timeline-wrapper">
+            <CareerTimeline />
+          </div>
         </div>
       </div>
     )}
@@ -280,29 +284,8 @@ if (skills?.tags) {
     overflow: hidden;
   }
 
-  #about-page .author-content-item.careers .card-content {
-    padding-bottom: 120px;
-  }
-
-  #about-page .author-content-img {
-    position: absolute;
-    left: 0;
-    bottom: 0;
-    width: 100%;
-    height: auto;
-    max-height: 140px;
-    transition: transform 0.6s ease;
-    user-select: none;
-    object-fit: contain;
-    object-position: bottom center;
-  }
-
-  #about-page .author-content-item:hover .author-content-img {
-    transform: scale(1.05);
-  }
-
   #about-page .careers-group {
-    margin-top: 12px;
+    margin: 1rem 0;
     position: relative;
     z-index: 2;
   }
@@ -328,6 +311,17 @@ if (skills?.tags) {
 
   [data-theme="dark"] #about-page .name {
     color: var(--efu-fontcolor, #f7f7fa);
+  }
+
+  #about-page .careers-timeline-wrapper {
+    margin-top: 1rem;
+    width: 100%;
+  }
+
+  #about-page .careers-timeline-wrapper .career-timeline {
+    background: transparent;
+    border: none;
+    padding: 0.5rem 0;
   }
 
   @media (max-width: 768px) {

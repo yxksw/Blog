@@ -10,9 +10,43 @@ import Hobbies from '../components/about/Hobbies.astro';
 import Award from '../components/about/Award.astro';
 import Other from '../components/about/Other.astro';
 import TenYear from '../components/about/TenYear.astro';
+import { getCollection } from 'astro:content';
 
 const title = `关于 | ${SITE_TITLE}`;
 const description = '了解更多关于我的信息';
+
+// 获取 about.mdx 内容
+const aboutEntries = await getCollection('about');
+const aboutDoc = aboutEntries.find(entry => entry.id === 'about.mdx' || entry.id === 'about.md') || aboutEntries[0];
+const aboutContent = aboutDoc?.body || '';
+
+// 解析时间线数据
+function parseTimeline(content: string) {
+  const lines = content.split('\n').filter(line => line.trim());
+  const timeline: { version: string; content: string }[] = [];
+  let currentItem: { version: string; content: string } | null = null;
+  
+  for (const line of lines) {
+    const versionMatch = line.match(/^-\s*(V\d+\s+\d{4})/);
+    if (versionMatch) {
+      if (currentItem) {
+        timeline.push(currentItem);
+      }
+      currentItem = {
+        version: versionMatch[1],
+        content: ''
+      };
+    } else if (currentItem && line.trim()) {
+      currentItem.content += (currentItem.content ? ' ' : '') + line.trim();
+    }
+  }
+  if (currentItem) {
+    timeline.push(currentItem);
+  }
+  return timeline;
+}
+
+const timelineData = parseTimeline(aboutContent);
 
 // 关于页面数据配置
 const aboutData = {
@@ -20,17 +54,17 @@ const aboutData = {
   authorInfo: {
     title: '关于',
     image: 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif',
-    leftTags: ['游戏宅', '全栈开发'],
-    rightTags: ['二次元', '开源爱好者']
+    leftTags: ['博客写作者', '资源分享者', '前端入门者'],
+    rightTags: ['小说爱好者', '开源爱好者', 'CTRL CV']
   },
   
   // 内容信息
   contentInfo: {
     sup: '你好，很高兴认识你',
-    name: '云曦',
-    title: '是一名 计算机爱好者、博主',
+    name: '异飨客',
+    title: '是一名 博客写作者、资源分享者、前端入门者',
     tip: 'Slogan',
-    slogan: '在',
+    slogan: '希望每天进步！',
     mask: ['不断探索中', '热爱生活', '追求极致', '创造价值']
   },
   
@@ -56,8 +90,8 @@ const aboutData = {
     subtitle: '无限进步',
     image: 'https://bu.dusays.com/2026/02/27/69a14e1fe4fef.webp',
     items: [
-      { school: '某某大学', major: '计算机科学与技术', color: '#3b82f6' },
-      { school: '某某高中', major: '理科', color: '#10b981' }
+      { school: '南京工业职业技术大学', major: '自动化技术与应用', color: '#3b82f6' },
+      { school: '王淦昌高级中学', major: '理科', color: '#10b981' }
     ]
   },
   
@@ -85,9 +119,9 @@ const aboutData = {
   expertise: {
     title: '专长',
     prefix: '专注于',
-    specialist: 'Web开发',
-    content: '热爱',
-    level: '开源贡献'
+    specialist: '博客写作',
+    content: '前端',
+    level: '小玩具'
   },
   
   // 游戏
@@ -95,23 +129,23 @@ const aboutData = {
     {
       type: 'game',
       title: '游戏爱好',
-      subtitle: '原神',
-      img: 'https://cdn.jsdelivr.net/gh/yxksw/blog-img@main/game-genshin.jpg',
-      tips_left: 'UID: 123456789'
+      subtitle: '饥荒',
+      img: 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/jh.avif',
+      tips_left: '人物: 大力士'
     },
     {
       type: 'game',
       title: '游戏爱好',
-      subtitle: '崩坏：星穹铁道',
-      img: 'https://cdn.jsdelivr.net/gh/yxksw/blog-img@main/game-starrail.jpg',
-      tips_left: 'UID: 100122444'
+      subtitle: '泰拉瑞亚',
+      img: 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/taila.avif',
+      tips_left: '职业：战士'
     },
     {
       type: 'game',
       title: '游戏爱好',
-      subtitle: '第五人格',
-      img: 'https://cdn.jsdelivr.net/gh/yxksw/blog-img@main/game-identity5.jpg',
-      tips_left: 'ID: 442106279'
+      subtitle: '我的世界',
+      img: 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/mc.avif',
+      tips_left: 'ID: yxksw'
     }
   ],
   
@@ -120,54 +154,55 @@ const aboutData = {
     {
       type: 'like-technology',
       title: '技术',
-      subtitle: 'Technology',
-      bg: 'https://cdn.jsdelivr.net/gh/yxksw/blog-img@main/tech.jpg',
-      subtips: '探索新技术',
+      subtitle: '博客内容',
+      bg: 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/tech.avif',
+      subtips: '技术分享、资源分享、日常分享',
       button: true,
-      button_link: '/posts',
+      button_link: '/blog/',
       button_text: '查看文章'
     },
     {
       type: 'like-music',
       title: '音乐偏好',
-      subtitle: 'JUSF周存、HOYO-MIX',
-      bg: 'https://cdn.jsdelivr.net/gh/yxksw/blog-img@main/music.jpg',
-      subtips: '跟 ✧星港✩Star☆ 一起欣赏更多音乐',
+      subtitle: '古风、国服等等',
+      bg: 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/%E3%80%90%E5%93%B2%E9%A3%8E%E5%A3%81%E7%BA%B8%E3%80%91ins%E9%A3%8E-%E5%92%96%E5%95%A1%E5%BA%97.avif',
+      subtips: '可以在这里看到我的歌单',
       button: true,
-      button_link: 'https://music.163.com/',
+      button_link: '/music/',
       button_text: '音乐站'
     }
   ],
   
   // 统计
   tj: {
-    img: 'https://cdn.jsdelivr.net/gh/yxksw/blog-img@main/stat.jpg',
+    img: 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/umami.avif',
     desc: '网站统计数据',
     button: true,
-    button_link: '/stats',
+    button_link: 'https://umami.mcyzsx.top/share/jQxmGr3J06FWKUmt',
     button_text: '查看详情',
-    provider: 'custom',
-    url: '/api/stats'
+    provider: 'Umami',
+    url: 'https://um-blog.261770.xyz/'
   },
   
   // 个人信息
   oneself: {
-    birthYear: '2000',
-    university: '某某大学',
-    major: '计算机',
-    occupation: '开发者',
-    location: '中国',
+    birthYear: '2005',
+    university: '南京工业职业技术大学',
+    major: '自动化技术与应用',
+    occupation: '博客写作者',
+    location: '江苏',
     map: {
       light: 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/map-light.avif',
       dark: 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/map-dark.avif'
     }
   },
   
-  // 建站原因
+  // 建站原因（使用 about.mdx 的时间线数据）
   cause: {
     tip: '为什么建站',
     title: '分享与记录',
-    content: '<p>这个博客是我分享技术、记录生活的地方。在这里，我可以自由地表达自己的想法，与志同道合的朋友交流。</p>'
+    content: '<p>这个博客是我分享技术、记录生活的地方。在这里，我可以自由地表达自己的想法，与志同道合的朋友交流。</p>',
+    timeline: timelineData
   },
   
   // 十年计划
@@ -175,29 +210,26 @@ const aboutData = {
     tips: '十年计划',
     title: '十年之约',
     text: '用十年时间，成为一个优秀的开发者，创造有价值的产品。',
-    start: '2024-01-01',
-    end: '2034-01-01'
+    start: '2025-01-01',
+    end: '2035-01-01'
   },
   
   // 打赏
   award: {
     enable: true,
-    title: '打赏',
-    description: '如果觉得我的文章对你有帮助，欢迎打赏支持！',
-    tips: '共有 {sum} 元打赏',
+    title: '感谢支持',
+    description: '您的支持是我创作的动力',
+    tips: '感谢所有支持我的朋友',
     limit: 6,
-    more: '/rewards',
+    more: '/sponsors',
     list: [
-      { name: '微信', qcode: 'https://cdn.jsdelivr.net/gh/yxksw/blog-img@main/wechat-pay.png', color: '#22c55e' },
-      { name: '支付宝', qcode: 'https://cdn.jsdelivr.net/gh/yxksw/blog-img@main/alipay.png', color: '#3b82f6' }
+      { name: '微信', qcode: 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/weixin.avif', color: '#22c55e' },
+      { name: '支付宝', qcode: 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/zhifubao.avif', color: '#3b82f6' }
     ]
   },
   
-  // 打赏列表
-  rewardList: [
-    { name: '张三', money: 10, color: '#f87171', icon: 'fa-heart', time: Date.now() },
-    { name: '李四', money: 20, color: '#60a5fa', icon: 'fa-star', time: Date.now() - 86400000 }
-  ]
+  // 赞助数据远程链接
+  sponsorsUrl: 'https://cdn.jsdmirror.com/gh/yxksw/Friends@main/data/sponsors.json',
 };
 ---
 
@@ -233,7 +265,15 @@ const aboutData = {
         <div class="create-site-post author-content-item single">
           <div class="author-content-item-tips">{aboutData.cause.tip}</div>
           <span class="author-content-item-title">{aboutData.cause.title}</span>
-          <div set:html={aboutData.cause.content} />
+          <div class="lishi">博客发展历程</div>
+          <ul class="timeline">
+            {aboutData.cause.timeline.map((item) => (
+              <li>
+                <div class="timeline-version">{item.version}</div>
+                <div class="timeline-content">{item.content}</div>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     )}
@@ -242,7 +282,7 @@ const aboutData = {
     <TenYear data={aboutData.tenyear} />
     
     <!-- 打赏 -->
-    <Award data={aboutData.award} rewardList={aboutData.rewardList} />
+    <Award data={aboutData.award} sponsorsUrl={aboutData.sponsorsUrl} />
   </div>
 </MainLayout>
 
@@ -338,6 +378,64 @@ const aboutData = {
     opacity: 0.9;
   }
 
+  /* 时间线样式 */
+  .lishi {
+    font-size: 1.25rem;
+    color: var(--efu-secondtext, #6b7280);
+    margin: 1rem 0;
+  }
+
+  [data-theme="dark"] .lishi {
+    color: var(--efu-secondtext, #9ca3af);
+  }
+
+  .timeline {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .timeline li {
+    position: relative;
+    padding-left: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-left: 2px solid var(--efu-card-border, #e5e7eb);
+  }
+
+  [data-theme="dark"] .timeline li {
+    border-left-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .timeline li::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #3b82f6;
+  }
+
+  .timeline li:last-child {
+    border-left: 2px solid transparent;
+  }
+
+  .timeline-version {
+    font-weight: 700;
+    color: #3b82f6;
+    margin-bottom: 0.25rem;
+  }
+
+  .timeline-content {
+    color: var(--efu-fontcolor, #4b5563);
+    line-height: 1.6;
+  }
+
+  [data-theme="dark"] .timeline-content {
+    color: var(--efu-fontcolor, #9ca3af);
+  }
+
   /* 按钮样式 */
   .banner-button-group {
     display: flex;
@@ -365,18 +463,60 @@ const aboutData = {
 
   /* 响应式 */
   @media (max-width: 768px) {
+    #about-page {
+      padding: 0.5rem 0.75rem 2rem;
+      gap: 0.75rem;
+    }
+
     .author-content {
       flex-direction: column;
+      gap: 0.75rem;
     }
     
     .author-content-item {
       flex: 1 1 100% !important;
-      min-height: 160px;
-      padding: 1.5rem;
+      width: 100% !important;
+      min-height: 140px;
+      padding: 1.25rem;
+      border-radius: 16px;
     }
     
     .author-content-item-title {
-      font-size: 1.5rem;
+      font-size: 1.25rem;
+    }
+
+    .author-content-item-tips {
+      font-size: 0.7rem;
+    }
+
+    .card-content {
+      padding: 0;
+    }
+
+    .content-bottom {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .banner-button-group {
+      width: 100%;
+    }
+
+    .banner-button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .author-content-item {
+      padding: 1rem;
+      min-height: 120px;
+    }
+
+    .author-content-item-title {
+      font-size: 1.1rem;
     }
   }
 

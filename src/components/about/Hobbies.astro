@@ -215,6 +215,7 @@ const { games, likes } = Astro.props;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding-top: 0;
   }
 
   .banner-button-group {
@@ -252,7 +253,90 @@ const { games, likes } = Astro.props;
     }
 
     .author-content-item.like-music {
+      min-height: 320px;
+    }
+
+    .author-content.game-list {
+      flex-wrap: wrap;
+    }
+
+    .author-content-item.game {
+      min-width: 100%;
+      flex: 1 1 100%;
+    }
+
+    .author-content-item.like-technology .card-content,
+    .author-content-item.like-music .card-content {
+      justify-content: space-between;
+      padding: 1.5rem;
+    }
+
+    .author-content-item.like-technology .content-bottom,
+    .author-content-item.like-music .content-bottom {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-top: auto;
+      padding-top: 4.5rem;
+    }
+
+    .banner-button-group {
+      width: 100%;
+    }
+
+    .banner-button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .author-content-item.game {
+      min-height: 160px;
+      height: 160px;
+    }
+
+    .game-title {
+      font-size: 1.25rem;
+    }
+
+    .game-id {
+      font-size: 0.75rem;
+    }
+
+    .author-content-item.like-technology,
+    .author-content-item.like-music {
       min-height: 280px;
+    }
+
+    .author-content-item.like-technology .card-content,
+    .author-content-item.like-music .card-content {
+      padding: 1.25rem;
+      justify-content: space-between;
+    }
+
+    .author-content-item.like-technology .author-content-item-tips,
+    .author-content-item.like-music .author-content-item-tips {
+      font-size: 0.7rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .author-content-item.like-technology .author-content-item-title,
+    .author-content-item.like-music .author-content-item-title {
+      font-size: 1.5rem;
+      line-height: 1.2;
+    }
+
+    .author-content-item.like-technology .content-bottom,
+    .author-content-item.like-music .content-bottom {
+      margin-top: auto;
+      padding-top: 5rem;
+    }
+
+    .author-content-item.like-technology .tips,
+    .author-content-item.like-music .tips {
+      font-size: 0.8rem;
+      margin-bottom: 0.75rem;
     }
   }
 </style>
