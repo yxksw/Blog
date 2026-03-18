@@ -155,7 +155,17 @@ const description = '用于管理博客评论和统计数据的管理后台';
 		</div>
 	</div>
 
-	<script is:inline>
+	<script is:inline data-astro-rerun>
+		// Prevent re-declaration on view transitions
+		if (window.__adminDashboardInitialized) {
+			// Just re-run initialization
+			if (typeof window.__initAdminDashboard === 'function') {
+				window.__initAdminDashboard();
+			}
+			return;
+		}
+		window.__adminDashboardInitialized = true;
+
 		const API_BASE = 'https://api.261770.xyz';
 		const TOKEN_KEY = 'yxksw_blog_token';
 		
@@ -430,9 +440,14 @@ const description = '用于管理博客评论和统计数据的管理后台';
 				loadComments();
 			}
 		};
+		window.__initAdminDashboard = initAdminDashboard;
 
 		// Event listeners - support both normal load and Astro view transitions
-		document.addEventListener('DOMContentLoaded', initAdminDashboard);
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', initAdminDashboard);
+		} else {
+			initAdminDashboard();
+		}
 		
 		// Listen for Astro page load event (for view transitions)
 		document.addEventListener('astro:page-load', initAdminDashboard);

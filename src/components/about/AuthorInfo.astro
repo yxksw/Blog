@@ -1,0 +1,172 @@
+---
+interface Props {
+  data: {
+    image: string;
+    leftTags: string[];
+    rightTags: string[];
+  };
+  title: string;
+}
+
+const { data, title } = Astro.props;
+---
+
+<div class="author-info">
+  <div class="author-tag-left">
+    {data.leftTags.map((tag) => (
+      <span class="author-tag">{tag}</span>
+    ))}
+  </div>
+  <div class="author-img">
+    <img src={data.image} alt="avatar" />
+  </div>
+  <div class="author-tag-right">
+    {data.rightTags.map((tag) => (
+      <span class="author-tag">{tag}</span>
+    ))}
+  </div>
+</div>
+<h1 class="author-title">{title}</h1>
+
+<style is:global>
+  #about-page .author-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0 16px 0;
+  }
+
+  #about-page .author-tag-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-right: 20px;
+  }
+
+  #about-page .author-tag-left .author-tag:first-child,
+  #about-page .author-tag-left .author-tag:last-child {
+    margin-right: -16px;
+  }
+
+  #about-page .author-tag-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-left: 20px;
+  }
+
+  #about-page .author-tag-right .author-tag:first-child,
+  #about-page .author-tag-right .author-tag:last-child {
+    margin-left: -16px;
+  }
+
+  #about-page .author-tag {
+    transform: translate(0, -4px);
+    padding: 4px 12px;
+    background: var(--efu-card-bg, rgba(255, 255, 255, 0.9));
+    border: 1px solid var(--efu-card-border, #e3e8f7);
+    border-radius: 40px;
+    margin-top: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: var(--efu-shadow-lightblack, 0 5px 12px -5px rgba(0, 0, 0, 0.1));
+    animation: floating 6s ease-in-out infinite;
+    color: var(--efu-fontcolor, #363636);
+    white-space: nowrap;
+  }
+
+  [data-theme="dark"] #about-page .author-tag {
+    background: var(--efu-card-bg, rgba(27, 28, 32, 0.9));
+    border-color: var(--efu-card-border, #3d3d3f);
+    color: var(--efu-fontcolor, #f7f7fa);
+  }
+
+  #about-page .author-tag:nth-child(1) { animation-delay: 0s; }
+  #about-page .author-tag:nth-child(2) { animation-delay: 0.6s; }
+  #about-page .author-tag:nth-child(3) { animation-delay: 1.2s; }
+  #about-page .author-tag:nth-child(4) { animation-delay: 1.8s; }
+
+  #about-page .author-img {
+    margin: 0 30px;
+    border-radius: 50%;
+    width: 180px;
+    height: 180px;
+    position: relative;
+    background: var(--efu-secondbg, #f7f7f9);
+    user-select: none;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+  }
+
+  #about-page .author-img:hover {
+    transform: scale(1.1);
+  }
+
+  #about-page .author-img::before {
+    content: '';
+    transition: all 1s ease;
+    width: 30px;
+    height: 30px;
+    background: var(--efu-green, #57bd6a);
+    position: absolute;
+    border-radius: 50%;
+    border: 5px solid var(--efu-background, #f7f9fe);
+    bottom: 5px;
+    right: 10px;
+    z-index: 2;
+  }
+
+  [data-theme="dark"] #about-page .author-img::before {
+    border-color: var(--efu-background, #18171d);
+  }
+
+  #about-page .author-img img {
+    border-radius: 200px;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  #about-page .author-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0.5rem 0;
+    line-height: 1;
+    color: var(--efu-fontcolor, #363636);
+    text-align: center;
+  }
+
+  [data-theme="dark"] #about-page .author-title {
+    color: var(--efu-fontcolor, #f7f7fa);
+  }
+
+  @media (max-width: 768px) {
+    #about-page .author-tag-left,
+    #about-page .author-tag-right {
+      display: none;
+    }
+
+    #about-page .author-img {
+      width: 120px;
+      height: 120px;
+      margin: 0;
+    }
+
+    #about-page .author-img::before {
+      bottom: -2px;
+      right: -2px;
+      width: 20px;
+      height: 20px;
+      border-width: 3px;
+    }
+
+    #about-page .author-title {
+      font-size: 1.5rem;
+    }
+  }
+
+  @keyframes floating {
+    0%, 100% { transform: translate(0, -4px); }
+    50% { transform: translate(0, 4px); }
+  }
+</style>

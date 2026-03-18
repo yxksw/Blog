@@ -1,0 +1,352 @@
+---
+interface SkillTag {
+  title: string;
+  color: string;
+  img?: string;
+  icon?: string;
+  icon_color?: string;
+}
+
+interface CareerItem {
+  school: string;
+  major: string;
+  color: string;
+}
+
+interface Props {
+  skills?: {
+    title: string;
+    subtitle: string;
+    tags: SkillTag[];
+  };
+  careers?: {
+    title: string;
+    subtitle: string;
+    image: string;
+    items: CareerItem[];
+  };
+}
+
+const { skills, careers } = Astro.props;
+
+// Generate pairs exactly like Pug template:
+// each i in [0,1,2,3,4,5,6,7]
+//   each tag, index in skills.tags
+//     - pair.push(tag)
+//     if pair.length === 2
+//       .tags-group-icon-pair
+const allPairs: SkillTag[][] = [];
+if (skills?.tags) {
+  for (let i = 0; i < 8; i++) {
+    let pair: SkillTag[] = [];
+    for (const tag of skills.tags) {
+      pair.push(tag);
+      if (pair.length === 2) {
+        allPairs.push([...pair]);
+        pair = [];
+      }
+    }
+  }
+}
+---
+
+{(skills || careers) && (
+  <div class="author-content">
+    {skills && (
+      <div class="author-content-item skills">
+        <div class="card-content">
+          <div class="author-content-item-tips">{skills.title}</div>
+          <span class="author-content-item-title">{skills.subtitle}</span>
+          <div class="skills-style-group">
+            <div class="tags-group-all">
+              <div class="tags-group-wrapper">
+                {allPairs.map((pair) => (
+                  <div class="tags-group-icon-pair">
+                    {pair.map((item) => (
+                      <div class="tags-group-icon" style={`background: ${item.color}`}>
+                        {item.img ? (
+                          <img src={item.img} title={item.title} alt={item.title} />
+                        ) : item.icon ? (
+                          <i class={item.icon} title={item.title} style={item.icon_color ? `color: ${item.icon_color}` : ''} />
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div class="skills-list">
+              {skills.tags.map((tag, index) => (
+                <>
+                  {index % 3 === 0 && index !== 0 && <div class="skill-row-break" />}
+                  <div class="skill-info">
+                    <div class="skill-icon" style={`background: ${tag.color}`}>
+                      {tag.img ? (
+                        <img src={tag.img} title={tag.title} alt={tag.title} />
+                      ) : tag.icon ? (
+                        <i class={tag.icon} title={tag.title} style={tag.icon_color ? `color: ${tag.icon_color}` : ''} />
+                      ) : null}
+                    </div>
+                    <div class="skill-name">
+                      <span>{tag.title}</span>
+                    </div>
+                  </div>
+                </>
+              ))}
+              <div class="etc">...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    
+    {careers && (
+      <div class="author-content-item careers">
+        <div class="card-content">
+          <div class="author-content-item-tips">{careers.title}</div>
+          <span class="author-content-item-title">{careers.subtitle}</span>
+          <div class="careers-group">
+            {careers.items.map((item) => (
+              <div class="careers-item">
+                <div class="circle" style={`background: ${item.color}`} />
+                <div class="name">{item.school}, {item.major}</div>
+              </div>
+            ))}
+          </div>
+          <img class="author-content-img" src={careers.image} alt={careers.title} />
+        </div>
+      </div>
+    )}
+  </div>
+)}
+
+<style is:global>
+  #about-page .author-content-item.skills {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    flex-direction: column;
+    min-height: 280px;
+    flex: 1;
+  }
+
+  #about-page .tags-group-all {
+    display: flex;
+    transform: rotate(0);
+    transition: 0.3s;
+  }
+
+  #about-page .tags-group-wrapper {
+    margin-top: 20px;
+    display: flex;
+    flex-wrap: nowrap;
+    animation: rowleft-quarter 30s linear infinite;
+  }
+
+  @keyframes rowleft-quarter {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  #about-page .skills-style-group {
+    position: relative;
+  }
+
+  #about-page .skills-list {
+    display: flex;
+    opacity: 0;
+    transition: 0.3s;
+    position: absolute;
+    width: 100%;
+    top: 0;
+    left: 0;
+    flex-wrap: wrap;
+    flex-direction: row;
+    margin-top: 10px;
+    gap: 8px;
+  }
+
+  #about-page .skill-row-break {
+    width: 100%;
+    height: 0;
+  }
+
+  #about-page .author-content-item.skills:hover .skills-style-group .tags-group-all {
+    opacity: 0;
+  }
+
+  #about-page .author-content-item.skills:hover .skills-style-group .skills-list {
+    opacity: 1;
+  }
+
+  #about-page .tags-group-icon-pair {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-right: 16px;
+  }
+
+  #about-page .tags-group-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    transition: transform 0.3s ease;
+  }
+
+  #about-page .tags-group-icon:hover {
+    transform: scale(1.1);
+  }
+
+  #about-page .tags-group-icon img {
+    width: 32px;
+    height: 32px;
+  }
+
+  #about-page .tags-group-icon i {
+    font-size: 28px;
+  }
+
+  #about-page .skill-info {
+    display: flex;
+    align-items: center;
+    background: var(--efu-background, #f7f9fe);
+    border-radius: 40px;
+    padding: 4px 12px 4px 8px;
+    border: 1px solid var(--efu-card-border, #e3e8f7);
+    box-shadow: var(--efu-shadow-border, 0 8px 16px -4px #2c2d300c);
+    transition: all 0.3s ease;
+  }
+
+  [data-theme="dark"] #about-page .skill-info {
+    background: var(--efu-background, #18171d);
+    border-color: var(--efu-card-border, #3d3d3f);
+  }
+
+  #about-page .skill-info:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  #about-page .etc {
+    display: flex;
+    align-items: center;
+    padding: 4px 12px;
+    color: var(--efu-secondtext, rgba(60, 60, 67, 0.8));
+  }
+
+  #about-page .skill-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+    user-select: none;
+  }
+
+  #about-page .skill-icon img {
+    width: 18px;
+    height: 18px;
+  }
+
+  #about-page .skill-icon i {
+    font-size: 16px;
+  }
+
+  #about-page .skill-name {
+    font-weight: 700;
+    line-height: 1;
+    color: var(--efu-fontcolor, #363636);
+  }
+
+  [data-theme="dark"] #about-page .skill-name {
+    color: var(--efu-fontcolor, #f7f7fa);
+  }
+
+  /* Careers */
+  #about-page .author-content-item.careers {
+    min-height: 280px;
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #about-page .author-content-item.careers .card-content {
+    padding-bottom: 120px;
+  }
+
+  #about-page .author-content-img {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: auto;
+    max-height: 140px;
+    transition: transform 0.6s ease;
+    user-select: none;
+    object-fit: contain;
+    object-position: bottom center;
+  }
+
+  #about-page .author-content-item:hover .author-content-img {
+    transform: scale(1.05);
+  }
+
+  #about-page .careers-group {
+    margin-top: 12px;
+    position: relative;
+    z-index: 2;
+  }
+
+  #about-page .careers-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  #about-page .circle {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    border-radius: 16px;
+    flex-shrink: 0;
+  }
+
+  #about-page .name {
+    color: var(--efu-fontcolor, #363636);
+    font-size: 0.9rem;
+  }
+
+  [data-theme="dark"] #about-page .name {
+    color: var(--efu-fontcolor, #f7f7fa);
+  }
+
+  @media (max-width: 768px) {
+    #about-page .author-content-item.skills {
+      min-height: 220px;
+    }
+
+    #about-page .tags-group-icon {
+      width: 48px;
+      height: 48px;
+    }
+
+    #about-page .tags-group-icon img {
+      width: 28px;
+      height: 28px;
+    }
+
+    #about-page .author-content-item.careers {
+      min-height: 220px;
+    }
+  }
+</style>

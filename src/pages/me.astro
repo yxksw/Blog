@@ -1,0 +1,413 @@
+---
+import MainLayout from '../layouts/MainLayout.astro';
+import { SITE_TITLE } from '../consts';
+import AuthorInfo from '../components/about/AuthorInfo.astro';
+import ContentInfo from '../components/about/ContentInfo.astro';
+import SkillsInfo from '../components/about/SkillsInfo.astro';
+import Personalities from '../components/about/Personalities.astro';
+import Motto from '../components/about/Motto.astro';
+import Hobbies from '../components/about/Hobbies.astro';
+import Award from '../components/about/Award.astro';
+import Other from '../components/about/Other.astro';
+import TenYear from '../components/about/TenYear.astro';
+
+const title = `关于 | ${SITE_TITLE}`;
+const description = '了解更多关于我的信息';
+
+// 关于页面数据配置
+const aboutData = {
+  // 作者信息
+  authorInfo: {
+    title: '关于',
+    image: 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif',
+    leftTags: ['游戏宅', '全栈开发'],
+    rightTags: ['二次元', '开源爱好者']
+  },
+  
+  // 内容信息
+  contentInfo: {
+    sup: '你好，很高兴认识你',
+    name: '云曦',
+    title: '是一名 计算机爱好者、博主',
+    tip: 'Slogan',
+    slogan: '在',
+    mask: ['不断探索中', '热爱生活', '追求极致', '创造价值']
+  },
+  
+  // 技能信息
+  skills: {
+    title: '技能',
+    subtitle: '开启创造力',
+    tags: [
+      { title: 'JavaScript', color: '#f7df1e', img: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg' },
+      { title: 'TypeScript', color: '#3178c6', img: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg' },
+      { title: 'React', color: '#61dafb', img: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg' },
+      { title: 'Vue', color: '#4fc08d', img: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vuejs/vuejs-original.svg' },
+      { title: 'Node.js', color: '#339933', img: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg' },
+      { title: 'Python', color: '#3776ab', img: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg' },
+      { title: 'Docker', color: '#2496ed', img: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg' },
+      { title: 'Linux', color: '#fcc624', img: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linux/linux-original.svg' },
+    ]
+  },
+  
+  // 职业经历
+  careers: {
+    title: '生涯',
+    subtitle: '无限进步',
+    image: 'https://bu.dusays.com/2026/02/27/69a14e1fe4fef.webp',
+    items: [
+      { school: '某某大学', major: '计算机科学与技术', color: '#3b82f6' },
+      { school: '某某高中', major: '理科', color: '#10b981' }
+    ]
+  },
+  
+  // 性格
+  personalities: {
+    tips: '性格',
+    title: '提倡者',
+    type: 'INFJ-T',
+    color: '#1AED66',
+    image: 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/infj.avif',
+    myphoto: 'https://s2.loli.net/2024/11/10/mGboP27FOzaQHRp.webp',
+    linkText: '16personalities',
+    typeName: 'INFJ-T',
+    typeLink: 'https://www.16personalities.com/infj-personality'
+  },
+  
+  // 座右铭
+  motto: {
+    title: '座右铭',
+    prefix: '每一段旅行',
+    content: '都有重点'
+  },
+  
+  // 专长
+  expertise: {
+    title: '专长',
+    prefix: '专注于',
+    specialist: 'Web开发',
+    content: '热爱',
+    level: '开源贡献'
+  },
+  
+  // 游戏
+  games: [
+    {
+      type: 'game',
+      title: '游戏爱好',
+      subtitle: '原神',
+      img: 'https://cdn.jsdelivr.net/gh/yxksw/blog-img@main/game-genshin.jpg',
+      tips_left: 'UID: 123456789'
+    },
+    {
+      type: 'game',
+      title: '游戏爱好',
+      subtitle: '崩坏：星穹铁道',
+      img: 'https://cdn.jsdelivr.net/gh/yxksw/blog-img@main/game-starrail.jpg',
+      tips_left: 'UID: 100122444'
+    },
+    {
+      type: 'game',
+      title: '游戏爱好',
+      subtitle: '第五人格',
+      img: 'https://cdn.jsdelivr.net/gh/yxksw/blog-img@main/game-identity5.jpg',
+      tips_left: 'ID: 442106279'
+    }
+  ],
+  
+  // 爱好
+  likes: [
+    {
+      type: 'like-technology',
+      title: '技术',
+      subtitle: 'Technology',
+      bg: 'https://cdn.jsdelivr.net/gh/yxksw/blog-img@main/tech.jpg',
+      subtips: '探索新技术',
+      button: true,
+      button_link: '/posts',
+      button_text: '查看文章'
+    },
+    {
+      type: 'like-music',
+      title: '音乐偏好',
+      subtitle: 'JUSF周存、HOYO-MIX',
+      bg: 'https://cdn.jsdelivr.net/gh/yxksw/blog-img@main/music.jpg',
+      subtips: '跟 ✧星港✩Star☆ 一起欣赏更多音乐',
+      button: true,
+      button_link: 'https://music.163.com/',
+      button_text: '音乐站'
+    }
+  ],
+  
+  // 统计
+  tj: {
+    img: 'https://cdn.jsdelivr.net/gh/yxksw/blog-img@main/stat.jpg',
+    desc: '网站统计数据',
+    button: true,
+    button_link: '/stats',
+    button_text: '查看详情',
+    provider: 'custom',
+    url: '/api/stats'
+  },
+  
+  // 个人信息
+  oneself: {
+    birthYear: '2000',
+    university: '某某大学',
+    major: '计算机',
+    occupation: '开发者',
+    location: '中国',
+    map: {
+      light: 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/map-light.avif',
+      dark: 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/map-dark.avif'
+    }
+  },
+  
+  // 建站原因
+  cause: {
+    tip: '为什么建站',
+    title: '分享与记录',
+    content: '<p>这个博客是我分享技术、记录生活的地方。在这里，我可以自由地表达自己的想法，与志同道合的朋友交流。</p>'
+  },
+  
+  // 十年计划
+  tenyear: {
+    tips: '十年计划',
+    title: '十年之约',
+    text: '用十年时间，成为一个优秀的开发者，创造有价值的产品。',
+    start: '2024-01-01',
+    end: '2034-01-01'
+  },
+  
+  // 打赏
+  award: {
+    enable: true,
+    title: '打赏',
+    description: '如果觉得我的文章对你有帮助，欢迎打赏支持！',
+    tips: '共有 {sum} 元打赏',
+    limit: 6,
+    more: '/rewards',
+    list: [
+      { name: '微信', qcode: 'https://cdn.jsdelivr.net/gh/yxksw/blog-img@main/wechat-pay.png', color: '#22c55e' },
+      { name: '支付宝', qcode: 'https://cdn.jsdelivr.net/gh/yxksw/blog-img@main/alipay.png', color: '#3b82f6' }
+    ]
+  },
+  
+  // 打赏列表
+  rewardList: [
+    { name: '张三', money: 10, color: '#f87171', icon: 'fa-heart', time: Date.now() },
+    { name: '李四', money: 20, color: '#60a5fa', icon: 'fa-star', time: Date.now() - 86400000 }
+  ]
+};
+---
+
+<MainLayout title={title} description={description}>
+  <div id="about-page">
+    <!-- 作者信息 -->
+    <AuthorInfo data={aboutData.authorInfo} title={aboutData.authorInfo.title} />
+    
+    <!-- 内容信息 -->
+    <ContentInfo data={aboutData.contentInfo} />
+    
+    <!-- 技能和职业 -->
+    <SkillsInfo skills={aboutData.skills} careers={aboutData.careers} />
+    
+    <!-- 性格和个人照片 -->
+    <Personalities data={aboutData.personalities} />
+    
+    <!-- 座右铭和专长 -->
+    <Motto motto={aboutData.motto} expertise={aboutData.expertise} />
+    
+    <!-- 游戏 -->
+    <Hobbies games={aboutData.games} />
+    
+    <!-- 爱好 -->
+    <Hobbies likes={aboutData.likes} />
+    
+    <!-- 统计和个人信息 -->
+    <Other tj={aboutData.tj} oneself={aboutData.oneself} />
+    
+    <!-- 建站原因 -->
+    {aboutData.cause && (
+      <div class="author-content">
+        <div class="create-site-post author-content-item single">
+          <div class="author-content-item-tips">{aboutData.cause.tip}</div>
+          <span class="author-content-item-title">{aboutData.cause.title}</span>
+          <div set:html={aboutData.cause.content} />
+        </div>
+      </div>
+    )}
+    
+    <!-- 十年计划 -->
+    <TenYear data={aboutData.tenyear} />
+    
+    <!-- 打赏 -->
+    <Award data={aboutData.award} rewardList={aboutData.rewardList} />
+  </div>
+</MainLayout>
+
+<style is:global>
+  /* 基础样式 - 使用 AstraBay 的 CSS 变量 */
+  #about-page {
+    display: flex;
+    padding-top: 1rem;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem 1rem 4rem;
+  }
+
+  /* 通用内容块 */
+  .author-content {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: stretch;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .author-content-item {
+    flex: 1;
+    min-height: 200px;
+    border-radius: 24px;
+    background: var(--efu-card-bg, #fff);
+    border: 1px solid var(--efu-card-border, #e3e8f7);
+    box-shadow: var(--efu-shadow-border, 0 8px 16px -4px #2c2d300c);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    padding: 2rem;
+  }
+
+  [data-theme="dark"] .author-content-item {
+    background: var(--efu-card-bg, #1b1c20);
+    border-color: var(--efu-card-border, #3d3d3f);
+  }
+
+  .author-content-item:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--efu-shadow-border, 0 8px 16px -4px #2c2d300c), 0 12px 24px rgba(0, 0, 0, 0.1);
+  }
+
+  .author-content-item.single {
+    flex: 1 1 100%;
+  }
+
+  .author-content-item-tips {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    margin-bottom: 0.5rem;
+    color: var(--efu-secondtext, rgba(60, 60, 67, 0.8));
+  }
+
+  [data-theme="dark"] .author-content-item-tips {
+    color: var(--efu-secondtext, rgba(255, 255, 255, 0.7));
+  }
+
+  .author-content-item-title {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--efu-fontcolor, #363636);
+  }
+
+  [data-theme="dark"] .author-content-item-title {
+    color: var(--efu-fontcolor, #f7f7fa);
+  }
+
+  .card-content {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .content-bottom {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .tips {
+    font-size: 0.875rem;
+    opacity: 0.9;
+  }
+
+  /* 按钮样式 */
+  .banner-button-group {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .banner-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border-radius: 8px;
+    color: inherit;
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+  }
+
+  .banner-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateX(4px);
+  }
+
+  /* 响应式 */
+  @media (max-width: 768px) {
+    .author-content {
+      flex-direction: column;
+    }
+    
+    .author-content-item {
+      flex: 1 1 100% !important;
+      min-height: 160px;
+      padding: 1.5rem;
+    }
+    
+    .author-content-item-title {
+      font-size: 1.5rem;
+    }
+  }
+
+  /* 动画 */
+  @keyframes gradient {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  @keyframes floating {
+    0%, 100% { transform: translate(0, -4px); }
+    50% { transform: translate(0, 4px); }
+  }
+
+  @keyframes slide-in {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .author-content-item {
+    animation: slide-in 0.6s ease backwards;
+  }
+
+  .author-content-item:nth-child(1) { animation-delay: 0s; }
+  .author-content-item:nth-child(2) { animation-delay: 0.1s; }
+  .author-content-item:nth-child(3) { animation-delay: 0.2s; }
+  .author-content-item:nth-child(4) { animation-delay: 0.3s; }
+</style>

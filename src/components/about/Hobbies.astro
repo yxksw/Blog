@@ -1,0 +1,258 @@
+---
+interface GameItem {
+  type: string;
+  title: string;
+  subtitle: string;
+  img?: string;
+  box_shadow?: string;
+  icon_group?: string[];
+  tips_left?: string;
+  tips_right?: string;
+  bg?: string;
+  subtips?: string;
+  button?: boolean;
+  button_link?: string;
+  button_text?: string;
+}
+
+interface Props {
+  games?: GameItem[];
+  likes?: GameItem[];
+}
+
+const { games, likes } = Astro.props;
+---
+
+{games && games.length > 0 && (
+  <div class="author-content game-list">
+    {games.map((game, index) => (
+      <div 
+        class={`author-content-item game game-${index}`}
+        style={game.img ? `background: url(${game.img}) no-repeat top; background-size: cover;` : game.bg ? `background: url(${game.bg}) no-repeat center/cover;` : ''}
+      >
+        {game.box_shadow && (
+          <style>
+            .game-{index}::after {{
+              box-shadow: {game.box_shadow} !important;
+            }}
+          </style>
+        )}
+        <div class="card-content">
+          <div class="game-header">
+            <div class="author-content-item-tips">{game.title}</div>
+            <span class="game-title">{game.subtitle}</span>
+          </div>
+          <div class="content-bottom">
+            {game.icon_group ? (
+              <div class="icon-group">
+                {game.icon_group.map((icon) => (
+                  <i style={`background-image: url(${icon})`} />
+                ))}
+              </div>
+            ) : game.tips_left ? (
+              <div class="game-id">{game.tips_left}</div>
+            ) : null}
+            {game.tips_right && <div class="tips">{game.tips_right}</div>}
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+)}
+
+{likes && likes.length > 0 && (
+  <div class="author-content">
+    {likes.map((like) => (
+      <div 
+        class={`author-content-item ${like.type}`}
+        style={`background: url(${like.bg}) no-repeat center/cover;`}
+      >
+        <div class="card-content">
+          <div class="author-content-item-tips">{like.title}</div>
+          <span class="author-content-item-title">{like.subtitle}</span>
+          <div class="content-bottom">
+            {like.subtips && <div class="tips">{like.subtips}</div>}
+            {like.button && (
+              <div class="banner-button-group">
+                <a class="banner-button" href={like.button_link}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 16 16 12 12 8"/>
+                    <line x1="8" y1="12" x2="16" y2="12"/>
+                  </svg>
+                  <span class="banner-button-text">{like.button_text}</span>
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+)}
+
+<style>
+  .author-content.game-list {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+  }
+
+  .author-content-item.game {
+    min-height: 200px;
+    height: 200px;
+    overflow: hidden;
+    color: #fff;
+    position: relative;
+    flex: 1;
+    border-radius: 12px;
+  }
+
+  .author-content-item.game::after {
+    position: absolute;
+    content: '';
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.4) 100%);
+  }
+
+  .author-content-item.game .card-content {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+  }
+
+  .game-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .author-content-item.game .author-content-item-tips {
+    font-size: 0.75rem;
+    opacity: 0.9;
+    color: #fff;
+    margin-bottom: 0;
+  }
+
+  .game-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+
+  .game-id {
+    font-size: 0.875rem;
+    color: rgba(255,255,255,0.9);
+    font-weight: 500;
+  }
+
+  .icon-group {
+    display: flex;
+    gap: 8px;
+  }
+
+  .icon-group i {
+    width: 32px;
+    height: 32px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+
+  .author-content-item.like-technology,
+  .author-content-item.like-music {
+    background-size: cover;
+    min-height: 230px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    flex: 1;
+  }
+
+  .author-content-item.like-technology::after,
+  .author-content-item.like-music::after {
+    position: absolute;
+    content: '';
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    box-shadow: 0 -69px 203px 11px #050b20 inset;
+  }
+
+  .author-content-item.like-music {
+    min-height: 400px;
+  }
+
+  .author-content-item.like-music::after {
+    box-shadow: 0 -69px 203px 11px #0e0e0e inset;
+  }
+
+  .author-content-item.like-technology .card-content,
+  .author-content-item.like-music .card-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 1.5rem;
+  }
+
+  .author-content-item.like-technology .content-bottom,
+  .author-content-item.like-music .content-bottom {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .banner-button-group {
+    display: flex;
+  }
+
+  .banner-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+  }
+
+  .banner-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .banner-button svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  @media (max-width: 768px) {
+    .author-content-item.game,
+    .author-content-item.like-technology,
+    .author-content-item.like-music {
+      min-height: 200px;
+    }
+
+    .author-content-item.like-music {
+      min-height: 280px;
+    }
+  }
+</style>

@@ -1,0 +1,280 @@
+---
+interface Props {
+  tj?: {
+    img: string;
+    desc: string;
+    button?: boolean;
+    button_link?: string;
+    button_text?: string;
+    provider?: string;
+    url?: string;
+  };
+  oneself?: {
+    birthYear: string;
+    university: string;
+    major: string;
+    occupation: string;
+    location: string;
+    map: {
+      light: string;
+      dark: string;
+    };
+  };
+}
+
+const { tj, oneself } = Astro.props;
+---
+
+{(tj || oneself) && (
+  <div class="author-content">
+    {tj && (
+      <div class="author-content-item about-statistic" style={`background: url(${tj.img}) no-repeat center/cover;`}>
+        <div class="card-content">
+          <div class="author-content-item-tips">网站统计</div>
+          <span class="author-content-item-title">访问数据</span>
+          <div id="statistic">
+            <div><span>今日人数</span><span>--</span></div>
+            <div><span>今日访问</span><span>--</span></div>
+            <div><span>昨日人数</span><span>--</span></div>
+            <div><span>昨日访问</span><span>--</span></div>
+          </div>
+          <div class="post-tips">{tj.desc}</div>
+          {tj.button && (
+            <div class="banner-button-group">
+              <a class="banner-button" href={tj.button_link}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 16 16 12 12 8"/>
+                  <line x1="8" y1="12" x2="16" y2="12"/>
+                </svg>
+                <span class="banner-button-text">{tj.button_text}</span>
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
+    {oneself && (
+      <div class="author-content-item-group column mapAndInfo">
+        <div class="author-content-item map single">
+          <img class="map-light" src={oneself.map.light} alt="map" loading="lazy" />
+          <img class="map-dark" src={oneself.map.dark} alt="map dark" loading="lazy" />
+          <span class="map-title">我现在在 <b>{oneself.location}</b></span>
+        </div>
+        <div class="author-content-item selfInfo single">
+          <div>
+            <span class="selfInfo-title">生于</span>
+            <span class="selfInfo-content" style="color: #43a6c6;">{oneself.birthYear}</span>
+          </div>
+          <div>
+            <span class="selfInfo-title">{oneself.university}</span>
+            <span class="selfInfo-content" style="color: #c69043;">{oneself.major}</span>
+          </div>
+          <div>
+            <span class="selfInfo-title">职业</span>
+            <span class="selfInfo-content" style="color: #b04fe6;">{oneself.occupation}</span>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+)}
+
+<style>
+  .about-statistic {
+    min-height: 380px;
+    background-size: cover;
+    color: #fff;
+    overflow: hidden;
+    position: relative;
+    flex: 1;
+  }
+
+  .about-statistic::after {
+    box-shadow: 0 -159px 173px 71px #0f1114 inset;
+    position: absolute;
+    content: '';
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+  }
+
+  .about-statistic .card-content {
+    position: relative;
+    z-index: 2;
+  }
+
+  #statistic {
+    font-size: 16px;
+    border-radius: 15px;
+    width: 100%;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 4px;
+    margin-bottom: 2rem;
+  }
+
+  #statistic div {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+    width: 50%;
+    margin-bottom: 0.5rem;
+  }
+
+  #statistic div span:first-child {
+    opacity: 0.8;
+    font-size: 0.6rem;
+  }
+
+  #statistic div span:last-child {
+    font-weight: 700;
+    font-size: 34px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .post-tips {
+    font-size: 0.875rem;
+    opacity: 0.9;
+    margin-bottom: 1rem;
+  }
+
+  /* Map and Info */
+  .author-content-item-group.column {
+    display: flex;
+    flex-direction: column;
+    width: calc(50% - 0.25rem);
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex: 1;
+  }
+
+  .author-content-item.map {
+    min-height: 160px;
+    max-height: 400px;
+    position: relative;
+    overflow: hidden;
+    height: 60%;
+    transition: 1s ease-in-out;
+    flex: 1;
+  }
+
+  .author-content-item.map img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: 1s ease-in-out;
+  }
+
+  .author-content-item.map .map-dark {
+    display: none;
+  }
+
+  :global([data-theme="dark"]) .author-content-item.map .map-light {
+    display: none;
+  }
+
+  :global([data-theme="dark"]) .author-content-item.map .map-dark {
+    display: block;
+  }
+
+  .map-title {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 0.5rem 2rem;
+    backdrop-filter: saturate(180%) blur(20px);
+    transition: 1s ease-in-out;
+    font-size: 20px;
+    color: #fff;
+    transform: translateZ(0);
+  }
+
+  .map-title b {
+    color: #fff;
+  }
+
+  .author-content-item.map:hover {
+    background-size: 120%;
+    transition: 4s ease-in-out;
+    background-position-x: 0;
+    background-position-y: 36%;
+  }
+
+  .author-content-item.map:hover .map-title {
+    bottom: -100%;
+  }
+
+  .author-content-item.selfInfo {
+    display: flex;
+    min-height: 100px;
+    max-height: 400px;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    height: 40%;
+    flex: 1;
+  }
+
+  .author-content-item.selfInfo div {
+    display: flex;
+    flex-direction: column;
+    margin: 0.5rem 2rem 0.5rem 0;
+  }
+
+  .selfInfo-title {
+    opacity: 0.8;
+    font-size: 0.6rem;
+    line-height: 1;
+    margin-bottom: 8px;
+    color: var(--about-text-secondary, #666);
+  }
+
+  [data-theme="dark"] .selfInfo-title {
+    color: var(--about-text-secondary-dark, #aaa);
+  }
+
+  .selfInfo-content {
+    font-weight: 700;
+    font-size: 34px;
+    line-height: 1;
+  }
+
+  @media (max-width: 768px) {
+    .author-content-item-group.column {
+      width: 100%;
+    }
+
+    .author-content-item.map {
+      margin-bottom: 0;
+    }
+
+    .map-title {
+      padding: 1rem;
+      font-size: 16px;
+    }
+
+    #statistic div span:last-child {
+      font-size: 24px;
+    }
+
+    .selfInfo-content {
+      font-size: 24px;
+    }
+
+    .author-content-item.selfInfo {
+      height: auto;
+    }
+  }
+</style>

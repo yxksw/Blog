@@ -1,0 +1,142 @@
+---
+interface Props {
+  data: {
+    tips: string;
+    title: string;
+    type: string;
+    color: string;
+    image: string;
+    myphoto: string;
+    linkText: string;
+    typeName: string;
+    typeLink: string;
+  };
+}
+
+const { data } = Astro.props;
+---
+
+<div class="author-content">
+  <div class="author-content-item personalities">
+    <div class="author-content-item-tips">{data.tips}</div>
+    <span class="author-content-item-title">{data.title}</span>
+    <div class="title2" style={`color: ${data.color}`}>{data.type}</div>
+    <div class="image">
+      <img src={data.image} alt="personality" loading="lazy" />
+    </div>
+    <div class="post-tips">
+      在
+      <a href="https://www.16personalities.com/" target="_blank" rel="noopener noreferrer">{data.linkText}</a>
+      了解更多关于
+      <a href={data.typeLink} target="_blank" rel="noopener noreferrer">{data.typeName}</a>
+    </div>
+  </div>
+  <div class="author-content-item myphoto" style={`background-image: url(${data.myphoto});`}>
+  </div>
+</div>
+
+<style is:global>
+  #about-page .author-content-item.personalities {
+    overflow: hidden;
+    position: relative;
+    flex: 6;
+    min-height: 280px;
+  }
+
+  #about-page .author-content-item.personalities .title2 {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-top: 0.5rem;
+  }
+
+  #about-page .author-content-item.personalities .image {
+    position: absolute;
+    right: -10px;
+    bottom: 40px;
+    transition: transform 2s cubic-bezier(0.13, 0.45, 0.21, 1.02);
+    user-select: none;
+    z-index: 1;
+  }
+
+  #about-page .author-content-item.personalities .image img {
+    max-width: 240px;
+    height: auto;
+  }
+
+  #about-page .author-content-item.personalities:hover .image {
+    transform: rotate(-10deg);
+  }
+
+  #about-page .author-content-item.personalities .post-tips {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 1.5rem;
+    font-size: 0.875rem;
+    color: var(--efu-secondtext, rgba(60, 60, 67, 0.8));
+    max-width: 60%;
+    line-height: 1.5;
+    z-index: 2;
+  }
+
+  [data-theme="dark"] #about-page .author-content-item.personalities .post-tips {
+    color: var(--efu-secondtext, rgba(255, 255, 255, 0.7));
+  }
+
+  #about-page .author-content-item.personalities .post-tips a {
+    color: var(--efu-fontcolor, #363636);
+    text-decoration: none;
+    transition: color 0.3s ease;
+    font-weight: 600;
+  }
+
+  [data-theme="dark"] #about-page .author-content-item.personalities .post-tips a {
+    color: var(--efu-fontcolor, #f7f7fa);
+  }
+
+  #about-page .author-content-item.personalities .post-tips a:hover {
+    color: var(--efu-main, #3b82f6);
+    text-decoration: underline;
+  }
+
+  #about-page .author-content-item.myphoto {
+    flex: 4;
+    min-height: 280px;
+    position: relative;
+    overflow: hidden;
+    padding: 0 !important;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: transform 0.6s;
+  }
+
+  #about-page .author-content-item.myphoto:hover {
+    transform: scale(1.05);
+    transition: transform 2s;
+  }
+
+  @media (max-width: 768px) {
+    #about-page .author-content-item.personalities {
+      min-height: 240px;
+    }
+
+    #about-page .author-content-item.personalities .title2 {
+      font-size: 28px;
+    }
+
+    #about-page .author-content-item.personalities .image {
+      right: -20px;
+      bottom: 20px;
+    }
+
+    #about-page .author-content-item.personalities .image img {
+      max-width: 180px;
+    }
+
+    #about-page .author-content-item.personalities .post-tips {
+      max-width: 80%;
+      font-size: 0.8rem;
+    }
+  }
+</style>

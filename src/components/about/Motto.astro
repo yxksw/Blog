@@ -1,0 +1,126 @@
+---
+interface Props {
+  motto?: {
+    title: string;
+    prefix: string;
+    content: string;
+  };
+  expertise?: {
+    title: string;
+    prefix: string;
+    specialist: string;
+    content: string;
+    level: string;
+  };
+}
+
+const { motto, expertise } = Astro.props;
+---
+
+{(motto || expertise) && (
+  <div class="author-content">
+    {motto && (
+      <div class="author-content-item maxim">
+        <div class="author-content-item-tips">{motto.title}</div>
+        <span class="maxim-title">
+          <span>{motto.prefix}</span>
+          <span>{motto.content}</span>
+        </span>
+      </div>
+    )}
+    {expertise && (
+      <div class="author-content-item buff">
+        <div class="card-content">
+          <div class="author-content-item-tips">{expertise.title}</div>
+          <span class="buff-title">
+            <span>
+              {expertise.prefix}
+              <span class="inline-word">{expertise.specialist}</span>
+            </span>
+            <span>
+              {expertise.content}
+              <span class="inline-word">{expertise.level}</span>
+            </span>
+          </span>
+        </div>
+      </div>
+    )}
+  </div>
+)}
+
+<style>
+  .author-content-item.maxim {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.1;
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: center;
+    flex: 1;
+    min-height: 200px;
+  }
+
+  .maxim-title {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .maxim-title span:first-child {
+    opacity: 0.6;
+    margin-bottom: 8px;
+    font-size: 0.6em;
+  }
+
+  .author-content-item.buff {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.1;
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: center;
+    background: linear-gradient(120deg, #ff27e8 0, #ff8000 100%);
+    color: #fff;
+    background-size: 200%;
+    animation: gradient 15s ease infinite;
+    min-height: 200px;
+    height: fit-content;
+    flex: 1;
+  }
+
+  .author-content-item.buff .card-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .buff-title {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .buff-title span:first-child {
+    opacity: 0.6;
+    margin-bottom: 8px;
+    font-size: 0.6em;
+  }
+
+  .inline-word {
+    word-break: keep-all;
+    white-space: nowrap;
+  }
+
+  @keyframes gradient {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  @media (max-width: 768px) {
+    .author-content-item.maxim,
+    .author-content-item.buff {
+      font-size: 28px;
+      min-height: 160px;
+    }
+  }
+</style>

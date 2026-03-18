@@ -1,0 +1,175 @@
+---
+interface Props {
+  data?: {
+    tips: string;
+    title: string;
+    text: string;
+    start: string;
+    end: string;
+  };
+}
+
+const { data } = Astro.props;
+---
+
+{data && (
+  <div class="author-content" id="tenyear">
+    <div class="create-site-post author-content-item single">
+      <div class="author-content-item-tips">{data.tips}</div>
+      <div class="author-content-item-title">{data.title}</div>
+      <p>{data.text}</p>
+      <div class="tenyear-timeline">
+        <div class="progress" style={`--progress-percentage: 0%;`} />
+        <div class="past-time" style={`--past-time-percentage: 0;`} />
+        <div class="percentage-label">0%</div>
+      </div>
+      <div class="time-labels">
+        <div class="start-time" data-start={data.start}>
+          {new Date(data.start).toLocaleDateString('zh-CN')}
+        </div>
+        <div class="end-time" data-end={data.end}>
+          {new Date(data.end).toLocaleDateString('zh-CN')}
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+<script is:inline>
+  (function() {
+    function updateTenYearProgress() {
+      const tenyearEl = document.getElementById('tenyear');
+      if (!tenyearEl) return;
+
+      const startTimeEl = tenyearEl.querySelector('.start-time');
+      const endTimeEl = tenyearEl.querySelector('.end-time');
+      const progressEl = tenyearEl.querySelector('.progress');
+      const pastTimeEl = tenyearEl.querySelector('.past-time');
+      const percentageLabelEl = tenyearEl.querySelector('.percentage-label');
+
+      if (!startTimeEl || !endTimeEl || !progressEl || !pastTimeEl || !percentageLabelEl) return;
+
+      const startTime = new Date(startTimeEl.dataset.start).getTime();
+      const endTime = new Date(endTimeEl.dataset.end).getTime();
+      const currentTime = new Date().getTime();
+
+      const progress = ((currentTime - startTime) / (endTime - startTime)) * 100;
+      const progressPercentage = Math.min(Math.max(progress, 0), 100);
+
+      progressEl.style.setProperty('--progress-percentage', progressPercentage + '%');
+      pastTimeEl.style.setProperty('--past-time-percentage', progressPercentage);
+
+      if (progressPercentage > 5) {
+        percentageLabelEl.textContent = progressPercentage.toFixed(1) + '%';
+        percentageLabelEl.style.left = `calc(${progressPercentage}% - 35px)`;
+      } else {
+        percentageLabelEl.textContent = progressPercentage.toFixed(1) + '%';
+        percentageLabelEl.style.left = '0';
+      }
+
+      percentageLabelEl.style.visibility = 'visible';
+    }
+
+    // Update on load
+    updateTenYearProgress();
+
+    // Update periodically
+    setInterval(updateTenYearProgress, 60000);
+
+    // Update on page load event
+    document.addEventListener('astro:page-load', updateTenYearProgress);
+  })();
+</script>
+
+<style>
+  .create-site-post {
+    padding: 2rem;
+  }
+
+  .create-site-post p {
+    margin: 1rem 0;
+    color: var(--about-text-secondary, #666);
+    line-height: 1.6;
+  }
+
+  .dark .create-site-post p {
+    color: var(--about-text-secondary-dark, #aaa);
+  }
+
+  .tenyear-timeline {
+    width: 100%;
+    background-color: var(--about-bg-secondary, rgba(0, 0, 0, 0.1));
+    position: relative;
+    overflow: hidden;
+    margin: 1.5rem 0 1rem;
+    border-radius: 0.5rem;
+    height: 2.5rem;
+  }
+
+  .progress {
+    width: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    position: absolute;
+    border-radius: 0.5rem;
+    animation: progressAnimation 2s ease forwards;
+  }
+
+  @keyframes progressAnimation {
+    0% {
+      width: 0;
+    }
+    100% {
+      width: var(--progress-percentage, 0);
+    }
+  }
+
+  .past-time {
+    width: 2px;
+    height: 20px;
+    background: #fff;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%) scaleX(0);
+    transform-origin: left;
+    animation: pastTimeAnimation 2s ease forwards;
+  }
+
+  @keyframes pastTimeAnimation {
+    0% {
+      transform: translateY(-50%) scaleX(0);
+    }
+    100% {
+      transform: translateY(-50%) scaleX(var(--past-time-percentage, 0));
+    }
+  }
+
+  .percentage-label {
+    position: absolute;
+    left: 0;
+    font-size: 14px;
+    color: #fff;
+    font-weight: bold;
+    top: 50%;
+    transform: translateY(-50%);
+    white-space: nowrap;
+    transition: left 0.5s linear;
+    visibility: hidden;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .time-labels {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .time-labels > div {
+    font-size: 14px;
+    color: var(--about-text-secondary, #666);
+  }
+
+  .dark .time-labels > div {
+    color: var(--about-text-secondary-dark, #aaa);
+  }
+</style>

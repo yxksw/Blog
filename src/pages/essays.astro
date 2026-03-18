@@ -134,9 +134,9 @@ function htmlToMarkdown(html: string): string {
     });
     
     // 处理有序列表（<ol> 标签包裹的）
-    text = text.replace(/<ol>([\s\S]*?)<\/ol>/g, (match, content) => {
+    text = text.replace(/<ol>([\s\S]*?)<\/ol>/g, (_match, content) => {
         let index = 1;
-        return '\n' + content.replace(/<li>(.*?)<\/li>/g, (match, item) => {
+        return '\n' + content.replace(/<li>(.*?)<\/li>/g, (_match: string, item: string) => {
             return `${index++}. ${item}\n`;
         }) + '\n';
     });

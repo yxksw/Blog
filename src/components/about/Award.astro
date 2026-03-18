@@ -1,0 +1,328 @@
+---
+interface RewardItem {
+  name: string;
+  money: number;
+  color: string;
+  icon?: string;
+  time: number;
+}
+
+interface Props {
+  data: {
+    enable: boolean;
+    title: string;
+    description: string;
+    tips: string;
+    limit: number;
+    more: string;
+    list: {
+      name: string;
+      qcode: string;
+      color: string;
+    }[];
+  };
+  rewardList: RewardItem[];
+}
+
+const { data, rewardList } = Astro.props;
+
+const sortedRewards = [...rewardList].sort((a, b) => b.time - a.time);
+const sum = rewardList.reduce((acc, r) => acc + r.money, 0);
+const displayRewards = sortedRewards.slice(0, data.limit);
+const hasMore = sortedRewards.length > data.limit;
+---
+
+{data.enable && (
+  <div class="author-content">
+    <div class="author-content-item single reward">
+      <div class="author-content-item-tips">感谢支持</div>
+      <span class="author-content-item-title">{data.title}</span>
+      <div class="author-content-item-description">
+        {data.description}
+      </div>
+      
+      {rewardList.length > 0 && (
+        <div class="reward-list-all">
+          {displayRewards.map((reward) => (
+            <div class="reward-list-item">
+              <div class="reward-list-item-name">{reward.name}</div>
+              <div class="reward-list-bottom-group">
+                <div class="reward-list-item-money" style={`background-color: ${reward.color}`}>
+                  {reward.icon && (
+                    <svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                  )}
+                  ¥ {reward.money}
+                </div>
+                <time class="reward-list-item-time" datetime={new Date(reward.time).toISOString()}>
+                  {new Date(reward.time).toLocaleDateString('zh-CN')}
+                </time>
+              </div>
+            </div>
+          ))}
+          
+          {hasMore && (
+            <a class="reward-list-item reward-list-item-more" href={data.more}>
+              <div class="reward-list-item-name">查看更多</div>
+              <div class="reward-list-bottom-group">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 16 16 12 12 8"/>
+                  <line x1="8" y1="12" x2="16" y2="12"/>
+                </svg>
+              </div>
+            </a>
+          )}
+        </div>
+      )}
+      
+      <div class="reward-list-tips">
+        <p>{data.tips.replace('{sum}', sum.toFixed(2))}</p>
+      </div>
+      
+      <!-- 打赏按钮 -->
+      <div class="post-reward">
+        <button class="reward-button" onclick="document.getElementById('reward-modal').classList.toggle('hidden')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+          打赏
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+<!-- 打赏弹窗 -->
+<div id="reward-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onclick="if(event.target === this) this.classList.add('hidden')">
+  <div class="reward-modal-content bg-white dark:bg-zinc-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-bold text-zinc-900 dark:text-zinc-100">打赏支持</h3>
+      <button onclick="document.getElementById('reward-modal').classList.add('hidden')" class="text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      {data.list.map((item) => (
+        <div class="text-center">
+          <img src={item.qcode} alt={item.name} class="w-full rounded-lg mb-2 border-2" style={`border-color: ${item.color}`} />
+          <span class="text-sm text-zinc-600 dark:text-zinc-400">{item.name}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
+
+<style>
+  .author-content-item.reward {
+    position: relative;
+    overflow: visible;
+  }
+
+  .author-content-item.reward .author-content-item-title {
+    color: #ef4444;
+  }
+
+  .author-content-item-description {
+    font-size: 16px;
+    margin-top: 0.5rem;
+    color: var(--about-text-secondary, #666);
+  }
+
+  .dark .author-content-item-description {
+    color: var(--about-text-secondary-dark, #aaa);
+  }
+
+  .reward-list-all {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    margin: 1rem -0.125rem 0.5rem;
+  }
+
+  .post-reward {
+    position: absolute;
+    right: 2rem;
+    top: 2rem;
+  }
+
+  .reward-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 8px 16px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  }
+
+  .reward-button:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+  }
+
+  .reward-list-item {
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--about-border-color, rgba(0, 0, 0, 0.1));
+    width: calc((100% / 6) - 0.25rem);
+    margin: 0 0.125rem 0.5rem 0.125rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: var(--about-card-bg, rgba(255, 255, 255, 0.9));
+    transition: all 0.3s ease;
+  }
+
+  .dark .reward-list-item {
+    background: var(--about-card-bg-dark, rgba(30, 30, 30, 0.9));
+    border-color: var(--about-border-color-dark, rgba(255, 255, 255, 0.1));
+  }
+
+  .reward-list-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .reward-list-item-name {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--about-text-primary, #1a1a1a);
+  }
+
+  .dark .reward-list-item-name {
+    color: var(--about-text-primary-dark, #f5f5f5);
+  }
+
+  .reward-list-bottom-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+  }
+
+  .reward-list-item-money {
+    padding: 4px 8px;
+    color: white;
+    font-size: 12px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    margin-right: 2px;
+    white-space: nowrap;
+    font-weight: 600;
+  }
+
+  .reward-list-item-money .icon {
+    margin-right: 4px;
+  }
+
+  .reward-list-item-time {
+    font-size: 12px;
+    color: var(--about-text-secondary, #666);
+    white-space: nowrap;
+  }
+
+  .dark .reward-list-item-time {
+    color: var(--about-text-secondary-dark, #aaa);
+  }
+
+  .reward-list-item.reward-list-item-more {
+    display: flex;
+    flex-direction: column;
+    font-size: 18px;
+    line-height: 1;
+    font-weight: 700;
+    background: #8b5cf6;
+    color: white;
+    cursor: pointer;
+    text-decoration: none;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .reward-list-item.reward-list-item-more:hover {
+    background: #7c3aed;
+    color: white;
+  }
+
+  .reward-list-tips {
+    margin-top: 1rem;
+  }
+
+  .reward-list-tips p {
+    font-size: 12px;
+    color: var(--about-text-secondary, #666);
+  }
+
+  .dark .reward-list-tips p {
+    color: var(--about-text-secondary-dark, #aaa);
+  }
+
+  /* 弹窗样式 */
+  .hidden {
+    display: none !important;
+  }
+
+  .reward-modal-content {
+    animation: modalSlideIn 0.3s ease;
+  }
+
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (max-width: 1200px) {
+    .reward-list-item {
+      width: calc((100% / 4) - 0.25rem);
+    }
+  }
+
+  @media (max-width: 900px) {
+    .reward-list-item {
+      width: calc((100% / 2) - 0.25rem);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .reward-list-item {
+      width: calc((100% / 2) - 0.25rem);
+    }
+
+    .post-reward {
+      position: static;
+      margin-top: 1rem;
+    }
+
+    .reward-button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
