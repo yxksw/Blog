@@ -104,7 +104,8 @@ const isGitHubPages =
   Boolean(process.env.GITHUB_PAGES) || process.env.CI === "true";
 const isProduction = process.env.NODE_ENV === "production";
 // Vercel/Cloudflare serves from "/", while GitHub Pages needs the repository subpath.
-const runtimeBase = (isVercel || isCloudflarePages) ? "/" : isGitHubPages ? REPO_BASE : "/";
+const runtimeBase =
+  isVercel || isCloudflarePages ? "/" : isGitHubPages ? REPO_BASE : "/";
 const runtimeSite = "https://blog.261770.xyz";
 
 /*
@@ -152,7 +153,16 @@ export default defineConfig({
   image: {
     service: passthroughImageService(),
   },
-  integrations: [mdx(), sitemap(), svelte()],
+  integrations: [
+    mdx(),
+    sitemap({
+      filter: (page) => true,
+      changefreq: "weekly",
+      priority: 0.7,
+      lastmod: new Date(),
+    }),
+    svelte(),
+  ],
   markdown: {
     // Keep markdown image URLs deployment-agnostic.
     remarkPlugins: [remarkGitHubAlertFallback, remarkMath],
