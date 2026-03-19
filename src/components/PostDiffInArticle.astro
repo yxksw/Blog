@@ -1,16 +1,50 @@
 ---
-// 文章内差异展示组件 - 基于 fuwari 实现重构
+// 文章内差异展示组件
 // 功能：在文章页面显示具体变更内容（新增/删除高亮）
+// 通过 URL 参数 ?diff=1 或 #post-diff 触发
 ---
 
 <script>
+	import * as Diff from "diff";
+
+	// 常量定义
 	const NOTIFICATION_STATE_KEY = "blog-notification-state";
 	const DEBUG_PARAM_KEY = "__diff_debug";
 	const DEBUG_STATE_KEY = "blog-diff-debug-state";
 	const CONTEXT_LINES = 2;
 	const BASE_URL = import.meta.env.BASE_URL || "/";
 
-	function normalizeGuid(guid, link) {
+	// 类型定义
+	interface DiffPart {
+		value: string;
+		added?: boolean;
+		removed?: boolean;
+	}
+
+	interface DiffRow {
+		type: 'add' | 'del' | 'ctx' | 'gap';
+		text: string;
+	}
+
+	// 工具函数：标准化路径
+	function normalizePathname(pathname: string): string {
+		const p = String(pathname || "");
+		if (!p) return "/";
+		const noQueryHash = p.split("#")[0].split("?")[0];
+		if (noQueryHash.length > 1) return noQueryHash.replace(/\/+$/, "");
+		return "/";
+	}
+
+	function stripBasePath(pathname: string): string {
+		const base = normalizePathname(BASE_URL);
+		const p = normalizePathname(pathname);
+		if (!base || base === "/") return p;
+		if (p === base) return "/";
+		if (p.startsWith(`${base}/`)) return p.slice(base.length) || "/";
+		return p;
+	}
+
+	function normalizeGuid(guid: string, link: string): string {
 		const value = (guid || link || "").trim();
 		if (!value) return "";
 		try {
@@ -21,7 +55,7 @@
 		}
 	}
 
-	function getRelativePath(absoluteUrl) {
+	function getRelativePath(absoluteUrl: string): string {
 		try {
 			const url = new URL(absoluteUrl, window.location.origin);
 			return `${url.pathname}${url.search}${url.hash}`;
@@ -30,32 +64,12 @@
 		}
 	}
 
-	function normalizePathname(pathname) {
-		const p = String(pathname || "");
-		if (!p) return "/";
-		const noQueryHash = p.split("#")[0].split("?")[0];
-		if (noQueryHash.length > 1) return noQueryHash.replace(/\/+$/, "");
-		return "/";
-	}
-
-	function stripBasePath(pathname) {
-		const base = normalizePathname(BASE_URL);
-		const p = normalizePathname(pathname);
-		if (!base || base === "/") return p;
-		if (p === base) return "/";
-		if (p.startsWith(`${base}/`)) return p.slice(base.length) || "/";
-		return p;
-	}
-
-	function clearInlineDiff(container) {
+	// 清理差异样式
+	function clearInlineDiff(container: HTMLElement) {
 		container.querySelectorAll("[data-post-inline-diff-inline]").forEach((el) => {
 			if (!(el instanceof HTMLElement)) return;
 			const kind = el.getAttribute("data-post-inline-diff-inline") || "";
-			if (kind === "anchor") {
-				el.remove();
-				return;
-			}
-			if (kind === "add") {
+			if (kind === "anchor" || kind === "add") {
 				el.remove();
 				return;
 			}
@@ -64,27 +78,27 @@
 		});
 
 		container.querySelectorAll("[data-post-inline-diff]").forEach((el) => el.remove());
-		container
-			.querySelectorAll("[data-post-inline-diff-add-target]")
-			.forEach((el) => el.removeAttribute("data-post-inline-diff-add-target"));
-		container.querySelectorAll(".post-inline-diff-add-target").forEach((el) => el.classList.remove("post-inline-diff-add-target"));
-		container
-			.querySelectorAll("[data-post-inline-diff-add-target-img]")
-			.forEach((el) => el.removeAttribute("data-post-inline-diff-add-target-img"));
-		container.querySelectorAll(".post-inline-diff-add-target-img").forEach((el) => el.classList.remove("post-inline-diff-add-target-img"));
-		container
-			.querySelectorAll("[data-post-inline-diff-del-target]")
-			.forEach((el) => el.removeAttribute("data-post-inline-diff-del-target"));
-		container.querySelectorAll(".post-inline-diff-del-target").forEach((el) => el.classList.remove("post-inline-diff-del-target"));
-		container
-			.querySelectorAll("[data-post-inline-diff-del-target-img]")
-			.forEach((el) => el.removeAttribute("data-post-inline-diff-del-target-img"));
-		container.querySelectorAll(".post-inline-diff-del-target-img").forEach((el) => el.classList.remove("post-inline-diff-del-target-img"));
+		container.querySelectorAll("[data-post-inline-diff-add-target]").forEach((el) => {
+			el.removeAttribute("data-post-inline-diff-add-target");
+			el.classList.remove("post-inline-diff-add-target");
+		});
+		container.querySelectorAll("[data-post-inline-diff-add-target-img]").forEach((el) => {
+			el.removeAttribute("data-post-inline-diff-add-target-img");
+			el.classList.remove("post-inline-diff-add-target-img");
+		});
+		container.querySelectorAll("[data-post-inline-diff-del-target]").forEach((el) => {
+			el.removeAttribute("data-post-inline-diff-del-target");
+			el.classList.remove("post-inline-diff-del-target");
+		});
+		container.querySelectorAll("[data-post-inline-diff-del-target-img]").forEach((el) => {
+			el.removeAttribute("data-post-inline-diff-del-target-img");
+			el.classList.remove("post-inline-diff-del-target-img");
+		});
 	}
 
-	function buildRows(diffParts) {
-		const rows = [];
-
+	// 构建差异行
+	function buildRows(diffParts: DiffPart[]): DiffRow[] {
+		const rows: DiffRow[] = [];
 		for (const part of diffParts) {
 			const type = part?.added ? "add" : part?.removed ? "del" : "ctx";
 			const value = String(part?.value ?? "");
@@ -92,13 +106,13 @@
 			if (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
 			for (const line of lines) rows.push({ type, text: line });
 		}
-
 		return rows;
 	}
 
-	function sliceWithContext(rows) {
-		const changeIndexes = [];
-		for (let i = 0; i < rows.length; i += 1) {
+	// 切片带上下文
+	function sliceWithContext(rows: DiffRow[]): (DiffRow | { type: 'gap'; text: string })[] {
+		const changeIndexes: number[] = [];
+		for (let i = 0; i < rows.length; i++) {
 			if (rows[i].type !== "ctx") changeIndexes.push(i);
 		}
 		if (changeIndexes.length === 0) return [];
@@ -107,29 +121,27 @@
 		for (const idx of changeIndexes) {
 			const start = Math.max(0, idx - CONTEXT_LINES);
 			const end = Math.min(rows.length - 1, idx + CONTEXT_LINES);
-			for (let i = start; i <= end; i += 1) keep[i] = true;
+			for (let i = start; i <= end; i++) keep[i] = true;
 		}
 
-		const out = [];
+		const out: (DiffRow | { type: 'gap'; text: string })[] = [];
 		let inGap = false;
-		for (let i = 0; i < rows.length; i += 1) {
+		for (let i = 0; i < rows.length; i++) {
 			if (keep[i]) {
 				out.push(rows[i]);
 				inGap = false;
-				continue;
-			}
-			if (!inGap) {
+			} else if (!inGap) {
 				out.push({ type: "gap", text: "…" });
 				inGap = true;
 			}
 		}
-
 		return out;
 	}
 
-	function toHunks(rowsWithGaps) {
-		const hunks = [];
-		let current = [];
+	// 转换为块
+	function toHunks(rowsWithGaps: (DiffRow | { type: 'gap'; text: string })[]): DiffRow[][] {
+		const hunks: DiffRow[][] = [];
+		let current: DiffRow[] = [];
 
 		for (const row of rowsWithGaps) {
 			if (row.type === "gap") {
@@ -137,13 +149,14 @@
 				current = [];
 				continue;
 			}
-			current.push(row);
+			current.push(row as DiffRow);
 		}
 		if (current.length) hunks.push(current);
 		return hunks;
 	}
 
-	function normalizeLineText(text) {
+	// 文本标准化
+	function normalizeLineText(text: string): string {
 		return String(text ?? "")
 			.replace(/\r\n/g, "\n")
 			.replace(/\r/g, "\n")
@@ -154,19 +167,19 @@
 			.trim();
 	}
 
-	function extractImgSrc(line) {
+	function extractImgSrc(line: string): string | null {
 		const s = String(line ?? "");
 		const m = s.match(/<img[^>]*\s(?:src|data-src)=["']([^"']+)["']/i);
 		return m?.[1] ? String(m[1]).trim() : null;
 	}
 
-	function stripHtmlLine(line) {
+	function stripHtmlLine(line: string): string {
 		const tmp = document.createElement("div");
 		tmp.innerHTML = String(line ?? "");
 		return tmp.textContent || tmp.innerText || "";
 	}
 
-	function normalizeForMatch(line) {
+	function normalizeForMatch(line: string): { kind: 'text' | 'img' | 'none'; value: string } {
 		const text = normalizeLineText(stripHtmlLine(line));
 		if (text) return { kind: "text", value: text };
 		const imgSrc = extractImgSrc(line);
@@ -176,13 +189,13 @@
 		return { kind: "none", value: "" };
 	}
 
-	function decodeHtmlEntities(value) {
+	function decodeHtmlEntities(value: string): string {
 		const t = document.createElement("textarea");
 		t.innerHTML = String(value ?? "");
 		return t.value;
 	}
 
-	function normalizeUrlForCompare(raw) {
+	function normalizeUrlForCompare(raw: string): string {
 		const v = decodeHtmlEntities(String(raw ?? "").trim());
 		if (!v) return "";
 		try {
@@ -201,7 +214,8 @@
 		}
 	}
 
-	function findImgBySrc(container, src) {
+	// 查找元素
+	function findImgBySrc(container: Element, src: string): HTMLImageElement | null {
 		const normPath = normalizeUrlForCompare(src);
 		if (!normPath) return null;
 		const imgs = container.querySelectorAll("img");
@@ -215,7 +229,7 @@
 		return null;
 	}
 
-	function findBlockByText(container, line) {
+	function findBlockByText(container: Element, line: string): HTMLElement | null {
 		const key = normalizeForMatch(line);
 		if (key.kind !== "text") return null;
 		const needle = key.value.slice(0, 48);
@@ -229,22 +243,54 @@
 			if (!normalizeLineText(content).includes(needle)) continue;
 			return el;
 		}
-
 		return null;
 	}
 
-	function findAnchorElement(container, hunk) {
-		const pick = (row) => String(row?.text ?? "").trim();
+	function findAnchorElement(container: Element, hunk: DiffRow[]): HTMLElement | null {
+		const pick = (row: DiffRow) => String(row?.text ?? "").trim();
 		const ctx = hunk.find((r) => r.type === "ctx" && pick(r).length >= 6);
-		const anchorLine = ctx?.text ?? ""; 
+		const anchorLine = ctx?.text ?? "";
 		if (!anchorLine) return null;
-		
+
 		const key = normalizeForMatch(anchorLine);
 		if (key.kind === "img") return findImgBySrc(container, key.value);
 		return findBlockByText(container, anchorLine);
 	}
 
-	function createDeletionNode(text, includeAnchor, useListItem) {
+	function lineExistsInArticle(container: Element, line: string): boolean {
+		const key = normalizeForMatch(line);
+		if (key.kind === "img") return !!findImgBySrc(container, key.value);
+		if (key.kind !== "text") return false;
+		return !!findBlockByText(container, line);
+	}
+
+	// 创建差异节点
+	function sanitizeHtmlFragment(html: string): string {
+		const parser = new DOMParser();
+		const doc = parser.parseFromString(`<div>${String(html || "")}</div>`, "text/html");
+		const root = doc.body.firstElementChild;
+		if (!root) return String(html || "");
+
+		const scripts = root.querySelectorAll("script, iframe, object, embed, style");
+		scripts.forEach((el) => el.remove());
+
+		const all = root.querySelectorAll("*");
+		all.forEach((el) => {
+			const attrs = Array.from(el.attributes);
+			for (const attr of attrs) {
+				if (attr.name.startsWith("on")) el.removeAttribute(attr.name);
+			}
+		});
+
+		return root.innerHTML;
+	}
+
+	function shouldRenderLineAsHtml(line: string): boolean {
+		const t = String(line || "").trim();
+		return /<[a-z][\s\S]*>/i.test(t) || /<\/[a-z][\s\S]*>/i.test(t);
+	}
+
+	function createDeletionNode(text: string, includeAnchor: boolean, useListItem: boolean): HTMLElement {
 		const el = document.createElement(useListItem ? "li" : "div");
 		el.setAttribute("data-post-inline-diff", "1");
 		el.className = "post-inline-diff-del-line";
@@ -265,32 +311,7 @@
 		return el;
 	}
 
-	function sanitizeHtmlFragment(html) {
-		const parser = new DOMParser();
-		const doc = parser.parseFromString(`<div>${String(html || "")}</div>`, "text/html");
-		const root = doc.body.firstElementChild;
-		if (!root) return String(html || "");
-
-		const scripts = root.querySelectorAll("script, iframe, object, embed, style");
-		scripts.forEach(el => el.remove());
-
-		const all = root.querySelectorAll("*");
-		all.forEach(el => {
-			const attrs = Array.from(el.attributes);
-			for (const attr of attrs) {
-				if (attr.name.startsWith("on")) el.removeAttribute(attr.name);
-			}
-		});
-
-		return root.innerHTML;
-	}
-
-	function shouldRenderLineAsHtml(line) {
-		const t = String(line || "").trim();
-		return /<[a-z][\s\S]*>/i.test(t) || /<\/[a-z][\s\S]*>/i.test(t);
-	}
-
-	function createAdditionNode(text, includeAnchor, useListItem) {
+	function createAdditionNode(text: string, includeAnchor: boolean, useListItem: boolean): HTMLElement {
 		const el = document.createElement(useListItem ? "li" : "div");
 		el.setAttribute("data-post-inline-diff", "1");
 		el.className = "post-inline-diff-add-line";
@@ -313,14 +334,15 @@
 		return el;
 	}
 
-	function insertAfter(node, ref) {
+	function insertAfter(node: Node, ref: Node | null): boolean {
 		const parent = ref?.parentNode;
 		if (!parent) return false;
 		parent.insertBefore(node, ref.nextSibling);
 		return true;
 	}
 
-	function applyInlineDiff(container, diffParts, isDebug) {
+	// 应用行内差异
+	function applyInlineDiff(container: HTMLElement, diffParts: DiffPart[], isDebug: boolean) {
 		clearInlineDiff(container);
 		const rows = buildRows(diffParts);
 		const focused = sliceWithContext(rows);
@@ -332,6 +354,8 @@
 			let idx = 0;
 			while (idx < hunk.length) {
 				const row = hunk[idx];
+
+				// 处理替换（删除+添加）
 				if (idx + 1 < hunk.length) {
 					const next = hunk[idx + 1];
 					const isReplace = (row.type === "del" && next.type === "add") || (row.type === "add" && next.type === "del");
@@ -340,17 +364,17 @@
 						const newHtml = row.type === "add" ? row.text : next.text;
 						const oldKey = normalizeForMatch(oldHtml);
 						const newKey = normalizeForMatch(newHtml);
-						let target = null;
+						let target: HTMLElement | null = null;
 						let isImgReplace = false;
-						
+
 						if (newKey.kind === "img") {
 							target = findImgBySrc(container, newKey.value);
 							isImgReplace = true;
 						} else {
 							target = findBlockByText(container, newHtml);
 						}
-						
-						if (target instanceof HTMLElement) {
+
+						if (target) {
 							if (isImgReplace) {
 								target.classList.add("post-inline-diff-add-target-img");
 								target.setAttribute("data-post-inline-diff-add-target-img", "1");
@@ -368,6 +392,7 @@
 					}
 				}
 
+				// 处理添加
 				if (row.type === "add") {
 					let endIdx = idx;
 					while (endIdx + 1 < hunk.length && hunk[endIdx + 1].type === "add") {
@@ -378,7 +403,7 @@
 						const key = normalizeForMatch(addRow.text);
 						if (key.kind === "img") {
 							const img = findImgBySrc(container, key.value);
-							if (img instanceof HTMLElement) {
+							if (img) {
 								img.classList.add("post-inline-diff-add-target-img");
 								img.setAttribute("data-post-inline-diff-add-target-img", "1");
 								if (!anchorState.inserted) {
@@ -391,68 +416,15 @@
 							}
 						} else {
 							const target = findBlockByText(container, addRow.text);
-							if (target instanceof HTMLElement) {
-								// 找到匹配的元素，添加高亮样式
+							if (target) {
 								target.classList.add("post-inline-diff-add-target");
 								target.setAttribute("data-post-inline-diff-add-target", "1");
-								// 直接添加内联样式确保生效
-								target.style.textDecorationLine = "underline";
-								target.style.textDecorationThickness = "2px";
-								target.style.textUnderlineOffset = "0.2em";
-								target.style.textDecorationColor = "#4ade80";
 								if (!anchorState.inserted) {
 									const anchor = document.createElement("span");
 									anchor.id = "post-diff";
 									anchor.setAttribute("data-post-inline-diff", "1");
 									target.parentNode?.insertBefore(anchor, target);
 									anchorState.inserted = true;
-								}
-							} else {
-								// 未找到匹配的元素，创建新元素插入
-								const text = key.value;
-								const useListItem = insertionPoint?.tagName === "LI";
-								const node = createAdditionNode(text, !anchorState.inserted, useListItem);
-								if (!anchorState.inserted) anchorState.inserted = true;
-								
-								// 尝试在合适的位置插入
-								let inserted = false;
-								// 优先在删除内容之后插入
-								for (let j = i - 1; j >= idx; j--) {
-									const prevRow = hunk[j];
-									if (prevRow.type === "del") {
-										const prevKey = normalizeForMatch(prevRow.text);
-										const prevTarget = prevKey.kind === "img" 
-											? findImgBySrc(container, prevKey.value)
-											: findBlockByText(container, prevRow.text);
-										if (prevTarget instanceof HTMLElement) {
-											insertAfter(node, prevTarget);
-											inserted = true;
-											break;
-										}
-									}
-								}
-								// 如果没有找到删除内容，在上下文之后插入
-								if (!inserted) {
-									for (let j = i - 1; j >= 0; j--) {
-										const prevRow = hunk[j];
-										if (prevRow.type === "ctx") {
-											const prevTarget = findBlockByText(container, prevRow.text);
-											if (prevTarget instanceof HTMLElement) {
-												insertAfter(node, prevTarget);
-												inserted = true;
-												break;
-											}
-										}
-									}
-								}
-								// 最后尝试在 insertionPoint 之前插入
-								if (!inserted && insertionPoint?.parentNode) {
-									insertionPoint.parentNode.insertBefore(node, insertionPoint);
-									inserted = true;
-								}
-								// 如果都失败了，添加到容器末尾
-								if (!inserted) {
-									container.appendChild(node);
 								}
 							}
 						}
@@ -461,39 +433,42 @@
 					continue;
 				}
 
+				// 跳过上下文
 				if (row.type !== "del") {
 					idx += 1;
 					continue;
 				}
 
+				// 处理删除
 				const key = normalizeForMatch(row.text);
 				if (key.kind === "none") {
 					idx += 1;
 					continue;
 				}
 
-				if (key.kind === "img") {
-					const img = findImgBySrc(container, key.value);
-					if (img instanceof HTMLElement) {
-						img.classList.add("post-inline-diff-del-target-img");
-						img.setAttribute("data-post-inline-diff-del-target-img", "1");
+				if (lineExistsInArticle(container, row.text)) {
+					if (key.kind === "img") {
+						const img = findImgBySrc(container, key.value);
+						if (img) {
+							img.classList.add("post-inline-diff-del-target-img");
+							img.setAttribute("data-post-inline-diff-del-target-img", "1");
+						}
+					} else {
+						const target = findBlockByText(container, row.text);
+						if (target) {
+							target.classList.add("post-inline-diff-del-target");
+							target.setAttribute("data-post-inline-diff-del-target", "1");
+						}
 					}
 					idx += 1;
 					continue;
 				}
-				const target = findBlockByText(container, row.text);
-				if (target instanceof HTMLElement) {
-					target.classList.add("post-inline-diff-del-target");
-					target.setAttribute("data-post-inline-diff-del-target", "1");
-					idx += 1;
-					continue;
-				}
 
+				// 插入删除标记
 				const t = key.kind === "img" ? `[图片] ${key.value}` : key.value;
-
 				let inserted = false;
 
-				for (let i = idx - 1; i >= 0; i -= 1) {
+				for (let i = idx - 1; i >= 0; i--) {
 					const prev = hunk[i];
 					if (prev?.type !== "ctx") continue;
 					const ctxEl = findBlockByText(container, prev.text);
@@ -506,7 +481,7 @@
 				}
 
 				if (!inserted) {
-					for (let i = idx + 1; i < hunk.length; i += 1) {
+					for (let i = idx + 1; i < hunk.length; i++) {
 						const next = hunk[i];
 						if (next?.type !== "ctx") continue;
 						const ctxEl = findBlockByText(container, next.text);
@@ -533,15 +508,16 @@
 		}
 	}
 
-	function applySimpleDiff(container, diffParts) {
-		container.innerHTML = "";
+	// 应用简单差异（用于标题/描述）
+	function applySimpleDiff(container: HTMLElement, diffParts: DiffPart[]) {
 		const rows = buildRows(diffParts);
-		
+		const fragment = document.createDocumentFragment();
+
 		for (const row of rows) {
 			if (row.type === "ctx") {
 				const span = document.createElement("span");
 				span.textContent = row.text;
-				container.appendChild(span);
+				fragment.appendChild(span);
 			} else if (row.type === "add") {
 				const span = document.createElement("span");
 				span.className = "post-inline-diff-add-target";
@@ -549,33 +525,37 @@
 				if (!container.querySelector("#post-diff")) {
 					const anchor = document.createElement("span");
 					anchor.id = "post-diff";
-					container.appendChild(anchor);
+					fragment.appendChild(anchor);
 				}
-				container.appendChild(span);
+				fragment.appendChild(span);
 			} else if (row.type === "del") {
 				const span = document.createElement("span");
 				span.className = "post-inline-diff-del-target";
 				span.textContent = row.text;
-				container.appendChild(span);
+				fragment.appendChild(span);
 			}
 		}
+
+		container.appendChild(fragment);
 	}
 
+	// 初始化文章内差异
 	function initPostInlineDiff() {
 		const sp = new URLSearchParams(window.location.search);
 		const isDebug = sp.get(DEBUG_PARAM_KEY) === "1";
 
-		const stateStr = isDebug ? sessionStorage.getItem(DEBUG_STATE_KEY) : localStorage.getItem(NOTIFICATION_STATE_KEY);
-		if (!stateStr) {
-			return;
-		}
+		const stateStr = isDebug 
+			? sessionStorage.getItem(DEBUG_STATE_KEY) 
+			: localStorage.getItem(NOTIFICATION_STATE_KEY);
+		
+		if (!stateStr) return;
 
-		let state;
+		let state: { items?: Array<{ isUpdated?: boolean; diff?: unknown; diffType?: string; guid?: string; link?: string }> } | null = null;
 		try {
 			state = JSON.parse(stateStr);
 		} catch {
-            const content = document.querySelector(".markdown-prose, .markdown-content");
-            if (content instanceof HTMLElement) clearInlineDiff(content);
+			const content = document.querySelector(".markdown-prose");
+			if (content instanceof HTMLElement) clearInlineDiff(content);
 			return;
 		}
 
@@ -586,77 +566,72 @@
 
 		const matched = items.find((post) => {
 			if (!post?.isUpdated || !post?.diff) return false;
-			const guidPath = normalizePathname(normalizeGuid(post.guid, post.link));
-			const linkPath = normalizePathname(getRelativePath(post.link));
+			const guidPath = normalizePathname(normalizeGuid(post.guid || '', post.link || ''));
+			const linkPath = normalizePathname(getRelativePath(post.link || ''));
 			const postCandidates = [guidPath, linkPath, stripBasePath(guidPath), stripBasePath(linkPath)];
 			return postCandidates.some((p) => currentCandidates.has(p));
 		});
 
-		// 检查是否需要应用 diff 样式
-		// 1. 调试模式
-		// 2. URL 中有 ?diff=1 参数
-		// 3. URL 中有 #post-diff 锚点
-		// 4. 从通知面板点击（localStorage 中有未读通知）
+		// 检查是否需要应用 diff
 		const diffParam = sp.get("diff") === "1";
 		const hasDiffHash = window.location.hash === "#post-diff";
-		
-		// 检查是否从通知面板点击而来（通过 referrer 或 localStorage）
-		const referrer = document.referrer;
-		const currentOrigin = window.location.origin;
-		const isFromInternal = referrer && referrer.startsWith(currentOrigin);
-		
-		// 检查 localStorage 中是否有未读通知（从通知面板点击时会设置）
 		const hasNotificationState = !!localStorage.getItem(NOTIFICATION_STATE_KEY);
-		
-		// 如果是从内部页面跳转或有通知状态，且文章有更新，自动显示 diff
-		const shouldAutoShow = matched && (isFromInternal || hasNotificationState);
-		
+		const shouldAutoShow = matched && hasNotificationState;
 		const shouldApply = isDebug || diffParam || hasDiffHash || shouldAutoShow;
 
-
-
 		if (!shouldApply || !matched?.diff) {
-            const content = document.querySelector(".markdown-prose, .markdown-content");
-            if (content instanceof HTMLElement) clearInlineDiff(content);
+			const content = document.querySelector(".markdown-prose");
+			if (content instanceof HTMLElement) clearInlineDiff(content);
 			return;
 		}
 
-        const diffType = matched.diffType || 'composite';
-        
-        let diffData = matched.diff;
-        
-        if (Array.isArray(diffData)) {
-            if (diffType === 'title') diffData = { title: diffData };
-            else if (diffType === 'description') diffData = { description: diffData };
-            else diffData = { content: diffData };
-        } else if (diffData.diff && (diffData.diffType === 'composite' || diffData.diffType === undefined)) {
-            diffData = diffData.diff;
-        }
+		let diffData = matched.diff as { content?: DiffPart[]; description?: DiffPart[]; title?: DiffPart[] } | DiffPart[];
+		const diffType = matched.diffType || 'composite';
 
-        if (diffData.title) {
-            const container = document.getElementById('post-title');
-            if (container) applySimpleDiff(container, diffData.title);
-        }
-        
-        if (diffData.description) {
-            const container = document.getElementById('post-description');
-            if (container) applySimpleDiff(container, diffData.description);
-        }
-        
-        if (diffData.content) {
-            const container = document.querySelector(".markdown-prose, .markdown-content");
-            if (container) applyInlineDiff(container, diffData.content, isDebug);
-        }
+		if (Array.isArray(diffData)) {
+			if (diffType === 'title') diffData = { title: diffData };
+			else if (diffType === 'description') diffData = { description: diffData };
+			else diffData = { content: diffData };
+		}
 
+		// 应用标题差异
+		if ((diffData as { title?: DiffPart[] }).title) {
+			const titleContainer = document.querySelector('h1');
+			if (titleContainer) {
+				applySimpleDiff(titleContainer, (diffData as { title: DiffPart[] }).title);
+			}
+		}
+
+		// 应用描述差异
+		if ((diffData as { description?: DiffPart[] }).description) {
+			const descContainer = document.querySelector('header p.font-serif');
+			if (descContainer) {
+				applySimpleDiff(descContainer as HTMLElement, (diffData as { description: DiffPart[] }).description);
+			}
+		}
+
+		// 应用内容差异
+		if ((diffData as { content?: DiffPart[] }).content) {
+			const content = document.querySelector(".markdown-prose");
+			if (content instanceof HTMLElement) {
+				applyInlineDiff(content, (diffData as { content: DiffPart[] }).content, isDebug);
+			}
+		}
+
+		// 滚动到差异位置
 		const anchor = document.getElementById("post-diff");
-		if (anchor instanceof HTMLElement) anchor.scrollIntoView({ behavior: "smooth", block: "start" });
+		if (anchor) {
+			setTimeout(() => {
+				anchor.scrollIntoView({ behavior: "smooth", block: "center" });
+			}, 300);
+		}
 	}
 
-	if (!(window as any).__blogPostInlineDiffBound) {
+	// 绑定事件
+	if (!(window as { __blogPostInlineDiffBound?: boolean }).__blogPostInlineDiffBound) {
 		document.addEventListener("DOMContentLoaded", initPostInlineDiff);
 		document.addEventListener("astro:page-load", initPostInlineDiff);
-		window.addEventListener("blog:diff-debug-updated", initPostInlineDiff);
-		(window as any).__blogPostInlineDiffBound = true;
+		(window as { __blogPostInlineDiffBound?: boolean }).__blogPostInlineDiffBound = true;
 	}
 </script>
 
@@ -666,12 +641,12 @@
 		text-decoration-line: underline !important;
 		text-decoration-thickness: 2px !important;
 		text-underline-offset: 0.2em !important;
-		text-decoration-color: #4ade80 !important;
+		text-decoration-color: #22c55e !important;
 		color: inherit !important;
 	}
 
 	.post-inline-diff-add-target-img {
-		outline: 2px solid #4ade80;
+		outline: 2px solid #22c55e;
 		outline-offset: 2px;
 		border-radius: 0.5rem;
 	}
@@ -679,21 +654,21 @@
 	/* 删除内容 - 红色删除线 */
 	.post-inline-diff-del-line {
 		margin: 0.5rem 0;
-		color: #f87171;
+		color: #ef4444;
 	}
 
 	.post-inline-diff-del-line del {
 		text-decoration-thickness: 2px;
-		text-decoration-color: #f87171;
+		text-decoration-color: #ef4444;
 	}
 
 	.post-inline-diff-add-line {
 		margin: 0.5rem 0;
-		color: #4ade80 !important;
+		color: #22c55e !important;
 		text-decoration-line: underline !important;
 		text-decoration-thickness: 2px !important;
 		text-underline-offset: 0.2em !important;
-		text-decoration-color: #4ade80 !important;
+		text-decoration-color: #22c55e !important;
 	}
 
 	.post-inline-diff-add-line .post-inline-diff-add-content {
@@ -703,10 +678,10 @@
 
 	.post-inline-diff-add-line img,
 	.post-inline-diff-add-content img {
-		outline: 2px solid #4ade80;
+		outline: 2px solid #22c55e;
 		outline-offset: 2px;
 		border-radius: 0.5rem;
-		background-color: rgba(74, 222, 128, 0.1);
+		background-color: rgba(34, 197, 94, 0.1);
 	}
 
 	.post-inline-diff-del-line.post-inline-diff-del-line {
@@ -715,7 +690,7 @@
 
 	.post-inline-diff-del-line img,
 	.post-inline-diff-del-line del img {
-		outline: 2px solid #f87171;
+		outline: 2px solid #ef4444;
 		outline-offset: 2px;
 		border-radius: 0.5rem;
 		opacity: 0.8;
@@ -723,10 +698,10 @@
 
 	/* 删除目标 - 红色删除线 */
 	.post-inline-diff-del-target {
-		color: #f87171 !important;
+		color: #ef4444 !important;
 		text-decoration-line: line-through;
 		text-decoration-thickness: 2px;
-		text-decoration-color: #f87171;
+		text-decoration-color: #ef4444;
 	}
 
 	h1.post-inline-diff-del-target,
@@ -735,13 +710,13 @@
 	h4.post-inline-diff-del-target,
 	h5.post-inline-diff-del-target,
 	h6.post-inline-diff-del-target {
-		color: #f87171 !important;
-		text-decoration-color: #f87171;
+		color: #ef4444 !important;
+		text-decoration-color: #ef4444;
 	}
 
 	/* 删除图片目标 */
 	.post-inline-diff-del-target-img {
-		outline: 2px solid #f87171;
+		outline: 2px solid #ef4444;
 		outline-offset: 2px;
 		border-radius: 0.5rem;
 		opacity: 0.7;

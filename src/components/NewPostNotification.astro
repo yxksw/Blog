@@ -1,13 +1,17 @@
 ---
-// 新文章通知组件 - 基于 fuwari 实现重构
-// 功能：RSS 存储到 IndexedDB，差异比较，通知面板
+// 新文章通知组件 - 基于 RSS + IndexedDB + Diff
+// 功能：
+// 1. 首次访问：RSS 存储到 IndexedDB
+// 2. 刷新页面：重新拉取 RSS，比较差异
+// 3. 展示变更：新文章、更新、删除等通知
+// 4. 点击跳转：支持跳转到更新的文章并显示差异
 ---
 
 <style>
     #notification-panel {
         position: relative;
-        width: 3.75rem;
-        height: 3.75rem;
+        width: 3.5rem;
+        height: 3.5rem;
         border-radius: 50%;
         overflow: hidden;
         box-sizing: border-box;
@@ -19,10 +23,10 @@
             opacity 260ms ease;
     }
     #notification-panel.is-open {
-        width: var(--np-open-width, min(20rem, calc(100vw - 2rem)));
+        width: var(--np-open-width, min(22rem, calc(100vw - 2rem)));
         height: var(--np-open-height, auto);
         min-height: auto;
-        max-height: min(40vh, 18rem);
+        max-height: min(50vh, 24rem);
         border-radius: 1rem;
     }
     #notification-minimized {
@@ -48,38 +52,93 @@
         pointer-events: auto;
         transform: translateY(0);
     }
+    .post-item {
+        transition: all 0.2s ease;
+    }
+    .post-item:hover {
+        transform: translateX(2px);
+    }
+    .diff-preview {
+        max-height: 4rem;
+        overflow: hidden;
+        position: relative;
+    }
+    .diff-preview::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 1rem;
+        background: linear-gradient(transparent, var(--bg-color, rgb(250 250 250)));
+    }
+    .dark .diff-preview::after {
+        --bg-color: rgb(39 39 42);
+    }
 </style>
 
 <div id="new-post-notification" class="fixed bottom-28 right-4 z-50 pointer-events-none">
     <div id="notification-panel" class="pointer-events-auto bg-white dark:bg-zinc-800 border-2 border-blue-500 dark:border-blue-400 text-blue-500 dark:text-blue-400 shadow-lg transform translate-y-20 opacity-0">
-        <button id="notification-minimized" aria-label="New post notification" class="flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+        <!-- 最小化状态 - 铃铛图标 -->
+        <button id="notification-minimized" aria-label="新文章通知" class="flex items-center justify-center w-full h-full hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
+                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path>
+            </svg>
         </button>
 
+        <!-- 展开状态 - 通知列表 -->
         <div id="notification-content" class="flex flex-col p-4">
-            <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center gap-2 text-blue-500 dark:text-blue-400">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg>
-                    <h3 class="font-bold text-zinc-900 dark:text-white text-sm">发现新文章</h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 11a9 9 0 0 1 9 9"></path>
+                        <path d="M4 4a16 16 0 0 1 16 16"></path>
+                        <circle cx="5" cy="19" r="1"></circle>
+                    </svg>
+                    <h3 class="font-bold text-zinc-900 dark:text-white text-sm">文章更新</h3>
+                    <span id="update-count" class="hidden text-xs bg-red-500 text-white px-1.5 py-0.5 rounded-full min-w-[1.25rem] text-center"></span>
                 </div>
                 <div class="flex items-center gap-1">
-                    <button id="clear-notification" class="text-zinc-500 dark:text-zinc-400 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-500/10" title="清空通知">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                    <button id="clear-notification" class="text-zinc-500 dark:text-zinc-400 hover:text-red-500 transition-colors p-1.5 rounded-md hover:bg-red-500/10" title="清空通知">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                        </svg>
                     </button>
-                    <button id="minimize-notification" class="text-zinc-500 dark:text-zinc-400 hover:text-blue-500 transition-colors p-1 rounded-md hover:bg-blue-500/10" title="隐藏">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+                    <button id="minimize-notification" class="text-zinc-500 dark:text-zinc-400 hover:text-blue-500 transition-colors p-1.5 rounded-md hover:bg-blue-500/10" title="收起">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 6L6 18M6 6l12 12"></path>
+                        </svg>
                     </button>
                 </div>
             </div>
-            <div id="new-post-list" class="text-sm text-zinc-700 dark:text-zinc-300 transition-colors space-y-1 flex-1 overflow-y-auto overflow-x-hidden"></div>
+            
+            <!-- 统计信息 -->
+            <div id="stats-bar" class="hidden text-xs text-zinc-500 dark:text-zinc-400 mb-2 px-1">
+                <span id="stats-new" class="hidden mr-2"><span class="text-green-500 font-medium" id="count-new">0</span> 篇新文章</span>
+                <span id="stats-updated" class="hidden"><span class="text-amber-500 font-medium" id="count-updated">0</span> 篇更新</span>
+            </div>
+
+            <!-- 文章列表 -->
+            <div id="new-post-list" class="text-sm text-zinc-700 dark:text-zinc-300 transition-colors space-y-2 flex-1 overflow-y-auto overflow-x-hidden pr-1"></div>
+            
+            <!-- 底部信息 -->
+            <div id="footer-info" class="mt-2 pt-2 border-t border-zinc-200 dark:border-zinc-700 text-[10px] text-zinc-400 dark:text-zinc-500 text-center hidden">
+                <span id="last-check-time"></span>
+            </div>
         </div>
     </div>
+    
+    <!-- 红点提示 -->
     <span id="notification-dot" class="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-zinc-800 animate-pulse pointer-events-none transform translate-y-20 opacity-0 scale-0 transition-all duration-260 ease-out"></span>
 </div>
 
 <script>
     import * as Diff from 'diff';
 
+    // 类型定义
     interface Post {
         title: string;
         link: string;
@@ -88,56 +147,78 @@
         description: string;
         content: string;
         isUpdated?: boolean;
-        diff?: Diff.Change[] | null;
-        diffType?: string;
+        isNew?: boolean;
+        isDeleted?: boolean;
+        diff?: Diff.Change[] | { content?: Diff.Change[]; description?: Diff.Change[]; title?: Diff.Change[] } | null;
+        diffType?: 'composite' | 'simple';
     }
 
     interface NotificationState {
         timestamp: number;
         items: Post[];
+        lastCheckTime: number;
     }
 
-    (async function() {
-    const __diffLogEnabled = (() => {
-        try {
-            const sp = new URLSearchParams(window.location.search);
-            return sp.get('__diff_log') === '1';
-        } catch {
-            return false;
-        }
-    })();
-    const BASE_URL = import.meta.env.BASE_URL || '/';
-    const basePath = String(BASE_URL).endsWith('/') ? String(BASE_URL).slice(0, -1) : String(BASE_URL);
-    const withBasePath = (pathname: string): string => {
-        const p = String(pathname || '');
-        if (!basePath || basePath === '/' || !p.startsWith('/')) return p;
-        if (p === basePath || p.startsWith(`${basePath}/`)) return p;
-        return `${basePath}${p}`;
-    };
-
-    const sp = new URLSearchParams(window.location.search);
-    if (sp.get('__diff_debug_cleanup') === '1') {
-        try {
-            const DB_NAME = 'new-posts-db';
-            indexedDB.deleteDatabase(DB_NAME);
-            localStorage.removeItem('new-posts-notification-state');
-            localStorage.removeItem('new-posts-cache');
-            localStorage.removeItem('new-posts-init-time');
-            const url = new URL(window.location.href);
-            url.searchParams.delete('__diff_debug_cleanup');
-            window.history.replaceState({}, '', url.toString());
-        } catch {}
+    interface StoredPost extends Post {
+        id: string;
+        storedAt: number;
     }
-    if (sp.get('__diff_debug') === '1') return;
 
-    const DB_NAME = 'new-posts-db';
+    // 常量定义
+    const DB_NAME = 'blog-rss-db';
     const DB_VERSION = 1;
     const STORE_OLD = 'posts-old';
     const STORE_NEW = 'posts-new';
-    const LOCAL_STORAGE_KEY = 'new-posts-cache';
-    const NOTIFICATION_STATE_KEY = 'new-posts-notification-state';
-    const INIT_TIME_KEY = 'new-posts-init-time';
+    const NOTIFICATION_STATE_KEY = 'blog-notification-state';
+    const INIT_TIME_KEY = 'blog-init-time';
+    const LAST_CHECK_KEY = 'blog-last-check';
+    const BASE_URL = import.meta.env.BASE_URL || '/';
 
+    // 工具函数：生成 ID
+    function generateId(guid: string): string {
+        let hash = 0;
+        const str = String(guid || '');
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return 'post_' + Math.abs(hash).toString(36);
+    }
+
+    // 工具函数：标准化 GUID
+    function normalizeGuid(guid: string, link: string): string {
+        const g = String(guid || link || '').trim();
+        try {
+            const url = new URL(g, window.location.origin);
+            return url.pathname + url.search;
+        } catch {
+            return g;
+        }
+    }
+
+    // 工具函数：添加 base path
+    function withBasePath(pathname: string): string {
+        const base = String(BASE_URL).endsWith('/') ? String(BASE_URL).slice(0, -1) : String(BASE_URL);
+        const p = String(pathname || '');
+        if (!base || base === '/' || !p.startsWith('/')) return p;
+        if (p === base || p.startsWith(`${base}/`)) return p;
+        return `${base}${p}`;
+    }
+
+    // 工具函数：格式化时间
+    function formatTime(timestamp: number): string {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diff = now.getTime() - date.getTime();
+        
+        if (diff < 60000) return '刚刚';
+        if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`;
+        if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时前`;
+        return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    // IndexedDB 操作
     function openDB(): Promise<IDBDatabase> {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -156,12 +237,12 @@
         });
     }
 
-    function getStoredPosts(db: IDBDatabase, storeName: string): Promise<Post[]> {
+    function getStoredPosts(db: IDBDatabase, storeName: string): Promise<StoredPost[]> {
         return new Promise((resolve, reject) => {
             const transaction = db.transaction([storeName], 'readonly');
             const store = transaction.objectStore(storeName);
             const request = store.getAll();
-            request.onsuccess = () => resolve((request.result as Post[]) || []);
+            request.onsuccess = () => resolve((request.result as StoredPost[]) || []);
             request.onerror = () => reject(request.error);
         });
     }
@@ -172,13 +253,19 @@
             const store = transaction.objectStore(storeName);
             const clearRequest = store.clear();
             clearRequest.onsuccess = () => {
-                let completed = 0;
                 if (posts.length === 0) {
                     resolve();
                     return;
                 }
+                let completed = 0;
+                const now = Date.now();
                 posts.forEach(post => {
-                    const addRequest = store.add({ ...post, id: generateId(post.guid) });
+                    const storedPost: StoredPost = {
+                        ...post,
+                        id: generateId(post.guid),
+                        storedAt: now
+                    };
+                    const addRequest = store.add(storedPost);
                     addRequest.onsuccess = () => {
                         completed++;
                         if (completed === posts.length) resolve();
@@ -200,34 +287,13 @@
         });
     }
 
-    function generateId(guid: string): string {
-        let hash = 0;
-        const str = String(guid || '');
-        for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-        }
-        return 'id_' + Math.abs(hash).toString(36);
-    }
-
-    function normalizeGuid(guid: string, link: string): string {
-        const g = String(guid || link || '').trim();
-        try {
-            const url = new URL(g);
-            return url.pathname + url.search;
-        } catch {
-            return g;
-        }
-    }
-
+    // 获取 RSS 数据
     async function fetchRSS(): Promise<Post[]> {
         try {
             const possiblePaths = [
                 withBasePath('/rss.xml'),
                 '/rss.xml',
-                './rss.xml',
-                'rss.xml'
+                './rss.xml'
             ];
             
             let response: Response | null = null;
@@ -235,21 +301,26 @@
             for (const rssPath of possiblePaths) {
                 try {
                     response = await fetch(rssPath, { cache: 'no-store' });
-                    if (response.ok) {
-                        break;
-                    }
+                    if (response.ok) break;
                 } catch (e) {
-                    // 静默处理 fetch 错误
+                    // 静默处理
                 }
             }
             
             if (!response || !response.ok) {
+                console.warn('[RSS] 无法获取 RSS 数据');
                 return [];
             }
             
             const text = await response.text();
             const parser = new DOMParser();
             const xml = parser.parseFromString(text, 'text/xml');
+            
+            // 检查是否是有效的 RSS
+            if (xml.querySelector('parsererror')) {
+                console.warn('[RSS] XML 解析错误');
+                return [];
+            }
             
             const channelLink = xml.querySelector("channel > link")?.textContent?.trim();
             let prodOrigin = "";
@@ -262,18 +333,25 @@
             
             const items = Array.from(xml.querySelectorAll('item'));
             
-            return items.map((item: Element): Post => {
+            return items.map((item): Post => {
                 const title = item.querySelector('title')?.textContent || '';
                 let link = (item.querySelector('link')?.textContent || '').trim();
                 let rawGuid = (item.querySelector('guid')?.textContent || '').trim();
-                const pubDate = new Date(item.querySelector('pubDate')?.textContent || '').getTime();
+                const pubDateStr = item.querySelector('pubDate')?.textContent || '';
+                const pubDate = new Date(pubDateStr).getTime() || Date.now();
                 let description = item.querySelector('description')?.textContent || '';
                 
+                // 获取内容（支持 content:encoded）
+                let content = '';
                 const contentEncoded = item.getElementsByTagNameNS('http://purl.org/rss/1.0/modules/content/', 'encoded')[0]?.textContent;
-                let content = contentEncoded || 
-                                item.getElementsByTagName('content:encoded')[0]?.textContent || 
-                                item.querySelector('content')?.textContent || '';
+                if (contentEncoded) {
+                    content = contentEncoded;
+                } else {
+                    const contentEl = item.getElementsByTagName('content:encoded')[0];
+                    if (contentEl) content = contentEl.textContent || '';
+                }
 
+                // 替换生产环境域名为当前域名
                 if (prodOrigin && prodOrigin !== currentOrigin) {
                     link = link.replaceAll(prodOrigin, currentOrigin);
                     if (rawGuid.includes(prodOrigin)) {
@@ -295,138 +373,306 @@
                 };
             });
         } catch (e) {
+            console.error('[RSS] 获取失败:', e);
             return [];
         }
     }
 
+    // 计算差异
     function computeDiff(oldText: string, newText: string): Diff.Change[] | null {
         if (!oldText || !newText) return null;
 
         const normalizeRaw = (text: string): string => {
-            const s = String(text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-            const lines = s.split("\n").map((line) => line.replace(/[ \t]+$/g, ""));
-            return lines.join("\n").trim();
+            return String(text || "")
+                .replace(/\r\n/g, "\n")
+                .replace(/\r/g, "\n")
+                .replace(/\s+/g, " ")
+                .trim();
         };
 
-        const normalizeForDiffHtml = (html: string): string => {
-            const raw = normalizeRaw(html);
-            if (!raw) return "";
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(`<div>${raw}</div>`, "text/html");
-            const root = doc.body.firstElementChild;
-            if (!root) return raw;
-            const clone = root.cloneNode(true) as Element;
-            clone.querySelectorAll("script, style, iframe, object, embed").forEach((el) => el.remove());
-            const text = clone.textContent || "";
-            return text.replace(/\s+/g, " ").trim();
-        };
-
-        const normalizedOld = normalizeForDiffHtml(oldText);
-        const normalizedNew = normalizeForDiffHtml(newText);
+        const normalizedOld = normalizeRaw(oldText);
+        const normalizedNew = normalizeRaw(newText);
 
         if (!normalizedOld || !normalizedNew || normalizedOld === normalizedNew) {
             return null;
         }
 
-        const diffResult = Diff.diffWordsWithSpace(normalizedOld, normalizedNew);
+        // 使用 diffWords 获取更细粒度的差异
+        const diffResult = Diff.diffWords(normalizedOld, normalizedNew);
         const hasChanges = diffResult.some((part: Diff.Change) => part.added || part.removed);
         return hasChanges ? diffResult : null;
     }
 
-    function renderDiffToHtml(diffArray: Diff.Change[]): string {
-        if (!Array.isArray(diffArray) || diffArray.length === 0) {
-            return '<span class="text-zinc-500 italic">无内容变更</span>';
+    // 计算行级差异（用于内容比较）
+    function computeLineDiff(oldText: string, newText: string): Diff.Change[] | null {
+        if (!oldText || !newText) return null;
+
+        const normalizeLines = (text: string): string => {
+            const s = String(text || "")
+                .replace(/\r\n/g, "\n")
+                .replace(/\r/g, "\n");
+            const lines = s.split("\n").map(line => line.replace(/[ \t]+$/g, "").trim());
+            return lines.filter(line => line.length > 0).join("\n");
+        };
+
+        const normalizedOld = normalizeLines(oldText);
+        const normalizedNew = normalizeLines(newText);
+
+        if (!normalizedOld || !normalizedNew || normalizedOld === normalizedNew) {
+            return null;
         }
-        return diffArray.map((part: Diff.Change) => {
+
+        const diffResult = Diff.diffLines(normalizedOld, normalizedNew);
+        const hasChanges = diffResult.some((part: Diff.Change) => part.added || part.removed);
+        return hasChanges ? diffResult : null;
+    }
+
+    // 渲染差异为 HTML
+    function renderDiffToHtml(diffArray: Diff.Change[] | undefined | null, maxLength: number = 100): string {
+        if (!Array.isArray(diffArray) || diffArray.length === 0) {
+            return '';
+        }
+        
+        let result = '';
+        let totalLength = 0;
+        
+        for (const part of diffArray) {
+            if (totalLength >= maxLength) break;
+            
             const text = part.value
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;")
-                .replace(/\n/g, '<br>');
+                .replace(/\n/g, ' ')
+                .trim();
+            
+            if (!text) continue;
+            
+            const remaining = maxLength - totalLength;
+            const displayText = text.length > remaining ? text.slice(0, remaining) + '...' : text;
+            
             if (part.added) {
-                return `<ins class="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 no-underline px-1 rounded">${text}</ins>`;
+                result += `<ins class="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 no-underline px-0.5 rounded">${displayText}</ins>`;
+            } else if (part.removed) {
+                result += `<del class="bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 no-underline px-0.5 rounded line-through opacity-70">${displayText}</del>`;
+            } else {
+                result += `<span>${displayText}</span>`;
             }
-            if (part.removed) {
-                return `<del class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 no-underline px-1 rounded line-through opacity-70">${text}</del>`;
-            }
-            return `<span>${text}</span>`;
-        }).join('');
+            
+            totalLength += displayText.length;
+        }
+        
+        return result || '<span class="text-zinc-400 italic">内容有变更</span>';
     }
 
-    function showNotification(items: Post[], timestamp: number, hasNew: boolean, initTime: number): void {
+    // 获取文章链接（带 diff 参数）
+    function getPostLink(post: Post): string {
+        let postLink = post.link;
+        try {
+            const url = new URL(post.link);
+            postLink = url.pathname;
+        } catch {
+            // 保持原样
+        }
+
+        // 如果是更新的文章，添加 diff 参数
+        if (post.isUpdated) {
+            try {
+                const url = new URL(postLink, window.location.origin);
+                url.searchParams.set('diff', '1');
+                url.hash = 'post-diff';
+                return withBasePath(`${url.pathname}${url.search}${url.hash}`);
+            } catch {
+                const base = postLink.split('#')[0];
+                const separator = base.includes('?') ? '&' : '?';
+                return withBasePath(`${base}${separator}diff=1#post-diff`);
+            }
+        }
+
+        return withBasePath(postLink);
+    }
+
+    // 显示通知面板
+    function showNotification(items: Post[], hasNew: boolean, isFirstVisit: boolean): void {
         const panel = document.getElementById('notification-panel');
         const dot = document.getElementById('notification-dot');
         const list = document.getElementById('new-post-list');
-        const minimizeBtn = document.getElementById('minimize-notification');
-        const clearBtn = document.getElementById('clear-notification');
+        const updateCount = document.getElementById('update-count');
+        const statsBar = document.getElementById('stats-bar');
+        const statsNew = document.getElementById('stats-new');
+        const statsUpdated = document.getElementById('stats-updated');
+        const countNew = document.getElementById('count-new');
+        const countUpdated = document.getElementById('count-updated');
+        const footerInfo = document.getElementById('footer-info');
+        const lastCheckTime = document.getElementById('last-check-time');
 
         if (!panel || !list) return;
 
-        const isFirstVisit = Date.now() - initTime < 5000;
-        const shouldAutoOpen = hasNew && !isFirstVisit;
-
-        if (items.length === 0) {
-            list.innerHTML = '<div class="text-zinc-500 dark:text-zinc-400 text-center py-8">暂无新文章</div>';
+        // 分类统计
+        const newPosts = items.filter(p => p.isNew);
+        const updatedPosts = items.filter(p => p.isUpdated);
+        
+        // 更新统计
+        if (newPosts.length > 0) {
+            statsNew?.classList.remove('hidden');
+            if (countNew) countNew.textContent = String(newPosts.length);
         } else {
-            list.innerHTML = items.map(item => {
-                const diffHtml = item.diff ? renderDiffToHtml(item.diff) : '';
-                const updatedBadge = item.isUpdated
-                    ? '<span class="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full ml-1">更新</span>'
-                    : '<span class="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded-full ml-1">新文章</span>';
-
-                return `
-                <div class="post-item group p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700/50 transition-colors cursor-pointer border-l-2 ${item.isUpdated ? 'border-amber-400' : 'border-green-400'} bg-zinc-50/50 dark:bg-zinc-800/50" data-link="${item.link}">
-                    <div class="font-medium text-zinc-900 dark:text-white text-sm group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors flex items-center flex-wrap gap-1">
-                        ${item.title}
-                        ${updatedBadge}
-                    </div>
-                    ${diffHtml ? `<div class="text-xs text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed max-h-24 overflow-y-auto">${diffHtml}</div>` : ''}
-                </div>
-                `;
-            }).join('');
-
-            list.querySelectorAll('.post-item').forEach(el => {
-                el.addEventListener('click', () => {
-                    const link = el.getAttribute('data-link');
-                    if (link) window.location.href = link;
-                });
-            });
+            statsNew?.classList.add('hidden');
+        }
+        
+        if (updatedPosts.length > 0) {
+            statsUpdated?.classList.remove('hidden');
+            if (countUpdated) countUpdated.textContent = String(updatedPosts.length);
+        } else {
+            statsUpdated?.classList.add('hidden');
         }
 
+        if (items.length > 0) {
+            statsBar?.classList.remove('hidden');
+            footerInfo?.classList.remove('hidden');
+            if (lastCheckTime) {
+                const lastCheck = localStorage.getItem(LAST_CHECK_KEY);
+                if (lastCheck) {
+                    lastCheckTime.textContent = `上次检查: ${formatTime(parseInt(lastCheck))}`;
+                }
+            }
+        }
+
+        // 更新红点数量
+        if (hasNew && items.length > 0) {
+            updateCount?.classList.remove('hidden');
+            if (updateCount) updateCount.textContent = String(items.length);
+        } else {
+            updateCount?.classList.add('hidden');
+        }
+
+        // 渲染列表
+        if (items.length === 0) {
+            list.innerHTML = `
+                <div class="text-zinc-500 dark:text-zinc-400 text-center py-8 flex flex-col items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="opacity-50">
+                        <path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <span class="text-sm">暂无文章更新</span>
+                    ${isFirstVisit ? '<span class="text-xs opacity-60">首次访问，已缓存文章列表</span>' : ''}
+                </div>
+            `;
+        } else {
+            list.innerHTML = items.map(item => {
+                const diffHtml = item.diff ? renderDiffToHtml(
+                    Array.isArray(item.diff) ? item.diff : item.diff?.content || item.diff?.description
+                ) : '';
+                
+                const badge = item.isNew
+                    ? '<span class="text-[10px] bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded-full shrink-0">新</span>'
+                    : item.isUpdated
+                    ? '<span class="text-[10px] bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full shrink-0">更新</span>'
+                    : '';
+
+                const link = getPostLink(item);
+                const timeStr = formatTime(item.pubDate);
+
+                return `
+                <a href="${link}" class="post-item group block p-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-700/50 transition-colors border-l-2 ${item.isNew ? 'border-green-400' : item.isUpdated ? 'border-amber-400' : 'border-zinc-300 dark:border-zinc-600'} bg-zinc-50/50 dark:bg-zinc-800/30">
+                    <div class="flex items-start justify-between gap-2">
+                        <h4 class="font-medium text-zinc-900 dark:text-white text-sm group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors line-clamp-2 flex-1">
+                            ${item.title}
+                        </h4>
+                        ${badge}
+                    </div>
+                    ${diffHtml ? `<div class="diff-preview text-xs text-zinc-600 dark:text-zinc-400 mt-1.5 leading-relaxed">${diffHtml}</div>` : ''}
+                    <div class="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1.5">${timeStr}</div>
+                </a>
+                `;
+            }).join('');
+        }
+
+        // 显示面板
+        panel.classList.remove('translate-y-20', 'opacity-0');
+
+        // 自动展开逻辑
+        const shouldAutoOpen = hasNew && !isFirstVisit && items.length > 0;
+        
         if (shouldAutoOpen) {
-            panel.classList.add('is-open');
-            setTimeout(() => panel.classList.add('is-open-content'), 360);
+            setTimeout(() => {
+                openPanel();
+            }, 800);
             dot?.classList.add('opacity-0', 'scale-0');
         } else if (hasNew) {
             dot?.classList.remove('opacity-0', 'scale-0', 'translate-y-20');
         }
 
-        panel.classList.remove('translate-y-20', 'opacity-0');
+        setupEventListeners();
+    }
 
+    // 面板控制
+    function openPanel(): void {
+        const panel = document.getElementById('notification-panel');
+        if (!panel) return;
+        
+        updatePanelSize();
+        panel.classList.add('is-open');
+        
+        const timer = window.setTimeout(() => {
+            panel.classList.add('is-open-content');
+        }, 360);
+        panel.setAttribute('data-open-timer', String(timer));
+    }
+
+    function closePanel(): void {
+        const panel = document.getElementById('notification-panel');
+        if (!panel) return;
+        
+        const prevTimer = panel.getAttribute('data-open-timer');
+        if (prevTimer) {
+            clearTimeout(Number(prevTimer));
+            panel.removeAttribute('data-open-timer');
+        }
+        panel.classList.remove('is-open-content');
+        panel.classList.remove('is-open');
+    }
+
+    function updatePanelSize(): void {
+        const panel = document.getElementById('notification-panel');
+        if (!panel) return;
+        
+        const isMobile = window.innerWidth < 640;
+        panel.style.setProperty('--np-open-width', isMobile ? 'calc(100vw - 2rem)' : 'min(22rem, calc(100vw - 2rem))');
+        panel.style.setProperty('--np-open-height', isMobile ? 'min(45vh, 20rem)' : 'min(50vh, 24rem)');
+    }
+
+    // 事件监听
+    function setupEventListeners(): void {
+        const panel = document.getElementById('notification-panel');
         const minimizedBtn = document.getElementById('notification-minimized');
-        if (minimizedBtn) {
+        const minimizeBtn = document.getElementById('minimize-notification');
+        const clearBtn = document.getElementById('clear-notification');
+        const dot = document.getElementById('notification-dot');
+
+        if (minimizedBtn && !minimizedBtn.hasAttribute('data-listening')) {
+            minimizedBtn.setAttribute('data-listening', 'true');
             minimizedBtn.onclick = () => {
-                const isOpen = panel.classList.contains('is-open');
-                if (isOpen) {
-                    panel.classList.remove('is-open-content');
-                    setTimeout(() => panel.classList.remove('is-open'), 200);
+                if (panel?.classList.contains('is-open')) {
+                    closePanel();
                 } else {
-                    panel.classList.add('is-open');
-                    setTimeout(() => panel.classList.add('is-open-content'), 360);
+                    openPanel();
                     dot?.classList.add('opacity-0', 'scale-0');
                 }
             };
         }
 
-        if (minimizeBtn) {
-            minimizeBtn.onclick = () => {
-                panel.classList.remove('is-open-content');
-                setTimeout(() => panel.classList.remove('is-open'), 200);
+        if (minimizeBtn && !minimizeBtn.hasAttribute('data-listening')) {
+            minimizeBtn.setAttribute('data-listening', 'true');
+            minimizeBtn.onclick = (e) => {
+                e.stopPropagation();
+                closePanel();
             };
         }
 
-        if (clearBtn) {
-            clearBtn.onclick = async () => {
+        if (clearBtn && !clearBtn.hasAttribute('data-listening')) {
+            clearBtn.setAttribute('data-listening', 'true');
+            clearBtn.onclick = async (e) => {
+                e.stopPropagation();
                 try {
                     const db = await openDB();
                     const currentPosts = await getStoredPosts(db, STORE_NEW);
@@ -434,200 +680,248 @@
                     await savePosts(db, STORE_OLD, currentPosts);
                     await clearStore(db, STORE_NEW);
                     localStorage.removeItem(NOTIFICATION_STATE_KEY);
-                    showNotification([], Date.now(), false, initTime);
-                } catch {}
+                    localStorage.setItem(INIT_TIME_KEY, Date.now().toString());
+                    
+                    // 重新渲染
+                    showNotification([], false, false);
+                    dot?.classList.add('opacity-0', 'scale-0');
+                } catch (err) {
+                    console.error('[Notification] 清空失败:', err);
+                }
             };
         }
 
-        if (!panel.getAttribute('data-resize-listening')) {
-            const resizeHandler = () => {
-                const isMobile = window.innerWidth < 640;
-                panel.style.setProperty('--np-open-width', isMobile ? 'calc(100vw - 2rem)' : 'min(20rem, calc(100vw - 2rem))');
-                panel.style.setProperty('--np-open-height', isMobile ? 'min(50vh, 16rem)' : 'min(45vh, 20rem)');
-            };
-            resizeHandler();
-            window.addEventListener('resize', resizeHandler);
+        if (panel && !panel.hasAttribute('data-resize-listening')) {
+            window.addEventListener('resize', updatePanelSize);
             panel.setAttribute('data-resize-listening', 'true');
         }
-     }
+    }
 
-    try {
-        const urlParams = new URLSearchParams(window.location.search);
-        const isDevMode = urlParams.has('debug-notification');
+    // 检测变更
+    function detectChanges(currentPosts: Post[], storedPosts: StoredPost[]): Post[] {
+        const storedMap = new Map(storedPosts.map(p => [p.id, p]));
+        const currentIds = new Set(currentPosts.map(p => generateId(p.guid)));
+        const detectedChanges: Post[] = [];
 
-        if (isDevMode) {
-            const mockDiff = [
-                { value: "This is some unchanged text context.\n", added: false, removed: false, count: 1 },
-                { value: "This line was removed.\n", added: false, removed: true, count: 1 },
-                { value: "This line is new.\n", added: true, removed: false, count: 1 },
-                { value: "More unchanged text.\n", added: false, removed: false, count: 1 }
-            ] as Diff.Change[];
-            
-            const mockPosts: Post[] = [
-                { title: 'Test New Post 1', link: '#', guid: 'test-1', isUpdated: false, pubDate: Date.now(), description: '', content: '' },
-                { 
-                    title: 'Test Updated Post', 
-                    link: '#', 
-                    guid: 'test-2', 
-                    isUpdated: true,
-                    diff: mockDiff,
-                    pubDate: Date.now(), 
-                    description: '', 
-                    content: ''
-                },
-            ];
-            showNotification(mockPosts, Date.now(), true, Date.now());
-            return; 
-        }
+        // 检测新文章和更新
+        for (const post of currentPosts) {
+            const id = generateId(post.guid);
+            const stored = storedMap.get(id);
 
-        const currentPosts = await fetchRSS();
-        if (currentPosts.length === 0) {
-            showNotification([], Date.now(), false, Date.now());
-            return;
-        }
+            if (!stored) {
+                // 新文章
+                detectedChanges.push({ ...post, isNew: true });
+            } else {
+                // 检查是否有更新
+                const titleChanged = post.title !== stored.title;
+                const descriptionChanged = post.description !== stored.description;
+                const contentChanged = post.content !== stored.content;
 
-        const db = await openDB();
-        const storedPostsOld = await getStoredPosts(db, STORE_OLD);
-        const storedPostsNew = await getStoredPosts(db, STORE_NEW);
-        let storedPosts = storedPostsOld;
-        if (storedPostsNew.length > 0) {
-            storedPosts = storedPostsNew;
-            await clearStore(db, STORE_OLD);
-            await savePosts(db, STORE_OLD, storedPostsNew);
-        }
+                if (titleChanged || descriptionChanged || contentChanged) {
+                    const diff: { content?: Diff.Change[]; description?: Diff.Change[]; title?: Diff.Change[] } = {};
+                    let hasChanges = false;
 
-        let initTimestamp = localStorage.getItem(INIT_TIME_KEY);
-        if (!initTimestamp) {
-            initTimestamp = Date.now().toString();
-            localStorage.setItem(INIT_TIME_KEY, initTimestamp);
-        }
-        const initTime = parseInt(initTimestamp);
-
-        const localCache = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (storedPostsOld.length === 0 && localCache) {
-            await clearStore(db, STORE_OLD);
-            await savePosts(db, STORE_OLD, currentPosts);
-            await clearStore(db, STORE_NEW);
-            localStorage.removeItem(LOCAL_STORAGE_KEY);
-            showNotification([], Date.now(), false, initTime);
-            return;
-        }
-
-        if (storedPostsOld.length === 0) {
-            await clearStore(db, STORE_OLD);
-            await savePosts(db, STORE_OLD, currentPosts);
-            await clearStore(db, STORE_NEW);
-            localStorage.removeItem(NOTIFICATION_STATE_KEY);
-            // 首次访问也显示通知图标，让用户知道有这个功能
-            showNotification([], Date.now(), true, initTime);
-        } else {
-            await clearStore(db, STORE_NEW);
-            await savePosts(db, STORE_NEW, currentPosts);
-            
-            const storedMap = new Map(
-                storedPosts.map(p => [generateId(p.guid), p])
-            );
-            
-            const detectedChanges: Post[] = [];
-
-            currentPosts.forEach(post => {
-                const stored = storedMap.get(generateId(post.guid));
-                if (!stored) {
-                    detectedChanges.push({ ...post, isUpdated: false });
-                } else {
-                    const titleChanged = post.title !== stored.title;
-                    const descriptionChanged = post.description !== stored.description;
-                    const contentChanged = post.content !== stored.content;
-                    
-                    if (titleChanged || descriptionChanged || contentChanged) {
-                        let result = null;
-                        let hasChanges = false;
-                        
-                        if (contentChanged && post.content && stored.content) {
-                            const contentDiff = computeDiff(stored.content, post.content);
-                            if (contentDiff) {
-                                result = contentDiff;
-                                hasChanges = true;
-                            }
-                        }
-                        
-                        if (!hasChanges && descriptionChanged && post.description && stored.description) {
-                            const descDiff = computeDiff(stored.description, post.description);
-                            if (descDiff) {
-                                result = descDiff;
-                                hasChanges = true;
-                            }
-                        }
-                        
-                        if (!hasChanges && titleChanged) {
-                            result = [
-                                { value: post.title, added: true, removed: false, count: 1 },
-                                { value: stored.title, added: false, removed: true, count: 1 }
-                            ];
+                    // 优先比较内容
+                    if (contentChanged) {
+                        const contentDiff = computeLineDiff(stored.content, post.content);
+                        if (contentDiff) {
+                            diff.content = contentDiff;
                             hasChanges = true;
                         }
-                        
-                        if (hasChanges) {
-                            if (__diffLogEnabled) {
-                                console.groupCollapsed('[NewPostNotification] computed diff', post.title);
-                                console.log({
-                                    link: post.link,
-                                    guid: post.guid,
-                                    titleChanged,
-                                    descriptionChanged,
-                                    contentChanged
-                                });
-                                console.log('diff.raw', result);
-                                console.groupEnd();
-                            }
-                            detectedChanges.push({ 
-                                ...post, 
-                                isUpdated: true, 
-                                diff: result,
-                                diffType: 'composite'
-                            });
+                    }
+
+                    // 然后比较描述
+                    if (!hasChanges && descriptionChanged) {
+                        const descDiff = computeDiff(stored.description, post.description);
+                        if (descDiff) {
+                            diff.description = descDiff;
+                            hasChanges = true;
                         }
                     }
-                }
-            });
 
-            if (detectedChanges.length > 0) {
-                const isAllNew = detectedChanges.length === currentPosts.length && detectedChanges.every(p => !p.isUpdated);
-                const isAllUpdated = detectedChanges.length === currentPosts.length && detectedChanges.every(p => p.isUpdated);
-
-                if (isAllNew || isAllUpdated) {
-                    await clearStore(db, STORE_OLD);
-                    await savePosts(db, STORE_OLD, currentPosts);
-                    await clearStore(db, STORE_NEW);
-                    localStorage.removeItem(NOTIFICATION_STATE_KEY);
-                    showNotification([], Date.now(), false, initTime);
-                    return;
-                }
-
-                const timestamp = Date.now();
-                const state = {
-                    timestamp: timestamp,
-                    items: detectedChanges
-                };
-                localStorage.setItem(NOTIFICATION_STATE_KEY, JSON.stringify(state));
-                
-                showNotification(detectedChanges, timestamp, true, initTime);
-            } else {
-                const persistedStateStr = localStorage.getItem(NOTIFICATION_STATE_KEY);
-                if (persistedStateStr) {
-                    try {
-                        const state = JSON.parse(persistedStateStr);
-                        showNotification(state.items, state.timestamp, false, initTime);
-                    } catch (e) {
-                        showNotification([], Date.now(), false, initTime);
+                    // 最后比较标题
+                    if (!hasChanges && titleChanged) {
+                        const titleDiff = computeDiff(stored.title, post.title);
+                        if (titleDiff) {
+                            diff.title = titleDiff;
+                            hasChanges = true;
+                        }
                     }
-                } else {
-                    showNotification([], Date.now(), false, initTime);
+
+                    if (hasChanges) {
+                        detectedChanges.push({
+                            ...post,
+                            isUpdated: true,
+                            diff,
+                            diffType: 'composite'
+                        });
+                    }
                 }
             }
         }
-    } catch (e) {
-        // 静默处理错误
+
+        // 检测删除的文章（可选）
+        for (const stored of storedPosts) {
+            if (!currentIds.has(stored.id)) {
+                detectedChanges.push({
+                    ...stored,
+                    isDeleted: true,
+                    title: `[已删除] ${stored.title}`
+                });
+            }
+        }
+
+        return detectedChanges;
     }
-})();
+
+    // 主逻辑
+    async function init(): Promise<void> {
+        try {
+            // 检查调试模式
+            const urlParams = new URLSearchParams(window.location.search);
+            const isDevMode = urlParams.has('debug-notification');
+
+            if (isDevMode) {
+                console.log('[Notification] 调试模式');
+                const mockPosts: Post[] = [
+                    { 
+                        title: '新文章示例', 
+                        link: '#', 
+                        guid: 'test-1', 
+                        isNew: true, 
+                        pubDate: Date.now(), 
+                        description: '这是新文章的描述', 
+                        content: '新文章内容' 
+                    },
+                    { 
+                        title: '更新文章示例', 
+                        link: '#', 
+                        guid: 'test-2', 
+                        isUpdated: true,
+                        diff: [
+                            { value: '旧内容', added: false, removed: true },
+                            { value: '新内容', added: true, removed: false }
+                        ],
+                        pubDate: Date.now(), 
+                        description: '这是更新的描述', 
+                        content: '更新后的内容'
+                    },
+                ];
+                showNotification(mockPosts, true, false);
+                return;
+            }
+
+            // 清理模式
+            if (urlParams.get('__diff_debug_cleanup') === '1') {
+                try {
+                    indexedDB.deleteDatabase(DB_NAME);
+                    localStorage.removeItem(NOTIFICATION_STATE_KEY);
+                    localStorage.removeItem(INIT_TIME_KEY);
+                    localStorage.removeItem(LAST_CHECK_KEY);
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('__diff_debug_cleanup');
+                    window.history.replaceState({}, '', url.toString());
+                } catch {}
+            }
+
+            // 获取当前 RSS
+            const currentPosts = await fetchRSS();
+            if (currentPosts.length === 0) {
+                showNotification([], false, false);
+                return;
+            }
+
+            // 打开数据库
+            const db = await openDB();
+            const storedPostsOld = await getStoredPosts(db, STORE_OLD);
+            const storedPostsNew = await getStoredPosts(db, STORE_NEW);
+            
+            // 如果有新的存储，迁移到旧的
+            let storedPosts = storedPostsOld;
+            if (storedPostsNew.length > 0) {
+                storedPosts = storedPostsNew;
+                await clearStore(db, STORE_OLD);
+                await savePosts(db, STORE_OLD, storedPostsNew);
+                await clearStore(db, STORE_NEW);
+            }
+
+            // 获取或设置初始化时间
+            let initTimestamp = localStorage.getItem(INIT_TIME_KEY);
+            if (!initTimestamp) {
+                initTimestamp = Date.now().toString();
+                localStorage.setItem(INIT_TIME_KEY, initTimestamp);
+            }
+            const initTime = parseInt(initTimestamp);
+            const isFirstVisit = storedPosts.length === 0;
+
+            // 更新最后检查时间
+            localStorage.setItem(LAST_CHECK_KEY, Date.now().toString());
+
+            if (isFirstVisit) {
+                // 首次访问：存储当前 RSS，不显示通知
+                await savePosts(db, STORE_OLD, currentPosts);
+                showNotification([], false, true);
+            } else {
+                // 非首次访问：检测变更
+                await savePosts(db, STORE_NEW, currentPosts);
+                
+                const detectedChanges = detectChanges(currentPosts, storedPosts);
+
+                if (detectedChanges.length > 0) {
+                    // 拦截异常场景：所有文章都是新的或都更新了
+                    const isAllNew = detectedChanges.length === currentPosts.length && 
+                                     detectedChanges.every(p => p.isNew);
+                    const isAllUpdated = detectedChanges.length === currentPosts.length && 
+                                         detectedChanges.every(p => p.isUpdated);
+
+                    if (isAllNew || isAllUpdated) {
+                        console.log('[Notification] 检测到异常场景，重置缓存');
+                        await clearStore(db, STORE_OLD);
+                        await savePosts(db, STORE_OLD, currentPosts);
+                        await clearStore(db, STORE_NEW);
+                        localStorage.removeItem(NOTIFICATION_STATE_KEY);
+                        showNotification([], false, false);
+                        return;
+                    }
+
+                    // 保存通知状态
+                    const state: NotificationState = {
+                        timestamp: Date.now(),
+                        items: detectedChanges,
+                        lastCheckTime: Date.now()
+                    };
+                    localStorage.setItem(NOTIFICATION_STATE_KEY, JSON.stringify(state));
+
+                    // 显示通知
+                    showNotification(detectedChanges, true, false);
+                } else {
+                    // 没有新变更，检查是否有持久化的通知
+                    const persistedStateStr = localStorage.getItem(NOTIFICATION_STATE_KEY);
+                    if (persistedStateStr) {
+                        try {
+                            const state: NotificationState = JSON.parse(persistedStateStr);
+                            showNotification(state.items, false, false);
+                        } catch {
+                            showNotification([], false, false);
+                        }
+                    } else {
+                        showNotification([], false, false);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('[Notification] 初始化失败:', e);
+            showNotification([], false, false);
+        }
+    }
+
+    // 启动
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
+    // Astro 页面切换后重新初始化
+    document.addEventListener('astro:page-load', init);
 </script>
