@@ -77,19 +77,18 @@
     <span id="notification-dot" class="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-zinc-800 animate-pulse pointer-events-none transform translate-y-20 opacity-0 scale-0 transition-all duration-260 ease-out"></span>
 </div>
 
-<script>
-    import * as Diff from 'diff';
-
-    interface Post {
-        title: string;
-        link: string;
-        guid: string;
-        pubDate: number;
-        description: string;
-        content: string;
-        isUpdated?: boolean;
-        diff?: Diff.Change[] | null;
-        diffType?: string;
+<script is:inline>
+    // Diff 库动态加载
+    let Diff = null;
+    async function loadDiff() {
+        if (Diff) return Diff;
+        try {
+            Diff = await import('https://cdn.jsdelivr.net/npm/diff@5.1.0/lib/index.es6.js');
+        } catch (e) {
+            // 备用：尝试从全局变量获取
+            Diff = window.Diff;
+        }
+        return Diff;
     }
 
     interface NotificationState {
@@ -299,23 +298,26 @@
         }
     }
 
-    function computeDiff(oldText: string, newText: string): Diff.Change[] | null {
+    async function computeDiff(oldText, newText) {
         if (!oldText || !newText) return null;
+        
+        const diffLib = await loadDiff();
+        if (!diffLib || !diffLib.diffWordsWithSpace) return null;
 
-        const normalizeRaw = (text: string): string => {
+        const normalizeRaw = (text) => {
             const s = String(text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
             const lines = s.split("\n").map((line) => line.replace(/[ \t]+$/g, ""));
             return lines.join("\n").trim();
         };
 
-        const normalizeForDiffHtml = (html: string): string => {
+        const normalizeForDiffHtml = (html) => {
             const raw = normalizeRaw(html);
             if (!raw) return "";
             const parser = new DOMParser();
             const doc = parser.parseFromString(`<div>${raw}</div>`, "text/html");
             const root = doc.body.firstElementChild;
             if (!root) return raw;
-            const clone = root.cloneNode(true) as Element;
+            const clone = root.cloneNode(true);
             clone.querySelectorAll("script, style, iframe, object, embed").forEach((el) => el.remove());
             const text = clone.textContent || "";
             return text.replace(/\s+/g, " ").trim();
@@ -328,16 +330,16 @@
             return null;
         }
 
-        const diffResult = Diff.diffWordsWithSpace(normalizedOld, normalizedNew);
-        const hasChanges = diffResult.some((part: Diff.Change) => part.added || part.removed);
+        const diffResult = diffLib.diffWordsWithSpace(normalizedOld, normalizedNew);
+        const hasChanges = diffResult.some((part) => part.added || part.removed);
         return hasChanges ? diffResult : null;
     }
 
-    function renderDiffToHtml(diffArray: Diff.Change[]): string {
+    function renderDiffToHtml(diffArray) {
         if (!Array.isArray(diffArray) || diffArray.length === 0) {
             return '<span class="text-zinc-500 italic">无内容变更</span>';
         }
-        return diffArray.map((part: Diff.Change) => {
+        return diffArray.map((part) => {
             const text = part.value
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
@@ -353,7 +355,7 @@
         }).join('');
     }
 
-    function showNotification(items: Post[], timestamp: number, hasNew: boolean, initTime: number): void {
+    function showNotification(items, timestamp, hasNew, initTime) {
         const panel = document.getElementById('notification-panel');
         const dot = document.getElementById('notification-dot');
         const list = document.getElementById('new-post-list');
@@ -461,9 +463,9 @@
                 { value: "This line was removed.\n", added: false, removed: true, count: 1 },
                 { value: "This line is new.\n", added: true, removed: false, count: 1 },
                 { value: "More unchanged text.\n", added: false, removed: false, count: 1 }
-            ] as Diff.Change[];
+            ];
             
-            const mockPosts: Post[] = [
+            const mockPosts = [
                 { title: 'Test New Post 1', link: '#', guid: 'test-1', isUpdated: false, pubDate: Date.now(), description: '', content: '' },
                 { 
                     title: 'Test Updated Post', 
@@ -544,7 +546,7 @@
                         let hasChanges = false;
                         
                         if (contentChanged && post.content && stored.content) {
-                            const contentDiff = computeDiff(stored.content, post.content);
+                            const contentDiff = await computeDiff(stored.content, post.content);
                             if (contentDiff) {
                                 result = contentDiff;
                                 hasChanges = true;
@@ -552,7 +554,7 @@
                         }
                         
                         if (!hasChanges && descriptionChanged && post.description && stored.description) {
-                            const descDiff = computeDiff(stored.description, post.description);
+                            const descDiff = await computeDiff(stored.description, post.description);
                             if (descDiff) {
                                 result = descDiff;
                                 hasChanges = true;
