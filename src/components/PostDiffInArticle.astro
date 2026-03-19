@@ -3,12 +3,12 @@
 // 功能：在文章页面显示具体变更内容（新增/删除高亮）
 ---
 
-<script is:inline>
-	const NOTIFICATION_STATE_KEY = "new-posts-notification-state";
+<script>
+	const NOTIFICATION_STATE_KEY = "blog-notification-state";
 	const DEBUG_PARAM_KEY = "__diff_debug";
 	const DEBUG_STATE_KEY = "blog-diff-debug-state";
 	const CONTEXT_LINES = 2;
-	const BASE_URL = (typeof import !== 'undefined' && import.meta?.env?.BASE_URL) || "/";
+	const BASE_URL = import.meta.env.BASE_URL || "/";
 
 	function normalizeGuid(guid, link) {
 		const value = (guid || link || "").trim();
@@ -652,11 +652,11 @@
 		if (anchor instanceof HTMLElement) anchor.scrollIntoView({ behavior: "smooth", block: "start" });
 	}
 
-	if (!window.__blogPostInlineDiffBound) {
+	if (!(window as any).__blogPostInlineDiffBound) {
 		document.addEventListener("DOMContentLoaded", initPostInlineDiff);
 		document.addEventListener("astro:page-load", initPostInlineDiff);
 		window.addEventListener("blog:diff-debug-updated", initPostInlineDiff);
-		window.__blogPostInlineDiffBound = true;
+		(window as any).__blogPostInlineDiffBound = true;
 	}
 </script>
 

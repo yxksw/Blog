@@ -12,7 +12,7 @@ import { defineConfig, passthroughImageService } from "astro/config";
 import tailwindcss from "@tailwindcss/vite";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
-import cloudflare from "@astrojs/cloudflare";
+import vercel from "@astrojs/vercel";
 
 /*
  * Minimal GitHub-style alert parser for markdown blockquotes.
@@ -98,12 +98,13 @@ function remarkGitHubAlertFallback() {
 }
 
 const REPO_BASE = "/Blog/";
+const isVercel = Boolean(process.env.VERCEL);
 const isCloudflarePages = Boolean(process.env.CF_PAGES);
 const isGitHubPages =
   Boolean(process.env.GITHUB_PAGES) || process.env.CI === "true";
 const isProduction = process.env.NODE_ENV === "production";
-// Cloudflare serves from "/", while GitHub Pages needs the repository subpath.
-const runtimeBase = isCloudflarePages ? "/" : isGitHubPages ? REPO_BASE : "/";
+// Vercel/Cloudflare serves from "/", while GitHub Pages needs the repository subpath.
+const runtimeBase = (isVercel || isCloudflarePages) ? "/" : isGitHubPages ? REPO_BASE : "/";
 const runtimeSite = "https://blog.261770.xyz";
 
 /*
@@ -147,7 +148,7 @@ export default defineConfig({
   base: runtimeBase,
   trailingSlash: "always",
   output: "server",
-  adapter: cloudflare(),
+  adapter: vercel(),
   image: {
     service: passthroughImageService(),
   },
