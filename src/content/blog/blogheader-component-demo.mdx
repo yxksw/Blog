@@ -1,0 +1,203 @@
+---
+title: BlogHeader 博客头部组件演示
+description: 展示 BlogHeader 博客头部组件的多种用法，包括自定义标题、副标题、Logo 和 Emoji 动画效果
+pubDate: 2026-03-22
+tags: ['组件', 'Astro', '演示']
+important: false
+author: 异飨客
+lang: cn
+category: 博客
+summary: "本文展示了 BlogHeader 博客头部组件的多种用法，包括自定义标题、副标题、Logo、Emoji 动画效果等功能。"
+---
+
+import Alert from '../../components/post/Alert.astro';
+import Badge from '../../components/post/Badge.astro';
+import BlogHeader from '../../components/post/BlogHeader.astro';
+
+# BlogHeader 博客头部组件演示 🏠
+
+本文展示 **BlogHeader** 博客头部组件的各种功能和用法。这个组件可以：
+
+- 显示博客标题和副标题
+- 自定义 Logo 图标
+- 鼠标悬浮时显示 Emoji 动画效果
+- 标题文字动态粗细变化效果
+- 支持自定义配置
+
+## 基本用法
+
+### 默认样式
+
+<BlogHeader />
+
+## 自定义标题和副标题
+
+<BlogHeader 
+  title="我的博客" 
+  subtitle="记录生活，分享技术"
+  logo="https://api.iconify.design/noto:cat-face.svg"
+/>
+
+## 自定义 Emoji 动画
+
+<BlogHeader 
+  title="技术空间" 
+  subtitle="探索编程的世界"
+  logo="https://api.iconify.design/noto:robot-face.svg"
+  emojiTail={['💻', '️', '🖱️', '💾', '']}
+/>
+
+## 隐藏标题
+
+<BlogHeader 
+  title="隐藏标题" 
+  subtitle="只显示 Logo"
+  logo="https://api.iconify.design/noto:sparkles.svg"
+  showTitle={false}
+/>
+
+## 不同风格的 Logo
+
+### 使用 Iconify 图标
+
+<BlogHeader 
+  title="Iconify 风格" 
+  subtitle="使用 Iconify 图标作为 Logo"
+  logo="https://api.iconify.design/noto:book.svg"
+/>
+
+### 使用自定义图片
+
+<BlogHeader 
+  title="自定义图片" 
+  subtitle="使用自己的图片作为 Logo"
+  logo="https://github.com/github.png"
+/>
+
+## 在不同的场景中使用
+
+### 在文章开头
+
+<BlogHeader 
+  title="文章标题" 
+  subtitle="这是文章的副标题"
+  logo="https://api.iconify.design/noto:pen.svg"
+/>
+
+### 在页面顶部
+
+<BlogHeader 
+  title="欢迎来到我的博客" 
+  subtitle="分享技术，记录生活"
+  logo="https://api.iconify.design/noto:house.svg"
+  emojiTail={['', '📝', '💡', '🎨', '']}
+/>
+
+## 组件使用方式
+
+在 MDX 文件中导入并使用：
+
+```mdx
+import BlogHeader from '../../components/post/BlogHeader.astro';
+
+<!-- 基本用法 -->
+<BlogHeader />
+
+<!-- 自定义配置 -->
+<BlogHeader 
+  title="我的博客" 
+  subtitle="记录生活，分享技术"
+  logo="https://example.com/logo.png"
+  emojiTail={['📝', '💻', '🚀']}
+  showTitle={true}
+/>
+```
+
+## Props 属性说明
+
+| 属性 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| tag | `string` | `'div'` | 标题的 HTML 标签 |
+| title | `string` | `'纸鹿摸鱼处'` | 博客标题 |
+| subtitle | `string` | `'纸鹿至麓不知路，支炉制露不止漉'` | 博客副标题 |
+| logo | `string` | Iconify 图标 | Logo 图片 URL |
+| emojiTail | `string[]` | `['📄', '🦌', '', '🐟', '']` | 悬浮时显示的 Emoji 数组 |
+| showTitle | `boolean` | `true` | 是否显示标题文字 |
+
+## 动画效果说明
+
+### 标题文字动画
+
+- **字体粗细变化**：使用字体变体功能，在 300-900 之间循环变化
+- **斜角效果**：字体斜角属性动态变化
+- **延迟效果**：每个字符有不同的动画延迟，形成波浪效果
+
+### Emoji 悬浮动画
+
+- **悬浮效果**：Emoji 会轻微浮动和缩放
+- **模糊效果**：悬浮时带有模糊效果，增加层次感
+- **透明度变化**：鼠标悬浮时透明度从 0.2 增加到 0.5
+- **延迟效果**：每个 Emoji 有不同的动画延迟
+
+## 字体配置
+
+BlogHeader 组件使用了 **阿里妈妈方圆体** 字体，该字体支持字体变体功能，可以实现动态的粗细和斜角效果。
+
+### 字体子集生成
+
+如果需要自定义字体子集，可以使用以下命令：
+
+```bash
+# 安装工具
+pip install fonttools brotli
+
+# 生成字体子集
+pyftsubset ./AlimamaFangYuanTi.ttf --text=Header 文本 --flavor=woff2
+```
+
+## 自定义样式
+
+你可以通过 CSS 覆盖来自定义样式：
+
+```css
+/* 修改 Logo 大小 */
+.blog-logo {
+  height: 4em; /* 默认 3em */
+}
+
+/* 修改标题字体大小 */
+.header-title {
+  font-size: 2em; /* 默认 1.5em */
+}
+
+/* 修改副标题透明度 */
+.header-subtitle {
+  opacity: 0.7; /* 默认 0.5 */
+}
+```
+
+## 暗色模式适配
+
+BlogHeader 组件完全适配暗色模式：
+
+- 文字颜色自动调整
+- Logo 阴影效果优化
+- Emoji 悬浮效果保持一致
+
+## 性能优化
+
+- **懒加载**：Logo 图片使用 `loading="lazy"` 延迟加载
+- **动画优化**：使用 CSS 动画，GPU 加速
+- **悬浮暂停**：鼠标离开时动画暂停，节省资源
+
+## 结语
+
+BlogHeader 组件让博客的头部更加生动有趣，通过 Emoji 动画和文字动态效果，为访客留下深刻的第一印象。
+
+你可以在以下场景使用 BlogHeader 组件：
+- 博客首页顶部
+- 文章页面开头
+- 个人主页头部
+- 任何需要展示博客标识的地方
+
+让你的博客更加个性化！🎉

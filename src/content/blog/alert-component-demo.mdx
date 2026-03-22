@@ -1,0 +1,227 @@
+---
+title: Alert 提示框组件演示
+description: 展示 Alert 提示框组件的多种用法，包括不同类型、卡片风格、自定义标题和图标等
+pubDate: 2026-03-22
+tags: ['组件', 'Astro', '演示']
+important: false
+author: 异飨客
+lang: cn
+category: 博客
+summary: "本文展示了 Alert 提示框组件的多种用法，包括 tip、info、question、warning、error 五种类型，以及卡片风格、扁平风格、自定义标题和图标等功能。"
+---
+
+import Alert from '../../components/post/Alert.astro';
+
+# Alert 提示框组件演示 📢
+
+本文展示 **Alert** 提示框组件的各种功能和用法。这个组件可以帮助你：
+
+- 突出显示重要信息
+- 区分不同类型的提示（提醒、信息、问题、警告、错误）
+- 支持卡片风格和扁平风格
+- 自定义标题、图标和颜色
+
+## 基本用法
+
+### 提醒（Tip）
+
+<Alert type="tip">
+
+这是一个**提醒**类型的提示框，默认用于显示一般性的提示信息。
+
+支持 Markdown 语法，比如**粗体**、*斜体*、`行内代码`等。
+
+</Alert>
+
+### 信息（Info）
+
+<Alert type="info">
+
+这是一个**信息**类型的提示框，用于显示补充说明或背景信息。
+
+你可以在这里添加更多的解释性内容。
+
+</Alert>
+
+### 问题（Question）
+
+<Alert type="question">
+
+这是一个**问题**类型的提示框，用于提出问题或引发思考。
+
+默认插槽的 [超链接](https://example.com) **粗体** `Inline code`
+
+</Alert>
+
+### 警告（Warning）
+
+<Alert type="warning">
+
+这是一个**警告**类型的提示框，用于提醒用户注意潜在的问题或风险。
+
+请仔细阅读以下内容，确保你了解相关风险。
+
+</Alert>
+
+### 错误（Error）
+
+<Alert type="error">
+
+这是一个**错误**类型的提示框，用于显示错误信息或失败原因。
+
+请检查你的输入或联系管理员获取帮助。
+
+</Alert>
+
+## 自定义标题
+
+你可以通过 `title` 属性自定义标题：
+
+<Alert type="info" title="自定义标题">
+
+这是带有自定义标题的提示框，标题会覆盖默认的类型标题。
+
+</Alert>
+
+## 卡片风格
+
+使用 `card` 属性启用卡片风格（默认启用）：
+
+<Alert type="tip" card={true}>
+
+这是一个**卡片风格**的提示框，具有渐变背景和更好的视觉效果。
+
+卡片风格适合用于需要特别强调的内容。
+
+</Alert>
+
+## 扁平风格
+
+使用 `flat` 属性禁用卡片风格：
+
+<Alert type="warning" flat={true}>
+
+这是一个**扁平风格**的提示框，背景更加简洁。
+
+扁平风格适合用于内容较多或需要节省空间的场景。
+
+</Alert>
+
+## 自定义图标
+
+你可以通过 `icon` 属性指定自定义的 Iconify 图标：
+
+<Alert type="info" icon="ri:lightbulb-fill">
+
+使用自定义图标的提示框，这里使用了 `ri:lightbulb-fill` 图标。
+
+图标可以在 [Iconify](https://iconify.design/) 或 [Yesicon](https://yesicon.app/) 搜索获取。
+
+</Alert>
+
+<Alert type="tip" icon="carbon:favorite">
+
+另一个自定义图标的示例，使用 `carbon:favorite` 图标。
+
+</Alert>
+
+## 自定义颜色
+
+你可以通过 `color` 属性自定义主题色：
+
+<Alert type="info" color="#8B5CF6">
+
+使用自定义颜色的提示框，这里使用了紫色 `#8B5CF6`。
+
+颜色可以是任何有效的 CSS 颜色值。
+
+</Alert>
+
+<Alert type="tip" color="#EC4899">
+
+使用粉色的提示框，颜色值为 `#EC4899`。
+
+</Alert>
+
+## 组合使用
+
+你可以同时使用多个属性来创建独特的提示框：
+
+<Alert type="question" title="卡片风格 标题插槽的 超链接 粗体 Inline code" icon="ph:question-fill" color="#F59E0B" card={true}>
+
+默认插槽的 [超链接](https://example.com) **粗体** `Inline code`
+
+这是一个组合了多种自定义属性的提示框，包括自定义标题、图标、颜色和卡片风格。
+
+</Alert>
+
+<Alert type="error" title="扁平风格 标题插槽的 超链接 粗体 Inline code" icon="ph:x-circle-fill" color="#EF4444" flat={true}>
+
+默认插槽的 [超链接](https://example.com) **粗体** `Inline code`
+
+这是一个扁平风格的错误提示框，同样支持自定义标题、图标和颜色。
+
+</Alert>
+
+## 仅标题，自定义图标和颜色
+
+<Alert type="tip" title="仅标题，并且自定义图标和颜色" icon="ri:star-smile-line" color="#10B981">
+
+这个提示框只设置了标题、图标和颜色，内容区域为空。
+
+</Alert>
+
+## 组件使用方式
+
+在 MDX 文件中导入并使用：
+
+```mdx
+import Alert from '../../components/post/Alert.astro';
+
+<Alert type="tip">
+  这是一个提示框
+</Alert>
+
+<Alert type="info" title="自定义标题" icon="ri:lightbulb-fill" color="#8B5CF6">
+  支持 Markdown 和 **富文本内容**
+</Alert>
+```
+
+## 支持的类型
+
+| 类型 | 说明 | 默认图标 | 默认颜色 |
+|------|------|----------|----------|
+| tip | 提醒 | ph:notepad-bold | #3A7（绿色） |
+| info | 信息 | ph:info-bold | var(--c-primary) |
+| question | 问题 | ph:question-bold | #3AF（青色） |
+| warning | 警告 | ph:warning-bold | #F80（橙色） |
+| error | 错误 | ph:x-circle-bold | #F33（红色） |
+
+## Props 属性说明
+
+| 属性 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| type | `'tip' \| 'info' \| 'question' \| 'warning' \| 'error'` | `'tip'` | 提示框类型 |
+| card | `boolean` | `true` | 是否启用卡片风格 |
+| flat | `boolean` | `false` | 是否使用扁平风格（与 card 相反） |
+| icon | `string` | - | 自定义 Iconify 图标 |
+| color | `string` | - | 自定义主题颜色 |
+| title | `string` | - | 自定义标题 |
+
+## 图标资源
+
+图标可以从以下网站获取：
+
+- [Iconify](https://iconify.design/) - 超过 200,000 个开源图标
+- [Yesicon](https://yesicon.app/) - 图标搜索和浏览工具
+
+图标格式为 `集合名：图标名`，例如：
+- `ri:lightbulb-fill`
+- `ph:question-bold`
+- `carbon:favorite`
+
+## 结语
+
+Alert 组件让博客中的重要信息更加醒目，通过不同的类型和样式帮助读者快速识别内容的性质。
+
+你可以根据需要选择合适的类型和风格，让博客内容更加丰富多彩！🎉

@@ -1,0 +1,181 @@
+---
+title: Badge 徽章组件演示
+description: 展示 Badge 徽章组件的多种用法，包括带链接、自定义图标、圆形方形样式等
+pubDate: 2026-03-22
+tags: ['组件', 'Astro', '演示']
+important: false
+author: 异飨客
+lang: cn
+category: 博客
+summary: "本文展示了 Badge 徽章组件的多种用法，包括带链接的徽章、自定义图标、圆形和方形样式、自动获取站点图标等功能。"
+---
+
+import Alert from '../../components/post/Alert.astro';
+import Badge from '../../components/post/Badge.astro';
+
+# Badge 徽章组件演示 ️
+
+本文展示 **Badge** 徽章组件的各种功能和用法。这个组件可以帮助你：
+
+- 创建美观的链接徽章
+- 自动获取外部网站的图标
+- GitHub 链接自动显示用户头像
+- 支持圆形和方形两种样式
+- 自定义图标和文本
+
+## 基本用法
+
+### 普通带链接
+
+<Badge link="https://example.com" text="普通带链接" />
+
+### 纯文本指定圆形
+
+<Badge text="纯文本指定圆形" round={true} />
+
+### 纯文本指定方形
+
+<Badge text="纯文本指定方形" square={true} />
+
+### 带个图
+
+<Badge img="https://github.com/github.png" text="带个图" />
+
+## 外部域名自动获取站点图标
+
+Badge 组件可以自动根据外部链接获取对应的站点图标：
+
+<Badge link="https://www.zhihu.com" text="纸鹿" />，
+<Badge link="https://blog.example.com" text="古怪杂记本" />
+
+## GitHub 链接自动识别头像
+
+GitHub 链接会自动获取用户的头像：
+
+<Badge link="https://github.com/KazariEX" text="KazariEX" />
+
+也可以指定为方形：
+
+<Badge link="https://github.com/isYangs/GioPic" text="isYangs/GioPic" square={true} />
+
+## 在其他组件中使用
+
+你可以在其他组件（如 Alert）中嵌套使用 Badge 组件：
+
+<Alert type="tip" title="在其他组件中使用">
+
+<Badge link="https://example.com" text="带链接" />
+
+<Badge img="https://github.com/github.png" text="指定圆形" round={true} />
+背景色 <Badge link="https://example.com" text="可以" />
+<Badge link="https://example.com" text="动态变化" />
+<Badge link="https://example.com" text="使用" />
+
+</Alert>
+
+## 更多示例
+
+### 社交媒体
+
+<Badge link="https://github.com" text="GitHub" />
+<Badge link="https://www.bilibili.com" text="Bilibili" />
+<Badge link="https://www.zhihu.com" text="知乎" />
+<Badge link="https://weibo.com" text="微博" />
+<Badge link="https://twitter.com" text="Twitter" />
+
+### 开发者平台
+
+<Badge link="https://stackoverflow.com" text="Stack Overflow" />
+<Badge link="https://www.npmjs.com" text="npm" />
+<Badge link="https://vercel.com" text="Vercel" />
+<Badge link="https://netlify.com" text="Netlify" />
+
+### 文档资源
+
+<Badge link="https://developer.mozilla.org" text="MDN" />
+<Badge link="https://docs.microsoft.com" text="Microsoft Docs" />
+<Badge link="https://astro.build" text="Astro" />
+
+### 自定义图标
+
+<Badge img="https://astro.build/favicon.svg" text="Astro" round={true} />
+<Badge img="https://vuejs.org/logo.svg" text="Vue.js" round={true} />
+<Badge img="https://react.dev/favicon.ico" text="React" round={true} />
+
+## 组件使用方式
+
+在 MDX 文件中导入并使用：
+
+```mdx
+import Badge from '../../components/post/Badge.astro';
+
+<!-- 基本用法 -->
+<Badge link="https://example.com" text="徽章文本" />
+
+<!-- 圆形样式 -->
+<Badge text="圆形" round={true} />
+
+<!-- 方形样式 -->
+<Badge text="方形" square={true} />
+
+<!-- 自定义图标 -->
+<Badge img="https://example.com/icon.png" text="带图标" />
+
+<!-- 在 Alert 中使用 -->
+<Alert type="tip">
+  <Badge link="https://example.com" text="链接徽章" />
+</Alert>
+```
+
+## Props 属性说明
+
+| 属性 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| img | `string` | - | 自定义图标 URL |
+| text | `string` | - | 徽章文本内容 |
+| link | `string` | - | 链接地址 |
+| round | `boolean` | `false` | 是否使用圆形样式 |
+| square | `boolean` | `false` | 是否使用方形样式 |
+
+## 样式说明
+
+### 自动样式规则
+
+- **有图标时**：默认为圆形，除非指定 `square={true}`
+- **无图标时**：默认为方形，除非指定 `round={true}`
+
+### 视觉效果
+
+- 边框和背景色会根据当前文本颜色自动调整
+- 悬停时颜色会加深
+- 外部链接会自动在新标签页打开
+- 鼠标悬停会显示域名提示
+
+## 图标获取规则
+
+Badge 组件会智能地获取图标：
+
+1. **自定义图标优先**：如果提供了 `img` 属性，直接使用自定义图标
+2. **GitHub 头像**：如果是 GitHub 链接，自动获取用户头像
+3. **站点图标**：如果是其他外部链接，使用 Google 服务获取站点 favicon
+4. **无图标**：如果没有链接或内部链接，不显示图标
+
+## 暗色模式适配
+
+Badge 组件完全适配暗色模式：
+
+- 边框颜色自动调整
+- 背景色透明度优化
+- 悬停效果保持一致
+
+## 结语
+
+Badge 组件让博客中的链接更加美观和实用，通过自动获取图标和智能样式，让读者一眼就能识别链接的类型和来源。
+
+你可以在文章中使用 Badge 组件来：
+- 标注引用的来源
+- 展示相关的 GitHub 项目
+- 链接到社交媒体
+- 美化外部链接
+
+让博客内容更加丰富多彩！🎉

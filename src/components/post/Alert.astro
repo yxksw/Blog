@@ -1,0 +1,144 @@
+---
+/**
+ * Alert - 提示框组件
+ * 
+ * 功能：
+ * 1. 支持多种类型：tip, info, question, warning, error
+ * 2. 支持卡片风格和扁平风格
+ * 3. 支持自定义标题、图标和颜色
+ * 4. 支持插槽内容
+ */
+
+interface Props {
+  type?: 'tip' | 'info' | 'question' | 'warning' | 'error';
+  card?: boolean;
+  flat?: boolean;
+  icon?: string;
+  color?: string;
+  title?: string;
+}
+
+const {
+  type = 'tip',
+  card: cardProp,
+  flat: flatProp,
+  icon: customIcon,
+  color: customColor,
+  title: customTitle,
+} = Astro.props;
+
+const typeMap = {
+  tip: {
+    icon: 'ph:notepad-bold',
+    color: '#3A7',
+    title: '提醒',
+  },
+  info: {
+    icon: 'ph:info-bold',
+    color: 'var(--c-primary, #3b82f6)',
+    title: '信息',
+  },
+  question: {
+    icon: 'ph:question-bold',
+    color: '#3AF',
+    title: '问题',
+  },
+  warning: {
+    icon: 'ph:warning-bold',
+    color: '#F80',
+    title: '警告',
+  },
+  error: {
+    icon: 'ph:x-circle-bold',
+    color: '#F33',
+    title: '错误',
+  },
+};
+
+const icon = customIcon || typeMap[type].icon;
+const color = customColor || typeMap[type].color;
+const title = customTitle || typeMap[type].title;
+const isCard = cardProp !== undefined ? cardProp : (flatProp !== undefined ? !flatProp : true);
+---
+
+<div class="alert" class:card={isCard} style={color ? `--c-primary: ${color}` : undefined}>
+  <div class="alert-title">
+    {icon && (
+      <img
+        src={`https://api.iconify.design/${icon}.svg`}
+        alt=""
+        class="alert-icon"
+        width="18"
+        height="18"
+        loading="lazy"
+      />
+    )}
+    <slot name="title">{title}</slot>
+  </div>
+  <div class="alert-content">
+    <slot />
+  </div>
+</div>
+
+<style>
+  .alert {
+    margin: 1em 0;
+    padding: 0.2em 0.8em;
+    border-radius: 0.5em;
+    background-color: var(--c-bg-2, rgba(24, 24, 27, 0.04));
+    font-size: 0.9em;
+  }
+
+  .alert.card {
+    background-color: var(--ld-bg-card, rgba(255, 255, 255, 0.85));
+    background-image: 
+      radial-gradient(circle at 4em -25em, var(--c-primary), transparent 30em);
+  }
+
+  .alert-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin: 0.5em 0;
+    font-weight: bold;
+    color: var(--c-primary);
+  }
+
+  .alert-title p {
+    margin: 0;
+  }
+
+  .alert-content {
+    margin: 0.5em 0;
+  }
+
+  .alert-content > :first-child {
+    margin-top: 0;
+  }
+
+  .alert-content > :last-child {
+    margin-bottom: 0;
+  }
+
+  .alert-icon {
+    flex-shrink: 0;
+    width: 1.1em;
+    height: 1.1em;
+    object-fit: contain;
+    vertical-align: middle;
+  }
+
+  /* 暗色模式适配 */
+  :global(.dark) .alert {
+    --c-primary: var(--c-primary, #60a5fa);
+  }
+
+  :global(.dark) .alert.card {
+    background-color: var(--ld-bg-card, rgba(24, 24, 27, 0.8));
+  }
+
+  /* 暗色模式下图标变为白色 */
+  :global(.dark) .alert-icon {
+    filter: brightness(0) invert(1);
+  }
+</style>

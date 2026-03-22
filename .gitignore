@@ -18,6 +18,9 @@ pnpm-debug.log*
 .env
 .env.production
 
+# wechat token cache
+.wechat-token-cache.json
+
 # macOS-specific files
 .DS_Store
 

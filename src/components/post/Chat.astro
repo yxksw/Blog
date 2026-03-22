@@ -1,0 +1,106 @@
+---
+/**
+ * Chat - 聊天消息组件
+ * 
+ * 功能：
+ * 1. 显示聊天对话样式
+ * 2. 支持系统消息
+ * 3. 支持自定义用户消息
+ * 4. 支持撤回消息提示
+ */
+
+interface Props {
+  user?: string;
+  system?: boolean;
+  timestamp?: string;
+  myself?: boolean;
+}
+
+const { user, system = false, timestamp, myself = false } = Astro.props;
+---
+
+{timestamp && (
+  <div class="chat-timestamp">
+    {timestamp}
+  </div>
+)}
+
+{system ? (
+  <div class="chat-message chat-system">
+    <slot />
+  </div>
+) : (
+  <div class={`chat-message ${myself ? 'chat-myself' : ''}`}>
+    {user && (
+      <div class="chat-user">{user}</div>
+    )}
+    <div class="chat-bubble">
+      <slot />
+    </div>
+  </div>
+)}
+
+<style>
+  .chat-timestamp {
+    text-align: center;
+    opacity: 0.6;
+    font-size: 0.85em;
+    margin: 1.5em 0 1em;
+    font-family: monospace;
+  }
+
+  .chat-message {
+    margin-bottom: 1em;
+    max-width: 90%;
+  }
+
+  .chat-message.chat-system {
+    margin: 1em 2vw;
+    text-align: center;
+    opacity: 0.8;
+    font-size: 0.9em;
+  }
+
+  /* 右侧消息（自己）- 显示在右边 */
+  .chat-message.chat-myself {
+    margin-left: auto;
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .chat-user {
+    opacity: 0.8;
+    font-size: 0.9em;
+    margin-bottom: 0.2em;
+  }
+
+  .chat-bubble {
+    display: inline-block;
+    overflow: hidden;
+    width: fit-content;
+    max-width: 100%;
+    padding: 0.6em 1em;
+    border-radius: 1em;
+    border-start-start-radius: 0.2em;
+    background-color: var(--c-bg-2, rgba(24, 24, 27, 0.04));
+    line-height: 1.5;
+  }
+
+  .chat-message.chat-myself .chat-bubble {
+    border-radius: 1em;
+    border-start-end-radius: 0.2em;
+    background-color: var(--c-primary-soft, rgba(59, 130, 246, 0.15));
+    margin-left: auto;
+  }
+
+  /* 暗色模式适配 */
+  :global(.dark) .chat-bubble {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  :global(.dark) .chat-message.chat-myself .chat-bubble {
+    background-color: rgba(59, 130, 246, 0.2);
+  }
+</style>
