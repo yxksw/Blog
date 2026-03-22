@@ -589,6 +589,7 @@
 
         // 显示面板
         panel.classList.remove('translate-y-20', 'opacity-0');
+        dot?.classList.remove('translate-y-20', 'opacity-0');
 
         // 自动展开逻辑
         const shouldAutoOpen = hasNew && !isFirstVisit && items.length > 0;
@@ -597,9 +598,11 @@
             setTimeout(() => {
                 openPanel();
             }, 800);
-            dot?.classList.add('opacity-0', 'scale-0');
-        } else if (hasNew) {
-            dot?.classList.remove('opacity-0', 'scale-0', 'translate-y-20');
+            dot?.classList.add('scale-0');
+        } else if (hasNew && items.length > 0) {
+            dot?.classList.remove('scale-0');
+        } else {
+            dot?.classList.add('scale-0');
         }
 
         setupEventListeners();
@@ -799,8 +802,8 @@
                         guid: 'test-2', 
                         isUpdated: true,
                         diff: [
-                            { value: '旧内容', added: false, removed: true },
-                            { value: '新内容', added: true, removed: false }
+                            { value: '旧内容', added: false, removed: true, count: 1 },
+                            { value: '新内容', added: true, removed: false, count: 1 }
                         ],
                         pubDate: Date.now(), 
                         description: '这是更新的描述', 
