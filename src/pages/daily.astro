@@ -329,7 +329,6 @@ function formatTime(dateStr: string): string {
     <!-- Lightbox Script -->
     <script is:inline>
         (function() {
-            let lockedScrollY = 0;
             let isBodyLocked = false;
 
             const getLightboxElements = () => {
@@ -353,7 +352,6 @@ function formatTime(dateStr: string): string {
                     requestAnimationFrame(() => {
                         document.body.style.overflow = '';
                         document.body.style.paddingRight = '';
-                        window.scrollTo(0, lockedScrollY);
                         isBodyLocked = false;
                     });
                 }
@@ -364,8 +362,6 @@ function formatTime(dateStr: string): string {
                 if (!overlay || !target || !src) return;
 
                 if (!isBodyLocked) {
-                    lockedScrollY = window.scrollY;
-                    // 计算滚动条宽度，避免页面抖动
                     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
                     document.body.style.overflow = 'hidden';
                     if (scrollbarWidth > 0) {

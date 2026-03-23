@@ -411,8 +411,6 @@ function extractText(html: string): string {
     <!-- Lightbox Script -->
     <script is:inline>
         (function() {
-            let lockedScrollY = 0;
-
             const getLightboxElements = () => {
                 const overlay = document.getElementById('essays-lightbox');
                 const target = document.getElementById('essays-lightbox-target');
@@ -432,7 +430,6 @@ function extractText(html: string): string {
                 requestAnimationFrame(() => {
                     document.body.style.overflow = '';
                     document.body.style.paddingRight = '';
-                    window.scrollTo(0, lockedScrollY);
                 });
             };
 
@@ -440,7 +437,6 @@ function extractText(html: string): string {
                 const { overlay, target } = getLightboxElements();
                 if (!overlay || !target || !src) return;
 
-                lockedScrollY = window.scrollY;
                 const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
                 document.body.style.overflow = 'hidden';
                 if (scrollbarWidth > 0) {

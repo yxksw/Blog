@@ -1,0 +1,87 @@
+---
+/**
+ * EmojiClock - 表情时钟组件
+ * 
+ * 功能：
+ * 1. 显示当前时间的表情时钟
+ * 2. 支持静态显示（每半小时一个表情）
+ * 3. 支持旋转模式（每分钟旋转）
+ * 4. 支持指定时间显示
+ */
+
+interface Props {
+  datetime?: string;
+  rotate?: boolean;
+}
+
+const { datetime, rotate = false } = Astro.props;
+---
+
+<span
+  class="emoji-clock"
+  class:list={{ rotate }}
+  data-datetime={datetime}
+  data-rotate={rotate}
+>
+  🕛
+</span>
+
+<script>
+  const emojiStatic = ['🕛', '🕧', '🕐', '🕜', '🕑', '🕝', '🕒', '🕞', '🕓', '🕟', '🕔', '🕠', '🕕', '🕡', '🕖', '🕢', '🕗', '🕣', '🕘', '🕤', '🕙', '🕥', '🕚', '🕦'];
+  const emojiRotate = ['🕛', '🕐', '🕑', '🕒', '🕓', '🕔', '🕕', '🕖', '🕗', '🕘', '🕙', '🕚'];
+
+  function getEmoji(datetime: string | null, rotate: boolean) {
+    const now = datetime ? new Date(datetime) : new Date();
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+
+    if (!rotate) {
+      const emojiIndex = (hour * 2 + Math.round(minute / 30)) % emojiStatic.length;
+      return { emoji: emojiStatic[emojiIndex], rotate: 0 };
+    }
+
+    const minuteAt = Math.round(minute / 5);
+    const emojiIndex = (hour % 12 - minuteAt + emojiRotate.length) % emojiRotate.length;
+    return { emoji: emojiRotate[emojiIndex], rotate: minuteAt * 30 };
+  }
+
+  function updateClocks() {
+    document.querySelectorAll('.emoji-clock').forEach(el => {
+      const datetime = el.getAttribute('data-datetime');
+      const rotate = el.getAttribute('data-rotate') === 'true';
+      const status = getEmoji(datetime, rotate);
+      
+      el.textContent = status.emoji;
+      
+      if (rotate) {
+        (el as HTMLElement).style.setProperty('--deg', `${status.rotate}deg`);
+      }
+    });
+  }
+
+  // 初始化
+  updateClocks();
+
+  // 每30秒更新一次（仅对当前时间模式）
+  setInterval(() => {
+    document.querySelectorAll('.emoji-clock[data-datetime=""], .emoji-clock:not([data-datetime])').forEach(el => {
+      const rotate = el.getAttribute('data-rotate') === 'true';
+      const status = getEmoji(null, rotate);
+      el.textContent = status.emoji;
+      if (rotate) {
+        (el as HTMLElement).style.setProperty('--deg', `${status.rotate}deg`);
+      }
+    });
+  }, 30000);
+</script>
+
+<style>
+  .emoji-clock {
+    display: inline-block;
+  }
+  
+  .emoji-clock.rotate {
+    transform: rotate(var(--deg, 0deg));
+    transition: transform 0.3s ease;
+  }
+</style>

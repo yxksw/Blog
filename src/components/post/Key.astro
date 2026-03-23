@@ -1,0 +1,233 @@
+---
+/**
+ * Key - 键盘按键组件
+ * 
+ * 功能：
+ * 1. 显示键盘按键样式
+ * 2. 按下对应键时会高亮
+ * 3. 支持组合键显示
+ * 4. 支持点击触发事件
+ * 5. macOS 自动使用图标
+ */
+
+interface Props {
+  text?: string;
+  /** https://developer.mozilla.org/zh-CN/docs/Web/API/KeyboardEvent/key */
+  code?: string;
+  /** 仅 macOS 默认显示图标 */
+  icon?: boolean;
+  ctrl?: boolean;
+  shift?: boolean;
+  alt?: boolean;
+  meta?: boolean;
+  win?: boolean;
+  /** 智能适配：Windows用Ctrl，macOS用Cmd */
+  cmd?: boolean;
+  prevent?: boolean;
+}
+
+const { text, code, icon, ctrl, shift, alt, meta, win, cmd, prevent } = Astro.props;
+---
+
+<kbd class="key" data-code={code} data-icon={icon} data-ctrl={ctrl} data-shift={shift} data-alt={alt} data-meta={meta} data-win={win} data-cmd={cmd} data-prevent={prevent}>
+  <slot>{text || code}</slot>
+</kbd>
+
+<script>
+  // 检测是否为 macOS
+  const isMac = /mac ?os/i.test(navigator?.userAgent);
+
+  // 显示名称映射
+  const displayMap: Record<string, string> = {
+    ' ': 'Space',
+    'ArrowDown': '↓',
+    'ArrowLeft': '←',
+    'ArrowRight': '→',
+    'ArrowUp': '↑',
+    'Control': 'Ctrl',
+    'Delete': 'Del',
+    'Escape': 'Esc',
+    'Meta': isMac ? 'Cmd' : 'Win',
+  };
+
+  // 符号映射（macOS 风格）
+  const symbolMap: Record<string, string> = {
+    ' ': '␣',
+    'Alt': '⌥',
+    'Backspace': '⌫',
+    'Control': '⌃',
+    'Delete': '⌦',
+    'Enter': '↵',
+    'Escape': '⎋',
+    'Meta': isMac ? '⌘' : '⊞',
+    'Shift': '⇧',
+    'Tab': '⇥',
+    'Win': '⊞',
+  };
+
+  function normalizeCodeDisplay(code: string | undefined, useSymbol: boolean): string {
+    if (!code) return '';
+    if (useSymbol && code in symbolMap) return symbolMap[code];
+    if (code in displayMap) return displayMap[code];
+    return code;
+  }
+
+  function getCodeDisplay(kbd: HTMLElement): string {
+    const text = kbd.textContent?.trim();
+    const code = kbd.getAttribute('data-code') || '';
+    const iconAttr = kbd.getAttribute('data-icon');
+    const useSymbol = iconAttr !== null ? iconAttr === 'true' : isMac;
+    const keyJoiner = useSymbol ? '' : '+';
+
+    const ctrl = kbd.getAttribute('data-ctrl') === 'true';
+    const shift = kbd.getAttribute('data-shift') === 'true';
+    const alt = kbd.getAttribute('data-alt') === 'true';
+    const meta = kbd.getAttribute('data-meta') === 'true';
+    const win = kbd.getAttribute('data-win') === 'true';
+    const cmd = kbd.getAttribute('data-cmd') === 'true';
+
+    const keyConfigs = [
+      { condition: cmd, code: isMac ? 'Meta' : 'Control' },
+      { condition: ctrl && !cmd, code: 'Control' },
+      { condition: shift, code: 'Shift' },
+      { condition: alt, code: 'Alt' },
+      { condition: meta && !cmd, code: 'Meta' },
+      { condition: win && !meta, code: 'Win' },
+      { condition: !!code, code },
+    ];
+
+    const display = keyConfigs
+      .filter(config => config.condition)
+      .map(config => normalizeCodeDisplay(config.code, useSymbol))
+      .join(keyJoiner);
+
+    return display || text || code;
+  }
+
+  // 初始化显示
+  document.querySelectorAll('.key').forEach(kbd => {
+    const display = getCodeDisplay(kbd as HTMLElement);
+    if (display) {
+      kbd.textContent = display;
+    }
+  });
+
+  // 键盘事件监听
+  const keyStates: Record<string, boolean> = {};
+
+  document.addEventListener('keydown', (e) => {
+    keyStates[e.key] = true;
+    keyStates['Control'] = e.ctrlKey;
+    keyStates['Shift'] = e.shiftKey;
+    keyStates['Alt'] = e.altKey;
+    keyStates['Meta'] = e.metaKey;
+
+    document.querySelectorAll('.key').forEach(kbd => {
+      const code = kbd.getAttribute('data-code');
+      const ctrl = kbd.getAttribute('data-ctrl') === 'true';
+      const shift = kbd.getAttribute('data-shift') === 'true';
+      const alt = kbd.getAttribute('data-alt') === 'true';
+      const meta = kbd.getAttribute('data-meta') === 'true';
+      const win = kbd.getAttribute('data-win') === 'true';
+      const cmd = kbd.getAttribute('data-cmd') === 'true';
+      const prevent = kbd.getAttribute('data-prevent') === 'true';
+
+      // 检查修饰键是否匹配
+      const cmdMatch = cmd ? (isMac ? keyStates['Meta'] : keyStates['Control']) : true;
+      const modifiersMatch = cmdMatch
+        && (!ctrl || (!cmd && keyStates['Control']))
+        && (!shift || keyStates['Shift'])
+        && (!alt || keyStates['Alt'])
+        && (!meta || (!cmd && keyStates['Meta']));
+
+      // 检查按键是否匹配
+      const keyMatch = !code || e.key.toLowerCase() === code.toLowerCase();
+
+      if (modifiersMatch && keyMatch) {
+        kbd.classList.add('active');
+        
+        // 触发自定义事件
+        kbd.dispatchEvent(new CustomEvent('press', { bubbles: true }));
+        
+        if (prevent) {
+          e.preventDefault();
+        }
+      }
+    });
+  });
+
+  document.addEventListener('keyup', (e) => {
+    keyStates[e.key] = false;
+    keyStates['Control'] = e.ctrlKey;
+    keyStates['Shift'] = e.shiftKey;
+    keyStates['Alt'] = e.altKey;
+    keyStates['Meta'] = e.metaKey;
+
+    document.querySelectorAll('.key').forEach(kbd => {
+      const code = kbd.getAttribute('data-code');
+      const keyMatch = !code || e.key.toLowerCase() === code.toLowerCase();
+      
+      if (keyMatch) {
+        kbd.classList.remove('active');
+      }
+    });
+  });
+
+  window.addEventListener('blur', () => {
+    document.querySelectorAll('.key').forEach(kbd => {
+      kbd.classList.remove('active');
+    });
+  });
+
+  // 点击事件
+  document.querySelectorAll('.key').forEach(kbd => {
+    kbd.addEventListener('click', (e) => {
+      e.stopPropagation();
+      kbd.classList.add('active');
+      kbd.dispatchEvent(new CustomEvent('press', { bubbles: true }));
+      
+      setTimeout(() => {
+        kbd.classList.remove('active');
+      }, 150);
+    });
+  });
+</script>
+
+<style>
+  .key {
+    display: inline-block;
+    margin: 0.1em;
+    padding: 0.15em 0.4em 0.2em;
+    border-radius: 0.3em;
+    box-shadow: inset 0 -2px 0 var(--c-bg-soft, rgba(0, 0, 0, 0.1));
+    background-color: var(--c-bg-soft, rgba(0, 0, 0, 0.05));
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.85em;
+    line-height: 1.4;
+    color: var(--c-text-2, inherit);
+    transition: all 0.1s ease;
+    user-select: none;
+    cursor: pointer;
+    border: 1px solid var(--c-border, rgba(0, 0, 0, 0.1));
+  }
+
+  .key:active,
+  .key.active {
+    box-shadow: inset 0 -1px 0 var(--c-primary, #3b82f6);
+    background-color: var(--c-primary-soft, rgba(59, 130, 246, 0.15));
+    color: var(--c-primary, #3b82f6);
+    transform: translateY(1px);
+  }
+
+  /* 暗色模式适配 */
+  :global(.dark) .key {
+    background-color: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 -2px 0 rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  :global(.dark) .key:active,
+  :global(.dark) .key.active {
+    background-color: rgba(59, 130, 246, 0.2);
+  }
+</style>

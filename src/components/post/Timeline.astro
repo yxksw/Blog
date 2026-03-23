@@ -1,0 +1,126 @@
+---
+/**
+ * Timeline - 时间线组件
+ *
+ * 功能：
+ * 1. 展示时间线内容
+ * 2. 支持标题（使用 {标题} 格式）和内容
+ * 3. 适配博客的暗色模式
+ */
+
+interface Props {
+  /** 时间线项目数组，每个项目可以是标题（以 { 开头 } 结尾）或内容 */
+  items?: Array<{ caption?: string; content?: string }>;
+}
+
+const { items } = Astro.props;
+
+// 解析 slot 内容
+const slotContent = await Astro.slots.render('default');
+---
+
+<dl class="timeline">
+  {items ? (
+    items.map((item) => (
+      <>
+        {item.caption && (
+          <dt class="timeline-caption">{item.caption}</dt>
+        )}
+        {item.content && (
+          <dd class="timeline-body" set:html={item.content} />
+        )}
+      </>
+    ))
+  ) : (
+    <slot />
+  )}
+</dl>
+
+<style>
+  .timeline {
+    position: relative;
+    padding-inline-start: 1.5em;
+    font-size: 0.95em;
+    margin: 1.5rem 0;
+  }
+
+  .timeline::before {
+    content: "";
+    position: absolute;
+    inset: 0.5em auto 0;
+    inset-inline-start: 0.5em;
+    width: 0.25em;
+    border-radius: 1em;
+    background-color: var(--c-bg-soft, rgba(0, 0, 0, 0.1));
+  }
+
+  .timeline-caption {
+    opacity: 0.85;
+    font-size: 0.95em;
+    color: var(--c-text-2, rgba(0, 0, 0, 0.65));
+    margin: 0.5em 0;
+    position: relative;
+  }
+
+  .timeline-caption::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: -1.2em;
+    width: 0.7em;
+    height: 0.7em;
+    margin-top: 0.35em;
+    border-radius: 50%;
+    background-color: var(--c-text-2, rgba(0, 0, 0, 0.5));
+  }
+
+  .timeline-body {
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 0 1em 0;
+    padding: 0.6em 1em;
+    background-color: var(--c-bg-soft, rgba(0, 0, 0, 0.05));
+    border-radius: 0.5em;
+    color: var(--c-text, inherit);
+    position: relative;
+  }
+
+  .timeline-body::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: -1.15em;
+    top: 0.8em;
+    width: 0.6em;
+    height: 0.6em;
+    border-radius: 50%;
+    background-color: var(--c-primary, #3b82f6);
+  }
+
+  .timeline-body :global(p) {
+    margin: 0;
+  }
+
+  .timeline-body :global(p + p) {
+    margin-top: 0.5em;
+  }
+
+  /* 暗色模式适配 */
+  :global(.dark) .timeline::before {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  :global(.dark) .timeline-caption {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  :global(.dark) .timeline-caption::before {
+    background-color: rgba(255, 255, 255, 0.5);
+  }
+
+  :global(.dark) .timeline-body {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+
+  :global(.dark) .timeline-body::before {
+    background-color: var(--c-primary, #60a5fa);
+  }
+</style>

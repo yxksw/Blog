@@ -1,0 +1,129 @@
+---
+/**
+ * Pic - 图片展示组件
+ * 
+ * 功能：
+ * 1. 展示图片，支持说明文字
+ * 2. 点击后打开灯箱缩放
+ * 3. 支持自定义宽高
+ */
+
+interface Props {
+  src: string;
+  alt?: string;
+  caption?: string;
+  width?: number | string;
+  height?: number | string;
+  zoom?: boolean;
+}
+
+const { 
+  src, 
+  alt = '', 
+  caption = '', 
+  width, 
+  height,
+  zoom = true 
+} = Astro.props;
+
+const style: Record<string, string> = {};
+if (width) style.width = typeof width === 'number' ? `${width}px` : width;
+if (height) style.height = typeof height === 'number' ? `${height}px` : height;
+---
+
+<figure class="pic-figure" data-pic-figure>
+  <img
+    class="pic-image"
+    class:list={{ 'pic-zoomable': zoom }}
+    src={src}
+    alt={caption || alt}
+    style={Object.keys(style).length > 0 ? style : undefined}
+    loading="lazy"
+    data-pic-src={src}
+    data-pic-alt={caption || alt}
+  />
+  {(caption || alt) && (
+    <figcaption class="pic-caption">
+      {caption || alt}
+    </figcaption>
+  )}
+</figure>
+
+<style>
+  .pic-figure {
+    margin: 1.5rem auto;
+    max-width: 100%;
+    text-align: center;
+  }
+
+  .pic-image {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    margin: 0 auto;
+    transition: transform 0.2s ease;
+  }
+
+  .pic-zoomable {
+    cursor: zoom-in;
+  }
+
+  .pic-zoomable:hover {
+    transform: scale(1.01);
+  }
+
+  .pic-caption {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: var(--c-text-2, rgba(0, 0, 0, 0.6));
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  /* 暗色模式适配 */
+  :global(.dark) .pic-caption {
+    color: rgba(255, 255, 255, 0.6);
+  }
+</style>
+
+<script>
+  // 为 Pic 组件的图片添加灯箱点击事件
+  document.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement;
+    if (!(target instanceof HTMLImageElement)) return;
+    
+    // 检查是否点击了 Pic 组件的图片
+    const picFigure = target.closest('[data-pic-figure]');
+    if (!picFigure) return;
+    
+    // 检查是否支持缩放
+    if (!target.classList.contains('pic-zoomable')) return;
+
+    // 获取灯箱元素
+    const overlay = document.getElementById('img-lightbox');
+    const lightboxTarget = document.getElementById('img-lightbox-target') as HTMLImageElement;
+    
+    if (!overlay || !lightboxTarget) return;
+
+    // 获取图片数据
+    const src = target.dataset.picSrc || target.src;
+    const alt = target.dataset.picAlt || target.alt;
+
+    // 打开灯箱
+    event.preventDefault();
+    
+    // 锁定 body 滚动
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = scrollbarWidth + 'px';
+    }
+
+    lightboxTarget.src = src;
+    lightboxTarget.alt = alt;
+    overlay.classList.remove('hidden');
+    overlay.classList.add('flex');
+    overlay.setAttribute('aria-hidden', 'false');
+  });
+</script>

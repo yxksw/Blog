@@ -1,0 +1,113 @@
+---
+/**
+ * Quote - 引用展示组件
+ *
+ * 功能：
+ * 1. 支持自定义图标（使用 Iconify 图标库）
+ * 2. 支持通过 iconHtml 使用 Emoji 或颜文字作为图标
+ * 3. 悬停时图标有动画效果
+ * 4. 适配博客的暗色模式
+ */
+
+interface Props {
+  /** Iconify 图标名称，默认 'ph:chat-centered-text-duotone' */
+  icon?: string;
+  /** 自定义图标 HTML（Emoji、颜文字等），设置后会覆盖 icon */
+  iconHtml?: string;
+}
+
+const { icon = 'ph:chat-centered-text-duotone', iconHtml } = Astro.props;
+---
+
+<div class="quote">
+  <div class="icon-line" aria-hidden="true">
+    {iconHtml ? (
+      <span class="quote-icon-html">{iconHtml}</span>
+    ) : (
+      <img
+        src={`https://api.iconify.design/${icon}.svg`}
+        alt=""
+        class="quote-icon"
+        loading="lazy"
+      />
+    )}
+  </div>
+  <div class="quote-content">
+    <slot />
+  </div>
+</div>
+
+<style>
+  .quote {
+    position: relative;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--c-text-2, rgba(0, 0, 0, 0.65));
+    isolation: isolate;
+    margin: 1.5rem 0;
+    padding: 0.5rem 0;
+  }
+
+  .icon-line {
+    position: relative;
+    opacity: 0.4;
+    min-height: 0.5em;
+    margin-bottom: -0.3em;
+    mask-image: linear-gradient(to bottom, #000, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, #000, transparent);
+    font-size: 3.5rem;
+    transition: all 0.2s ease;
+    z-index: -1;
+    line-height: 1;
+  }
+
+  .quote-icon {
+    width: 1em;
+    height: 1em;
+    object-fit: contain;
+    display: block;
+    margin-top: -0.2em;
+    margin-bottom: -0.4em;
+  }
+
+  .quote-icon-html {
+    display: block;
+    font-size: 0.8em;
+    line-height: 1;
+  }
+
+  .quote:hover .icon-line {
+    opacity: 0.7;
+    transform: translateY(-0.3rem);
+  }
+
+  .quote-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .quote-content :global(p) {
+    margin: 0;
+  }
+
+  .quote-content :global(p + p) {
+    margin-top: 0.5em;
+  }
+
+  /* 暗色模式适配 */
+  :global(.dark) .quote {
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  :global(.dark) .quote-icon {
+    filter: brightness(0) invert(1);
+    opacity: 0.8;
+  }
+
+  /* 响应式适配 */
+  @media (max-width: 640px) {
+    .icon-line {
+      font-size: 2.5rem;
+    }
+  }
+</style>

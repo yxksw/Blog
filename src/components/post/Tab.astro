@@ -1,0 +1,225 @@
+---
+/**
+ * Tab - 标签页组件
+ *
+ * 功能：
+ * 1. 支持多个标签页切换
+ * 2. 支持居中显示
+ * 3. 支持设置默认激活的标签
+ * 4. 适配博客的暗色模式
+ */
+
+interface Props {
+  /** tab 标题数组 */
+  tabs: string[];
+  /** 是否居中显示 */
+  center?: boolean;
+  /** 默认激活的标签下标（从1开始） */
+  active?: number;
+}
+
+const { tabs, center = false, active = 1 } = Astro.props;
+---
+
+<div class={`tab-wrapper ${center ? 'center' : ''}`} data-active={active}>
+  <div class="tabs">
+    {tabs.map((tab, index) => (
+      <button
+        class="tab-button"
+        class:active={index + 1 === active}
+        data-index={index + 1}
+        type="button"
+      >
+        {tab}
+      </button>
+    ))}
+  </div>
+  <div class="tab-contents">
+    <slot />
+  </div>
+</div>
+
+<script>
+  (function initTabs() {
+    document.querySelectorAll('.tab-wrapper').forEach(function(wrapper) {
+      const buttons = wrapper.querySelectorAll('.tab-button');
+      const contents = wrapper.querySelector('.tab-contents');
+      if (!contents) return;
+
+      const children = Array.from(contents.children);
+      const defaultActive = parseInt(wrapper.getAttribute('data-active') || '1', 10);
+
+      // 初始化显示
+      children.forEach(function(child, index) {
+        if (index + 1 === defaultActive) {
+          (child as HTMLElement).style.display = 'block';
+        } else {
+          (child as HTMLElement).style.display = 'none';
+        }
+      });
+
+      buttons.forEach(function(button) {
+        button.addEventListener('click', function() {
+          const index = parseInt(button.getAttribute('data-index') || '1', 10);
+
+          // 更新按钮状态
+          buttons.forEach(function(btn) {
+            btn.classList.remove('active');
+          });
+          button.classList.add('active');
+
+          // 更新内容显示
+          children.forEach(function(child, childIndex) {
+            if (childIndex + 1 === index) {
+              (child as HTMLElement).style.display = 'block';
+            } else {
+              (child as HTMLElement).style.display = 'none';
+            }
+          });
+        });
+      });
+    });
+  })();
+
+  document.addEventListener('astro:page-load', function() {
+    document.querySelectorAll('.tab-wrapper').forEach(function(wrapper) {
+      const buttons = wrapper.querySelectorAll('.tab-button');
+      const contents = wrapper.querySelector('.tab-contents');
+      if (!contents) return;
+
+      const children = Array.from(contents.children);
+      const defaultActive = parseInt(wrapper.getAttribute('data-active') || '1', 10);
+
+      children.forEach(function(child, index) {
+        if (index + 1 === defaultActive) {
+          (child as HTMLElement).style.display = 'block';
+        } else {
+          (child as HTMLElement).style.display = 'none';
+        }
+      });
+
+      buttons.forEach(function(button) {
+        button.addEventListener('click', function() {
+          const index = parseInt(button.getAttribute('data-index') || '1', 10);
+
+          buttons.forEach(function(btn) {
+            btn.classList.remove('active');
+          });
+          button.classList.add('active');
+
+          children.forEach(function(child, childIndex) {
+            if (childIndex + 1 === index) {
+              (child as HTMLElement).style.display = 'block';
+            } else {
+              (child as HTMLElement).style.display = 'none';
+            }
+          });
+        });
+      });
+    });
+  });
+</script>
+
+<style>
+  .tab-wrapper {
+    margin: 1.5rem 0;
+  }
+
+  .tab-wrapper.center {
+    width: fit-content;
+    max-width: 100%;
+    margin-inline: auto;
+  }
+
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5em;
+    position: relative;
+    width: fit-content;
+    margin: 0 auto;
+    font-size: 0.95em;
+    line-height: 1.4;
+  }
+
+  .tab-button {
+    position: relative;
+    margin-bottom: 0.5em;
+    padding: 0.4em 0.8em;
+    border-radius: 0.4em;
+    border: none;
+    background: transparent;
+    color: var(--c-text-2, rgba(0, 0, 0, 0.6));
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    font-size: inherit;
+  }
+
+  .tab-button:hover {
+    background-color: var(--c-bg-soft, rgba(0, 0, 0, 0.05));
+    color: var(--c-text, inherit);
+  }
+
+  .tab-button::before,
+  .tab-button::after {
+    display: block;
+    position: absolute;
+    inset-inline: 0.8em;
+    bottom: -0.5em;
+    height: 2px;
+    border-radius: 1em;
+    pointer-events: none;
+  }
+
+  .tab-button::after {
+    content: "";
+    inset-inline: -0.8em;
+    background-color: var(--c-border, rgba(0, 0, 0, 0.1));
+  }
+
+  .tab-button.active {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+    background-color: var(--c-bg-soft, rgba(0, 0, 0, 0.05));
+    color: var(--c-text, inherit);
+  }
+
+  .tab-button.active::before {
+    content: "";
+    background-color: var(--c-primary, #3b82f6);
+    z-index: 1;
+  }
+
+  .tab-contents {
+    margin: 1em 0;
+  }
+
+  .tab-contents > * {
+    display: none;
+    margin: 1em 0;
+  }
+
+  .tab-contents > *:first-child {
+    display: block;
+  }
+
+  /* 暗色模式适配 */
+  :global(.dark) .tab-button {
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  :global(.dark) .tab-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  :global(.dark) .tab-button.active {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  :global(.dark) .tab-button::after {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+</style>

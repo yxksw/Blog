@@ -1,0 +1,86 @@
+---
+/**
+ * Poetry - 诗歌展示组件
+ * 
+ * 功能：
+ * 1. 居中展示诗歌内容
+ * 2. 支持标题、作者、落款
+ * 3. 保留文本换行格式
+ */
+
+interface Props {
+  title?: string;
+  author?: string;
+  footer?: string;
+}
+
+const { title, author, footer } = Astro.props;
+---
+
+<section class="poetry">
+  {title && (
+    <h2 class="poetry-title">{title}</h2>
+  )}
+  {author && (
+    <div class="poetry-author">{author}</div>
+  )}
+  <div class="poetry-content">
+    <slot />
+  </div>
+  {footer && (
+    <div class="poetry-footer">{footer}</div>
+  )}
+</section>
+
+<style>
+  .poetry {
+    width: fit-content;
+    max-width: 100%;
+    margin: 2rem auto;
+    padding: 1.5rem 2rem;
+    text-align: center;
+    color: var(--c-text, inherit);
+  }
+
+  .poetry-title {
+    font-size: 1.25em;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+    color: var(--c-text, inherit);
+  }
+
+  .poetry-author {
+    font-size: 0.95em;
+    margin-bottom: 1rem;
+    color: var(--c-text-2, rgba(0, 0, 0, 0.6));
+  }
+
+  .poetry-content {
+    line-height: 2;
+    margin: 0.5rem 0;
+  }
+
+  .poetry-content :global(p) {
+    width: fit-content;
+    margin: 0 auto;
+    line-height: 2;
+    white-space: pre-wrap;
+  }
+
+  .poetry-content :global(p:empty) {
+    display: none;
+  }
+
+  .poetry-footer {
+    font-size: 0.9em;
+    margin-top: 1rem;
+    color: var(--c-text-2, rgba(0, 0, 0, 0.6));
+    font-style: italic;
+  }
+
+  /* 暗色模式适配 */
+  :global(.dark) .poetry-author,
+  :global(.dark) .poetry-footer {
+    color: rgba(255, 255, 255, 0.6);
+  }
+</style>
