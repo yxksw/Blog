@@ -1,0 +1,221 @@
+---
+/**
+ * Tip - 提示组件
+ *
+ * 功能：
+ * 1. 显示带下划线的提示文本
+ * 2. 支持鼠标悬停显示提示框
+ * 3. 支持点击复制功能
+ * 4. 支持自定义图标
+ * 5. 适配博客的暗色模式
+ */
+
+interface Props {
+  /** 提示文本内容 */
+  text?: string;
+  /** 提示框内容（悬停显示） */
+  tip?: string;
+  /** 是否启用复制功能 */
+  copy?: boolean;
+  /** 自定义图标（Iconify 图标名称） */
+  icon?: string | boolean;
+}
+
+const { text, tip: tipText, copy = false, icon } = Astro.props;
+
+// 确定图标
+let iconName: string | undefined;
+if (typeof icon === 'string') {
+  iconName = icon;
+} else if (icon === true) {
+  iconName = 'ph:info-bold';
+} else if (copy) {
+  iconName = 'ph:copy-bold';
+}
+
+// 提示内容
+const tooltipContent = tipText || (copy ? '点击复制' : '');
+---
+
+<span
+  class={`tip ${copy ? 'copy' : ''} ${tooltipContent ? 'has-tip' : ''}`}
+  data-tip={tooltipContent}
+  tabindex={copy ? 0 : undefined}
+  role={copy ? 'button' : undefined}
+>
+  <slot>{text}</slot>
+  {iconName && (
+    <img
+      src={`https://api.iconify.design/${iconName}.svg`}
+      alt=""
+      class="tip-icon"
+      loading="lazy"
+      data-tip-icon
+    />
+  )}
+  {tooltipContent && (
+    <span class="tip-tooltip">{tooltipContent}</span>
+  )}
+</span>
+
+<script>
+  (function initTip() {
+    // 复制功能
+    var tips = document.querySelectorAll('.tip.copy');
+    tips.forEach(function(tip) {
+      tip.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // 获取文本内容，排除图标和tooltip
+        var text = '';
+        var childNodes = tip.childNodes;
+        for (var i = 0; i < childNodes.length; i++) {
+          var node = childNodes[i];
+          if (node.nodeType === Node.TEXT_NODE) {
+            text += node.textContent || '';
+          } else if (node.nodeType === Node.ELEMENT_NODE) {
+            var el = node;
+            if (!el.classList.contains('tip-icon') && !el.classList.contains('tip-tooltip')) {
+              text += el.textContent || '';
+            }
+          }
+        }
+        text = text.trim();
+
+        if (text && navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(function() {
+            // 临时更换图标为勾选
+            var icon = tip.querySelector('.tip-icon');
+            if (icon) {
+              var originalSrc = icon.src;
+              icon.src = 'https://api.iconify.design/ph:check-bold.svg';
+              setTimeout(function() {
+                icon.src = originalSrc;
+              }, 1500);
+            }
+          }).catch(function(err) {
+            console.error('复制失败:', err);
+            // 降级方案
+            var textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+              document.execCommand('copy');
+              var icon = tip.querySelector('.tip-icon');
+              if (icon) {
+                var originalSrc = icon.src;
+                icon.src = 'https://api.iconify.design/ph:check-bold.svg';
+                setTimeout(function() {
+                  icon.src = originalSrc;
+                }, 1500);
+              }
+            } catch (e) {
+              console.error('降级复制也失败:', e);
+            }
+            document.body.removeChild(textarea);
+          });
+        }
+      });
+
+      // 键盘支持
+      tip.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          tip.click();
+        }
+      });
+    });
+  })();
+</script>
+
+<style>
+  .tip {
+    position: relative;
+    text-decoration: underline dashed var(--c-text-3, rgba(0, 0, 0, 0.3));
+    cursor: pointer;
+    text-underline-offset: 4px;
+    color: var(--c-text, inherit);
+  }
+
+  .tip:hover {
+    text-decoration-color: var(--c-primary, #3b82f6);
+  }
+
+  .tip {
+    display: inline-block;
+    position: relative;
+    padding-right: 0.5em;
+  }
+
+  .tip-icon {
+    position: absolute;
+    top: -0.5em;
+    right: 0;
+    width: 0.8em;
+    height: 0.8em;
+    opacity: 0.7;
+  }
+
+  .tip:hover .tip-icon {
+    opacity: 1;
+  }
+
+  /* Tooltip 样式 */
+  .tip-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    padding: 0.4em 0.8em;
+    background-color: var(--c-bg-soft, rgba(0, 0, 0, 0.8));
+    color: var(--c-text, #fff);
+    font-size: 0.85em;
+    border-radius: 0.4em;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s;
+    z-index: 100;
+    pointer-events: none;
+  }
+
+  .tip-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: var(--c-bg-soft, rgba(0, 0, 0, 0.8));
+  }
+
+  .tip.has-tip:hover .tip-tooltip {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* 暗色模式适配 */
+  :global(.dark) .tip {
+    text-decoration-color: rgba(255, 255, 255, 0.3);
+  }
+
+  :global(.dark) .tip:hover {
+    text-decoration-color: var(--c-primary, #60a5fa);
+  }
+
+  :global(.dark) .tip-icon {
+    filter: brightness(0) invert(1);
+  }
+
+  :global(.dark) .tip-tooltip {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: rgba(0, 0, 0, 0.9);
+  }
+
+  :global(.dark) .tip-tooltip::after {
+    border-top-color: rgba(255, 255, 255, 0.9);
+  }
+</style>

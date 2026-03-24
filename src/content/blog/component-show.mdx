@@ -13,6 +13,8 @@ import Poetry from '../../components/post/Poetry.astro';
 import Quote from '../../components/post/Quote.astro';
 import Tab from '../../components/post/Tab.astro';
 import Timeline from '../../components/post/Timeline.astro';
+import Tip from '../../components/post/Tip.astro';
+import VideoEmbed from '../../components/post/VideoEmbed.astro';
 
 ## EmojiClock
 
@@ -263,6 +265,55 @@ To be or not to be, that is the question.
     { content: '一件事<br>两件事。' },
     { content: '<em>再添一笔。</em>' },
   ]}
+/>
+
+---
+
+## Tip
+
+提示组件，显示带下划线的文本，支持鼠标悬停显示提示框和点击复制功能。
+
+### 基础用法（带提示框）
+
+我是一条小提示，<Tip text="我没有图标" tip="提示的内容是提示" />，鼠标悬停查看提示。
+
+### 带图标和提示
+
+<Tip text="带图标的提示" icon tip="或许也可以没有内容" />
+
+### 复制功能
+
+<Tip copy>+v 点击就能复制，太方便了！</Tip>
+
+---
+
+## VideoEmbed
+
+视频嵌入组件，支持多种视频平台（原始视频、Bilibili 等），自动适配不同平台的宽高比。
+
+### 原始视频
+
+支持自定义海报图，适合展示本地或直链视频。
+
+<VideoEmbed
+  type="raw"
+  id="https://sf-atsx-tob.larksuite.com/obj/static-atsx-online-sg-ee-tob-mycis/02c7da694d343896877c09de9db4fc42/8ede49e0a92f53cdafbbf49339194986d9d900fb2abe242b9a8b4e338bf18b05.mp4"
+  poster="https://sf-atsx-tob.larksuite.com/obj/static-atsx-online-sg-ee-tob-mycis/02c7da694d343896877c09de9db4fc42/e23074879c61a4d61e905ccef5771a36a2d19689c1204c2b32caa53711ac83ad.png"
+/>
+
+### Bilibili 视频
+
+<VideoEmbed
+  type="bilibili"
+  id="BV1Yr421p7rW"
+/>
+
+### 自定义宽高比
+
+<VideoEmbed
+  type="bilibili"
+  id="BV1Yr421p7rW"
+  ratio="4/3"
 />
 
 ---

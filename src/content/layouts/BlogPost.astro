@@ -590,6 +590,8 @@ const charsLabel = chars.toLocaleString('en-US');
 				if (!rawTarget.closest('.markdown-prose')) return;
 				// 跳过 Pic 组件的图片（由 Pic 组件自己处理灯箱）
 				if (rawTarget.closest('[data-pic-figure]')) return;
+				// 跳过 Tip 组件的图标
+				if (rawTarget.hasAttribute('data-tip-icon')) return;
 
 				const anchor = rawTarget.closest('a');
 				if (anchor) event.preventDefault();
