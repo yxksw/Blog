@@ -10,50 +10,22 @@ import Hobbies from '../components/about/Hobbies.astro';
 import Award from '../components/about/Award.astro';
 import Other from '../components/about/Other.astro';
 import TenYear from '../components/about/TenYear.astro';
-import { getCollection } from 'astro:content';
+import { getCollection, render } from 'astro:content';
 
 const title = `关于 | ${SITE_TITLE}`;
 const description = '了解更多关于我的信息';
 
-// 获取 about.mdx 内容
+// 获取 about.mdx 内容并渲染
 const aboutEntries = await getCollection('about');
 const aboutDoc = aboutEntries.find(entry => entry.id === 'about.mdx' || entry.id === 'about.md') || aboutEntries[0];
-const aboutContent = aboutDoc?.body || '';
-
-// 解析时间线数据
-function parseTimeline(content: string) {
-  const lines = content.split('\n').filter(line => line.trim());
-  const timeline: { version: string; content: string }[] = [];
-  let currentItem: { version: string; content: string } | null = null;
-  
-  for (const line of lines) {
-    const versionMatch = line.match(/^-\s*(V\d+\s+\d{4})/);
-    if (versionMatch) {
-      if (currentItem) {
-        timeline.push(currentItem);
-      }
-      currentItem = {
-        version: versionMatch[1],
-        content: ''
-      };
-    } else if (currentItem && line.trim()) {
-      currentItem.content += (currentItem.content ? ' ' : '') + line.trim();
-    }
-  }
-  if (currentItem) {
-    timeline.push(currentItem);
-  }
-  return timeline;
-}
-
-const timelineData = parseTimeline(aboutContent);
+const { Content: AboutContent } = aboutDoc ? await render(aboutDoc) : { Content: null };
 
 // 关于页面数据配置
 const aboutData = {
   // 作者信息
   authorInfo: {
     title: '关于',
-    image: 'https://cdn.jsdmirror.com/gh/zsxcoder/github-img@main/img/yxk-avatar.avif',
+    image: 'https://cn.cravatar.com/avatar/56cd72b5460ecaa08ddffea9562f5629?size=512',
     leftTags: ['博客写作者', '资源分享者', '前端入门者'],
     rightTags: ['小说爱好者', '开源爱好者', 'CTRL CV']
   },
@@ -197,12 +169,11 @@ const aboutData = {
     }
   },
   
-  // 建站原因（使用 about.mdx 的时间线数据）
-  cause: {
-    tip: '为什么建站',
+  // 建站原因（single 区块配置）
+  single: {
+    tip: '关于本站',
     title: '分享与记录',
-    content: '<p>这个博客是我分享技术、记录生活的地方。在这里，我可以自由地表达自己的想法，与志同道合的朋友交流。</p>',
-    timeline: timelineData
+    lishi: '博客说明'
   },
   
   // 十年计划
@@ -259,21 +230,16 @@ const aboutData = {
     <!-- 统计和个人信息 -->
     <Other tj={aboutData.tj} oneself={aboutData.oneself} />
     
-    <!-- 建站原因 -->
-    {aboutData.cause && (
+    <!-- 关于本站 - single 区块 -->
+    {aboutData.single && (
       <div class="author-content">
         <div class="create-site-post author-content-item single">
-          <div class="author-content-item-tips">{aboutData.cause.tip}</div>
-          <span class="author-content-item-title">{aboutData.cause.title}</span>
-          <div class="lishi">博客发展历程</div>
-          <ul class="timeline">
-            {aboutData.cause.timeline.map((item) => (
-              <li>
-                <div class="timeline-version">{item.version}</div>
-                <div class="timeline-content">{item.content}</div>
-              </li>
-            ))}
-          </ul>
+          <div class="author-content-item-tips">{aboutData.single.tip}</div>
+          <div class="author-content-item-title">{aboutData.single.title}</div>
+          <div class="lishi">{aboutData.single.lishi}</div>
+          <div class="single-content">
+            {AboutContent ? <AboutContent /> : <p class="text-center">可于 about.mdx 配置补充说明。</p>}
+          </div>
         </div>
       </div>
     )}
@@ -378,7 +344,7 @@ const aboutData = {
     opacity: 0.9;
   }
 
-  /* 时间线样式 */
+  /* single 区块样式 */
   .lishi {
     font-size: 1.25rem;
     color: var(--efu-secondtext, #6b7280);
@@ -389,6 +355,60 @@ const aboutData = {
     color: var(--efu-secondtext, #9ca3af);
   }
 
+  .single-content {
+    margin-top: 1rem;
+    line-height: 1.8;
+  }
+
+  .single-content p {
+    margin: 0.75rem 0;
+    color: var(--efu-fontcolor, #4b5563);
+  }
+
+  /* 确保 single-content 内的 Markdown 列表正确显示 */
+  .single-content ul {
+    margin: 0.75rem 0;
+    padding-left: 1.5rem;
+    list-style: disc outside;
+  }
+
+  .single-content ul > li {
+    margin: 0.5rem 0;
+    color: var(--efu-fontcolor, #4b5563);
+    list-style-type: disc;
+    display: list-item;
+    position: relative;
+  }
+
+  /* 列表标记样式 */
+  .single-content ul > li::marker {
+    color: var(--efu-secondtext, #6b7280);
+  }
+
+  .single-content a {
+    color: var(--c-primary, #3b82f6);
+    text-decoration: none;
+  }
+
+  .single-content a:hover {
+    text-decoration: underline;
+  }
+
+  [data-theme="dark"] .single-content p,
+  [data-theme="dark"] .single-content ul > li {
+    color: var(--efu-fontcolor, #9ca3af);
+  }
+
+  [data-theme="dark"] .single-content ul > li::marker {
+    color: var(--efu-secondtext, #9ca3af);
+  }
+
+  .text-center {
+    text-align: center;
+    color: var(--efu-secondtext, #6b7280);
+  }
+
+  /* 时间线样式 */
   .timeline {
     list-style: none;
     padding: 0;
